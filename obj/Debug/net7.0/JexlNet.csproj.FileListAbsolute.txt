@@ -1,0 +1,4 @@
+C:\Users\NRaes\Dev\JexlNet\obj\Debug\net7.0\JexlNet.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\NRaes\Dev\JexlNet\obj\Debug\net7.0\JexlNet.AssemblyInfoInputs.cache
+C:\Users\NRaes\Dev\JexlNet\obj\Debug\net7.0\JexlNet.AssemblyInfo.cs
+C:\Users\NRaes\Dev\JexlNet\obj\Debug\net7.0\JexlNet.csproj.CoreCompileInputs.cache
