@@ -1,0 +1,12 @@
+C:\Users\NRaes\Dev\JexlNet\JexlNet\bin\Debug\net8.0\JexlNet.deps.json
+C:\Users\NRaes\Dev\JexlNet\Jexlnet\bin\Debug\net8.0\JexlNet.dll
+C:\Users\NRaes\Dev\JexlNet\Jexlnet\bin\Debug\net8.0\JexlNet.pdb
+C:\Users\NRaes\Dev\JexlNet\Jexlnet\obj\Debug\net8.0\JexlNet.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\NRaes\Dev\JexlNet\Jexlnet\obj\Debug\net8.0\JexlNet.AssemblyInfoInputs.cache
+C:\Users\NRaes\Dev\JexlNet\Jexlnet\obj\Debug\net8.0\JexlNet.AssemblyInfo.cs
+C:\Users\NRaes\Dev\JexlNet\Jexlnet\obj\Debug\net8.0\JexlNet.csproj.CoreCompileInputs.cache
+C:\Users\NRaes\Dev\JexlNet\Jexlnet\obj\Debug\net8.0\JexlNet.sourcelink.json
+C:\Users\NRaes\Dev\JexlNet\Jexlnet\obj\Debug\net8.0\JexlNet.dll
+C:\Users\NRaes\Dev\JexlNet\Jexlnet\obj\Debug\net8.0\refint\JexlNet.dll
+C:\Users\NRaes\Dev\JexlNet\Jexlnet\obj\Debug\net8.0\JexlNet.pdb
+C:\Users\NRaes\Dev\JexlNet\JexlNet\obj\Debug\net8.0\ref\JexlNet.dll
