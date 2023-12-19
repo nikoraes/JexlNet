@@ -31,7 +31,7 @@ public class LexerUnitTest
     }
 
     [Fact]
-    public void GetTokens_UnquotesString_ReturnsToken()
+    public void GetTokens_UnDoubleQuotesString_ReturnsToken()
     {
         string[] elements = [@"""foo \""bar\\"""];
         var tokens = _lexer.GetTokens(elements);
@@ -39,5 +39,16 @@ public class LexerUnitTest
         Assert.Equal("literal", tokens[0].Type);
         Assert.Equal(@"foo ""bar\", tokens[0].Value);
         Assert.Equal(@"""foo \""bar\\""", tokens[0].Raw);
+    }
+
+    [Fact]
+    public void GetTokens_UnSingleQuotesString_ReturnsToken()
+    {
+        string[] elements = [@"'foo \'bar\\'"];
+        var tokens = _lexer.GetTokens(elements);
+        Assert.Single(tokens);
+        Assert.Equal("literal", tokens[0].Type);
+        Assert.Equal(@"foo 'bar\", tokens[0].Value);
+        Assert.Equal(@"'foo \'bar\\'", tokens[0].Raw);
     }
 }

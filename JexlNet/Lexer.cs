@@ -233,13 +233,17 @@ public class Lexer(Grammar grammar)
     /// <returns>a string with the surrounding quotes stripped and escapes properly processed.</returns>
     private string Unquote(string str)
     {
-        char quote = str[0];
+        return str[1..^1].Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\'", "'");
+
+
+
+        /* char quote = str[0];
         Regex escapeQuoteRegex = new(@$"\\{quote}");
         string unquotedString = str[1..^1];
         // Replace escaped quotes with unescaped quotes
         escapeQuoteRegex.Replace(unquotedString, quote.ToString());
         // Replace escaped escape characters with unescaped escape characters
         escEscRegex.Replace(unquotedString, @"\");
-        return unquotedString;
+        return unquotedString; */
     }
 }
