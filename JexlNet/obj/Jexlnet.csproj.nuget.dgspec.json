@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\NRaes\\Dev\\JexlNet\\Jexlnet\\Jexlnet.csproj": {}
+    "C:\\Users\\NRaes\\Dev\\JexlNet\\JexlNet\\JexlNet.csproj": {}
   },
   "projects": {
-    "C:\\Users\\NRaes\\Dev\\JexlNet\\Jexlnet\\Jexlnet.csproj": {
+    "C:\\Users\\NRaes\\Dev\\JexlNet\\JexlNet\\JexlNet.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\NRaes\\Dev\\JexlNet\\Jexlnet\\Jexlnet.csproj",
-        "projectName": "Jexlnet",
-        "projectPath": "C:\\Users\\NRaes\\Dev\\JexlNet\\Jexlnet\\Jexlnet.csproj",
+        "projectUniqueName": "C:\\Users\\NRaes\\Dev\\JexlNet\\JexlNet\\JexlNet.csproj",
+        "projectName": "JexlNet",
+        "projectPath": "C:\\Users\\NRaes\\Dev\\JexlNet\\JexlNet\\JexlNet.csproj",
         "packagesPath": "C:\\Users\\NRaes\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\NRaes\\Dev\\JexlNet\\Jexlnet\\obj\\",
+        "outputPath": "C:\\Users\\NRaes\\Dev\\JexlNet\\JexlNet\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\NRaes\\AppData\\Roaming\\NuGet\\NuGet.Config",
