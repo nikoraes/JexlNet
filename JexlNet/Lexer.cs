@@ -3,11 +3,28 @@ using System.Text.RegularExpressions;
 
 namespace JexlNet;
 
-public class Token
+public class Token : IEquatable<Token>
 {
-    public string? Raw { get; set; }
+    public Token() { }
+    public Token(string type, dynamic value, string raw)
+    {
+        Type = type;
+        Value = value;
+        Raw = raw;
+    }
     public string? Type { get; set; }
     public dynamic? Value { get; set; }
+    public string? Raw { get; set; }
+
+    public bool Equals(Token? other)
+    {
+        if (other == null)
+        {
+            return false;
+        }
+        return Raw == other.Raw && Type == other.Type && Value == other.Value;
+    }
+
 }
 
 /// <summary>
@@ -42,7 +59,7 @@ public class Lexer(Grammar grammar)
         // Identifiers
         @"[a-zA-Zа-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\\$][a-zA-Z0-9а-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\\$]*",
             // Numerics (without negative symbol)
-            @"(?:(?:[0-9]*\\.[0-9]+)|[0-9]+)",
+            @"(?:(?:[0-9]*\.[0-9]+)|[0-9]+)",
         ];
     public string[] minusNegatesAfter = [
         "binaryOp",
@@ -59,10 +76,10 @@ public class Lexer(Grammar grammar)
     /// </summary>
     /// <param name="str">A Jexl expression string</param>
     /// <returns>An array of substrings defining the functional elements of the expression.</returns>
-    public string[] GetElements(string str)
+    public List<string> GetElements(string str)
     {
         var regex = GetSplitRegex();
-        return regex.Split(str).ToList().Where(elem => !string.IsNullOrEmpty(elem)).ToArray();
+        return regex.Split(str).ToList().Where(elem => !string.IsNullOrEmpty(elem)).ToList();
     }
 
     /// <summary>
@@ -73,20 +90,20 @@ public class Lexer(Grammar grammar)
     /// </summary>
     /// <param name="elements">An array of expression elements</param>
     /// <returns>An array of token objects</returns>
-    public List<Token> GetTokens(IEnumerable<string> elements)
+    public List<Token> GetTokens(List<string> elements)
     {
         List<Token> tokens = [];
         bool negate = false;
-        foreach (var element in elements)
+        for (int i = 0; i < elements.Count; i++)
         {
-            if (IsWhiteSpace(element))
+            if (IsWhiteSpace(elements[i]))
             {
                 if (tokens.Count != 0)
                 {
-                    tokens[^1].Raw += element;
+                    tokens[^1].Raw += elements[i];
                 }
             }
-            else if (element == "-" && IsNegative(tokens))
+            else if (elements[i] == "-" && IsNegative(tokens))
             {
                 negate = true;
             }
@@ -94,13 +111,10 @@ public class Lexer(Grammar grammar)
             {
                 if (negate)
                 {
-                    tokens.Add(CreateToken("-" + element));
+                    elements[i] = "-" + elements[i];
                     negate = false;
                 }
-                else
-                {
-                    tokens.Add(CreateToken(element));
-                }
+                tokens.Add(CreateToken(elements[i]));
             }
         }
         if (negate)
@@ -138,7 +152,7 @@ public class Lexer(Grammar grammar)
         }
         else if (numericRegex.IsMatch(element))
         {
-            token.Value = float.Parse(element, CultureInfo.InvariantCulture);
+            token.Value = decimal.Parse(element, CultureInfo.InvariantCulture);
         }
         else if (element == "true")
         {
@@ -155,6 +169,10 @@ public class Lexer(Grammar grammar)
         else if (identifierRegex.IsMatch(element))
         {
             token.Type = "identifier";
+        }
+        else
+        {
+            throw new Exception($"Invalid expression token: {element}");
         }
         return token;
     }
@@ -204,10 +222,7 @@ public class Lexer(Grammar grammar)
     /// <returns>true if the '-' should be interpreted as a negative symbol; false otherwise.</returns>
     private bool IsNegative(IEnumerable<Token> tokens)
     {
-        if (!tokens.Any())
-        {
-            return false;
-        }
+        if (!tokens.Any()) return true;
         return minusNegatesAfter.Any((type) => tokens.Last().Type == type);
     }
 
@@ -231,7 +246,7 @@ public class Lexer(Grammar grammar)
     /// </summary>
     /// <param name="str">A string whose first and last characters are quotes</param>
     /// <returns>a string with the surrounding quotes stripped and escapes properly processed.</returns>
-    private string Unquote(string str)
+    private static string Unquote(string str)
     {
         return str[1..^1].Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\'", "'");
 

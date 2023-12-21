@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("JexlNet.Test")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3709a8d6187b1c91c3195bc1d2d762d43321880e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+89738719004d7396dcfb9e883ae5d1ff90e78db2")]
 [assembly: System.Reflection.AssemblyProductAttribute("JexlNet.Test")]
 [assembly: System.Reflection.AssemblyTitleAttribute("JexlNet.Test")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
