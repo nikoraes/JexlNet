@@ -19,6 +19,7 @@ public class EvaluatorUnitTest
     [InlineData("1 + 2", 3)]
     [InlineData("(2 + 3) * 4", 20)]
     [InlineData("7 // 2", 3)]
+    [InlineData("(\t2\n+\n3) *\n4\n\r\n", 20)]
     public async void EvaluateExpression_ReturnDecimal(string input, decimal expected)
     {
         Evaluator _evaluator = new(new Grammar());
@@ -215,6 +216,15 @@ public class EvaluatorUnitTest
     }
 
     [Fact]
+    public async void EvaluateExpression_AllowAccessToEmptyLiteralProperties()
+    {
+        Evaluator _evaluator = new(new Grammar());
+        var ast = ToTree(@""""".Length");
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal("".Length, result);
+    }
+
+    [Fact]
     public async void EvaluateExpression_AppliesTransformsWithMultipleArgs()
     {
         var grammar = new Grammar();
@@ -260,5 +270,58 @@ public class EvaluatorUnitTest
         var ast = ToTree(input);
         var result = await _evaluator.Eval(ast);
         Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(@"""foo"" ? 1 : 2", 1)]
+    [InlineData(@""""" ? 1 : 2", 2)]
+    public async void EvaluateExpression_Conditional(string input, decimal expected)
+    {
+        Evaluator _evaluator = new(new Grammar());
+        var ast = ToTree(input);
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(@"""foo"" ?: ""bar""", "foo")]
+    [InlineData(@""""" ?: ""bar""", "bar")]
+    public async void EvaluateExpression_AllowsMissingConsequentInTernary(string input, string expected)
+    {
+        Evaluator _evaluator = new(new Grammar());
+        var ast = ToTree(input);
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public async void EvaluateExpression_ReturnsEmptyArrayWhenApplyingFilterToUndefined()
+    {
+        var context = new Dictionary<string, dynamic>
+        {
+            { "a", new Dictionary<string, dynamic>() },
+            { "b", 4 }
+        };
+        Evaluator _evaluator = new(new Grammar(), context);
+        var ast = ToTree(@"a.b[.c == d]");
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal(new List<dynamic>(), result);
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async void EvaluateExpression_WithDollarIdentifiers()
+    {
+        var context = new Dictionary<string, dynamic>
+        {
+            { "$", 5 },
+            { "$foo", 6 },
+            { "$foo$bar", 7 },
+            { "$bar", 8 }
+        };
+        Evaluator _evaluator = new(new Grammar(), context);
+        var ast = ToTree(@"$+$foo+$foo$bar+$bar");
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal((decimal)26, result);
     }
 }

@@ -64,7 +64,12 @@ public static class EvaluatorHandlers
             throw new Exception("ConditionalExpression node has no test");
         }
         var testResult = await evaluator.Eval(node?.Test);
-        if (testResult == true)
+        // If it's a string, we consider it truthy if it's non-empty
+        // If it's a decimal, we consider it truthy it's non-zero
+        // Align with behaviour in Javascript
+        if (testResult?.GetType() == typeof(string)
+            ? !string.IsNullOrEmpty(testResult)
+            : (testResult?.GetType() == typeof(decimal) ? testResult != 0 : testResult == true))
         {
             if (node?.Consequent != null)
             {
@@ -130,7 +135,11 @@ public static class EvaluatorHandlers
         else if (fromResult is Dictionary<string, dynamic> dict)
         {
             string key = node!.Value!;
-            return dict[key];
+            if (dict.TryGetValue(key, out dynamic? value))
+            {
+                return value;
+            }
+            else return null;
         }
         else if (fromResult != null && node?.Value != null && node!.Value is string)
         {
