@@ -27,6 +27,7 @@ public class ElementGrammar
     {
         Type = type;
         Precedence = precedence;
+        Evaluate = evaluate;
     }
     public string Type { get; set; }
     public int Precedence { get; set; }
