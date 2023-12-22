@@ -27,7 +27,7 @@ public class Node : Token, IEquatable<Node>
     public Node? Subject { get; set; }
     public string? Name { get; set; }
     public string? Pool { get; set; }
-    public Node? From { get; set; }
+    public Node? From { get; set; } // Used for chained identifiers
     public Node? Alternate { get; set; }
     public Node? Consequent { get; set; }
     public Node? Test { get; set; }
@@ -66,25 +66,16 @@ public class Node : Token, IEquatable<Node>
             equalValue = Value == other.Value;
         }
         return
-            // Raw == other.Raw && // Equality not requried for nodes
             Type == other.Type &&
             equalValue &&
             Operator == other.Operator &&
+            Relative == other.Relative &&
             ((Left == null && other.Left == null) || (Left != null && Left.Equals(other.Left))) &&
-            ((Right == null && other.Right == null) || (Right != null && Right.Equals(other.Right)));
-        // Parent == other.Parent &&
-        //Writable == other.Writable &&
-        //Args == other.Args &&
-        //Operator == other.Operator &&
-        //Expr == other.Expr &&
-        //Relative == other.Relative &&
-        //Subject == other.Subject &&
-        //Name == other.Name &&
-        //Pool == other.Pool &&
-        //From == other.From &&
-        //Alternate == other.Alternate &&
-        //Consequent == other.Consequent &&
-        //Test == other.Test;
+            ((Right == null && other.Right == null) || (Right != null && Right.Equals(other.Right))) &&
+            ((From == null && other.From == null) || (From != null && From.Equals(other.From))) &&
+            Name == other.Name &&
+            Pool == other.Pool &&
+            ((Args == null && other.Args == null) || (Args != null && other.Args != null && Args.SequenceEqual(other.Args)));
     }
 }
 

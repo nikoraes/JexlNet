@@ -99,7 +99,8 @@ public class ParserStates : Dictionary<string, ParserState>
                 { "openParen", new ParserStateTokenType("argVal", ParserHandlers.FunctionCall) },
                 { "pipe", new ParserStateTokenType("expectTransform") },
                 { "question", new ParserStateTokenType("ternaryMid", ParserHandlers.TernaryStart) }
-            }
+            },
+            Completable = true
         });
 
         Add("traverse", new ParserState()
