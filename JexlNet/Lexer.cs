@@ -50,17 +50,17 @@ public class Lexer(Grammar grammar)
     public Regex whitespaceRegex = new(@"^\s*$", RegexOptions.Compiled);
     public string[] preOpRegexElems = [
         // Strings
-        @"'(?:(?:\\\\')|[^'])*'",
-        @"""(?:(?:\\\\"")|[^""])*""",
+        @"'(?:(?:\\')|[^'])*'",
+        @"""(?:(?:\\"")|[^""])*""",
         // Whitespace
-        @"\\s+",
+        @"\s+",
         // Booleans
-        @"\\btrue\\b",
-        @"\\bfalse\\b",
+        @"\btrue\b",
+        @"\bfalse\b",
         ];
     public string[] postOpRegexElems = [
         // Identifiers
-        @"[a-zA-Zа-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\\$][a-zA-Z0-9а-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\\$]*",
+        @"[a-zA-Zа-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\$][a-zA-Z0-9а-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\$]*",
             // Numerics (without negative symbol)
             @"(?:(?:[0-9]*\.[0-9]+)|[0-9]+)",
         ];
@@ -186,7 +186,7 @@ public class Lexer(Grammar grammar)
         string escapedString = Regex.Escape(str);
         if (identifierRegex.IsMatch(str))
         {
-            escapedString = "\\b" + escapedString + "\\b";
+            escapedString = @"\b" + escapedString + @"\b";
         }
         return escapedString;
     }
@@ -246,17 +246,7 @@ public class Lexer(Grammar grammar)
     /// <returns>a string with the surrounding quotes stripped and escapes properly processed.</returns>
     private static string Unquote(string str)
     {
-        return str[1..^1].Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\'", "'");
-
-
-
-        /* char quote = str[0];
-        Regex escapeQuoteRegex = new(@$"\\{quote}");
-        string unquotedString = str[1..^1];
-        // Replace escaped quotes with unescaped quotes
-        escapeQuoteRegex.Replace(unquotedString, quote.ToString());
-        // Replace escaped escape characters with unescaped escape characters
-        escEscRegex.Replace(unquotedString, @"\");
-        return unquotedString; */
+        char quote = str[0];
+        return str[1..^1].Replace(@"\\", @"\").Replace(@"\\""", @"\""").Replace(@$"\{quote}", $"{quote}");
     }
 }

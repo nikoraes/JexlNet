@@ -7,10 +7,11 @@ public class LexerUnitTest
     [Theory]
     [InlineData(@"""foo""")]
     [InlineData(@"'foo'")]
-    [InlineData(@"""f\\""oo""")]
-    [InlineData(@"""foo\\""""")]
-    [InlineData(@"'foo\\''")]
-    [InlineData(@"'f\\'oo'")]
+    [InlineData(@"""f\""oo""")]
+    [InlineData(@"""foo\""""")]
+    [InlineData(@"'foo\''")]
+    [InlineData(@"'f\'oo'")]
+    [InlineData(@"""Wo\""rld""")]
     public void GetElements_InputIsSingleString_Return1(string input)
     {
         var elements = _lexer.GetElements(input);
@@ -30,6 +31,14 @@ public class LexerUnitTest
         Assert.Equal(input, elements[0]);
     }
 
+    [Theory]
+    [InlineData(@"+""Wo\""rld""", 2)]
+    public void GetElements_Multiple(string input, int count)
+    {
+        var elements = _lexer.GetElements(input);
+        Assert.Equal(count, elements.Count);
+    }
+
     [Fact]
     public void GetTokens_UnDoubleQuotesString_ReturnsToken()
     {
@@ -46,6 +55,15 @@ public class LexerUnitTest
         var tokens = _lexer.GetTokens(elements);
         Assert.Single(tokens);
         Assert.Equal(new Token("literal", @"foo 'bar\", @"'foo \'bar\\'"), tokens[0]);
+    }
+
+    [Fact]
+    public void GetTokens_UnSingleQuotesString_ReturnsTokenComplex()
+    {
+        List<string> elements = [@"""Hello8Wo\""rld"""];
+        var tokens = _lexer.GetTokens(elements);
+        Assert.Single(tokens);
+        Assert.Equal(new Token("literal", @"Hello8Wo""rld", @"""Hello8Wo\""rld"""), tokens[0]);
     }
 
     [Fact]
@@ -114,7 +132,7 @@ public class LexerUnitTest
     [Fact]
     public void Tokenize_FullExpression()
     {
-        var tokens = _lexer.Tokenize(@"6+x -  -17.55*y<= !foo.bar[""baz\\""foz""]");
+        var tokens = _lexer.Tokenize(@"6+x -  -17.55*y<= !foo.bar[""baz\""foz""]");
         Assert.Equal(15, tokens.Count);
         Assert.Equal(new Token("literal", (decimal)6, "6"), tokens[0]);
         Assert.Equal(new Token("binaryOp", "+", "+"), tokens[1]);
@@ -129,7 +147,7 @@ public class LexerUnitTest
         Assert.Equal(new Token("dot", ".", "."), tokens[10]);
         Assert.Equal(new Token("identifier", "bar", "bar"), tokens[11]);
         Assert.Equal(new Token("openBracket", "[", "["), tokens[12]);
-        Assert.Equal(new Token("literal", @"baz""foz", @"""baz\\""foz"""), tokens[13]);
+        Assert.Equal(new Token("literal", @"baz""foz", @"""baz\""foz"""), tokens[13]);
         Assert.Equal(new Token("closeBracket", "]", "]"), tokens[14]);
     }
 

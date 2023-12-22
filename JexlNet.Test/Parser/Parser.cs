@@ -1,15 +1,13 @@
-using System.Security.Cryptography.X509Certificates;
-
 namespace JexlNet.Test;
 
 public class ParserUnitTest
 {
     private readonly Lexer _lexer = new(new Grammar());
-    private readonly Parser _parser = new(new Grammar());
 
     [Fact]
     public void ConstructsASTForOnePlusTwo()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("1 + 2"));
         var result = _parser.Complete();
         Node expected = new("BinaryExpression")
@@ -24,6 +22,7 @@ public class ParserUnitTest
     [Fact]
     public void AddsHeavierOperationsToTheRight()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("2+3*4"));
         var result = _parser.Complete();
         Node expected = new("BinaryExpression")
@@ -43,6 +42,7 @@ public class ParserUnitTest
     [Fact]
     public void EncapsulatesLighterOperations()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("2*3+4"));
         var result = _parser.Complete();
         Node expected = new("BinaryExpression")
@@ -62,6 +62,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesSubtreeEncapsulation()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("2+3*4==5/6-7"));
         var result = _parser.Complete();
         Node expected = new("BinaryExpression")
@@ -96,6 +97,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesUnaryOperator()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("1*!!true-2"));
         var result = _parser.Complete();
         Node expected = new("BinaryExpression")
@@ -123,6 +125,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesSubexpression()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("(2+3)*4"));
         var result = _parser.Complete();
         Node expected = new("BinaryExpression")
@@ -142,6 +145,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesNestedSubexpressions()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("(4*(2+3))/5"));
         var result = _parser.Complete();
         Node expected = new("BinaryExpression")
@@ -166,6 +170,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesObjectLiterals()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"{foo: ""bar"", tek: 1+2}"));
         var result = _parser.Complete();
         Node expected = new("ObjectLiteral")
@@ -188,6 +193,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesDashesInKey()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"{'with-dash': ""bar"", tek: 1+2}"));
         var result = _parser.Complete();
         Node expected = new("ObjectLiteral")
@@ -210,6 +216,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesNestedObjectLiterals()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"{foo: {bar: ""tek""}}"));
         var result = _parser.Complete();
         Node expected = new("ObjectLiteral")
@@ -232,6 +239,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesEmptyObjectLiterals()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"{}"));
         var result = _parser.Complete();
         Node expected = new("ObjectLiteral")
@@ -244,6 +252,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesArrayLiterals()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"[""foo"", 1+2]"));
         var result = _parser.Complete();
         Node expected = new("ArrayLiteral")
@@ -265,6 +274,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesNestedArrayLiterals()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"[""foo"", [""bar"", ""tek""]]"));
         var result = _parser.Complete();
         Node expected = new("ArrayLiteral")
@@ -288,6 +298,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesEmptyArrayLiterals()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"[]"));
         var result = _parser.Complete();
         Node expected = new("ArrayLiteral")
@@ -300,6 +311,7 @@ public class ParserUnitTest
     [Fact]
     public void ChainsTraversedIdentifiers()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo.bar.baz + 1"));
         var result = _parser.Complete();
         Node expected = new("BinaryExpression")
@@ -320,6 +332,7 @@ public class ParserUnitTest
     [Fact]
     public void AppliesTransformsAndArguments()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo|tr1|tr2.baz|tr3({bar:""tek""})"));
         var result = _parser.Complete();
         Node expected = new("FunctionCall")
@@ -363,6 +376,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesMultipleArgumentsInTransforms()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo|bar(""tek"", 5, true)"));
         var result = _parser.Complete();
         Node expected = new("FunctionCall")
@@ -383,6 +397,7 @@ public class ParserUnitTest
     [Fact]
     public void AppliesFiltersToIdentifiers()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo[1][.bar[0]==""tek""].baz"));
         var result = _parser.Complete();
         Node expected = new("Identifier", "baz")
@@ -418,6 +433,7 @@ public class ParserUnitTest
     [Fact]
     public void AllowsMixingRelativeAndNonRelativeIdentifiers()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo[.bar.baz == tek]"));
         var result = _parser.Complete();
         Node expected = new("FilterExpression")
@@ -443,6 +459,7 @@ public class ParserUnitTest
     [Fact]
     public void AllowsMixingRelativeAndNonRelativeComplex()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo.bar[.baz == tek.tak]"));
         var result = _parser.Complete();
         Node expected = new("FilterExpression")
@@ -471,6 +488,7 @@ public class ParserUnitTest
     [Fact]
     public void AllowsDotNotationForAllOperands()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"""foo"".length + {foo: ""bar""}.foo"));
         var result = _parser.Complete();
         Node expected = new("BinaryExpression")
@@ -497,6 +515,7 @@ public class ParserUnitTest
     [Fact]
     public void AllowsDotNotationOnSubexpressions()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"(""foo"" + ""bar"").length"));
         var result = _parser.Complete();
         Node expected = new("Identifier", "length")
@@ -514,6 +533,7 @@ public class ParserUnitTest
     [Fact]
     public void AllowsDotNotationOnArrays()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"[""foo"", ""bar""].length"));
         var result = _parser.Complete();
         Node expected = new("Identifier", "length")
@@ -533,6 +553,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesTernaryExpression()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo ? 1 : 0"));
         var result = _parser.Complete();
         Node expected = new("ConditionalExpression")
@@ -547,6 +568,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesNestedAndGroupedTernaryExpressions()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo ? (bar ? 1 : 2) : 3"));
         var result = _parser.Complete();
         Node expected = new("ConditionalExpression")
@@ -566,6 +588,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesNestedNonGroupedTernaryExpressions()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo ? bar ? 1 : 2 : 3"));
         var result = _parser.Complete();
         Node expected = new("ConditionalExpression")
@@ -585,6 +608,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesTernaryExpressionWithObjects()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo ? {bar: ""tek""} : ""baz"""));
         var result = _parser.Complete();
         Node expected = new("ConditionalExpression")
@@ -605,6 +629,7 @@ public class ParserUnitTest
     [Fact]
     public void BalancesBinaryBetweenComplexIdentifiers()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"a.b == c.d"));
         var result = _parser.Complete();
         Node expected = new("BinaryExpression")
@@ -625,6 +650,7 @@ public class ParserUnitTest
     [Fact]
     public void HandlesWhiteSpaceInExpression()
     {
+        Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("\t2\r\n+\n\r3\n\n"));
         var result = _parser.Complete();
         Node expected = new("BinaryExpression")

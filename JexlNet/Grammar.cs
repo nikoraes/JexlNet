@@ -23,22 +23,40 @@ public class ElementGrammar
     {
         Type = type;
     }
-    public ElementGrammar(string type, int precedence, Func<object[], object> evaluate)
+    public ElementGrammar(string type, int precedence, Func<dynamic[], dynamic> evaluate, bool evalOnDemand = false)
     {
         Type = type;
         Precedence = precedence;
         Evaluate = evaluate;
+        EvalOnDemand = evalOnDemand;
     }
     public string Type { get; set; }
     public int Precedence { get; set; }
-    public Func<object[], object>? Evaluate { get; set; }
+    public Func<dynamic[], dynamic>? Evaluate { get; set; }
+    public bool EvalOnDemand { get; set; }
 }
 
-public class BinaryOperatorGrammar(int precedence, Func<object[], object> evaluate) : ElementGrammar(GrammarType.BinaryOperator, precedence, evaluate)
+public class BinaryOperatorGrammar(
+    int precedence,
+    Func<dynamic[], dynamic> evaluate,
+    bool evalOnDemand = false
+    ) : ElementGrammar(
+        GrammarType.BinaryOperator,
+        precedence,
+        evaluate,
+        evalOnDemand)
 {
 }
 
-public class UnaryOperatorGrammar(int precedence, Func<object[], object> evaluate) : ElementGrammar(GrammarType.UnaryOperator, precedence, evaluate)
+public class UnaryOperatorGrammar(
+    int precedence,
+    Func<dynamic[], dynamic> evaluate,
+    bool evalOnDemand = false
+    ) : ElementGrammar(
+        GrammarType.UnaryOperator,
+        precedence,
+        evaluate,
+        evalOnDemand)
 {
 }
 
@@ -70,22 +88,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is string || b is string)
-                    {
-                        return a.ToString() + b.ToString();
-                    }
-                    else if (a is int || b is int)
-                    {
-                        return (int)a + (int)b;
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return (double)a + (double)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for + operator");
-                    }
+                    return a + b;
                 })
             },
             {
@@ -97,18 +100,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is int || b is int)
-                    {
-                        return (int)a - (int)b;
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return (double)a - (double)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for - operator");
-                    }
+                    return a - b;
                 })
             },
             {
@@ -120,18 +112,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is int || b is int)
-                    {
-                        return (int)a * (int)b;
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return (double)a * (double)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for * operator");
-                    }
+                    return a * b;
                 })
             },
             {
@@ -143,18 +124,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is int || b is int)
-                    {
-                        return (int)a / (int)b;
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return (double)a / (double)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for / operator");
-                    }
+                    return a / b;
                 })
             },
             {
@@ -166,18 +136,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is int || b is int)
-                    {
-                        return Math.Floor((decimal)((int)a / (int)b));
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return Math.Floor((double)a / (double)b);
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for // operator");
-                    }
+                    return Math.Floor(a / b);
                 })
             },
             {
@@ -189,18 +148,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is int || b is int)
-                    {
-                        return (int)a % (int)b;
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return (double)a % (double)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for % operator");
-                    }
+                    return a % b;
                 })
             },
             {
@@ -212,18 +160,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is int || b is int)
-                    {
-                        return (int)Math.Pow((int)a, (int)b);
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return Math.Pow((double)a, (double)b);
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for ^ operator");
-                    }
+                    return Math.Pow(a, b);
                 })
             },
             {
@@ -235,26 +172,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is string || b is string)
-                    {
-                        return a.ToString() == b.ToString();
-                    }
-                    else if (a is int || b is int)
-                    {
-                        return (int)a == (int)b;
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return (double)a == (double)b;
-                    }
-                    else if (a is bool || b is bool)
-                    {
-                        return (bool)a == (bool)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for == operator");
-                    }
+                    return a == b;
                 })
             },
             {
@@ -266,26 +184,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is string || b is string)
-                    {
-                        return a.ToString() != b.ToString();
-                    }
-                    else if (a is int || b is int)
-                    {
-                        return (int)a != (int)b;
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return (double)a != (double)b;
-                    }
-                    else if (a is bool || b is bool)
-                    {
-                        return (bool)a != (bool)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for != operator");
-                    }
+                    return a != b;
                 })
             },
             {
@@ -297,18 +196,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is int || b is int)
-                    {
-                        return (int)a > (int)b;
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return (double)a > (double)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for > operator");
-                    }
+                    return a > b;
                 })
             },
             {
@@ -320,18 +208,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is int || b is int)
-                    {
-                        return (int)a >= (int)b;
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return (double)a >= (double)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for >= operator");
-                    }
+                    return a >= b;
                 })
             },
             {
@@ -343,18 +220,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is int || b is int)
-                    {
-                        return (int)a < (int)b;
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return (double)a < (double)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for < operator");
-                    }
+                    return a < b;
                 })
             },
             {
@@ -366,18 +232,7 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (a is int || b is int)
-                    {
-                        return (int)a <= (int)b;
-                    }
-                    else if (a is double || b is double)
-                    {
-                        return (double)a <= (double)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for <= operator");
-                    }
+                    return a <= b;
                 })
             },
             {
@@ -397,7 +252,7 @@ public class Grammar
                     {
                         throw new Exception("Unsupported type for && operator");
                     }
-                })
+                }, true)
             },
             {
                 "||", new BinaryOperatorGrammar(10, (args) =>
@@ -416,7 +271,7 @@ public class Grammar
                     {
                         throw new Exception("Unsupported type for || operator");
                     }
-                })
+                }, true)
             },
             {
                 "in", new BinaryOperatorGrammar(20, (args) =>
@@ -427,9 +282,9 @@ public class Grammar
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (b is IEnumerable<object> enumerable)
+                    if (b is IEnumerable<dynamic> enumerable)
                     {
-                        return enumerable.Contains(a);
+                        return enumerable.Any(elem => elem == a);
                     }
                     else
                     {
