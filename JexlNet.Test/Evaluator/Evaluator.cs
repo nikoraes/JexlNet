@@ -18,6 +18,7 @@ public class EvaluatorUnitTest
     [Theory]
     [InlineData("1 + 2", 3)]
     [InlineData("(2 + 3) * 4", 20)]
+    [InlineData("7 // 2", 3)]
     public async void EvaluateExpression_ReturnDecimal(string input, decimal expected)
     {
         Evaluator _evaluator = new(new Grammar());
@@ -149,5 +150,115 @@ public class EvaluatorUnitTest
         ast = ToTree("foo.bar[1].tek");
         result = await _evaluator.Eval(ast);
         Assert.Equal("baz", result);
+    }
+
+    [Fact]
+    public async void EvaluateExpression_AllowFiltersToSelectObjectProperties()
+    {
+        var context = new Dictionary<string, dynamic>
+        { { "foo", new Dictionary<string, dynamic>
+            { { "baz", new Dictionary<string, dynamic>
+                        { { "bar", "tek" } }
+            } }
+        }};
+        Evaluator _evaluator = new(new Grammar(), context);
+        var ast = ToTree(@"foo[""ba"" + ""z""].bar");
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal("tek", result);
+    }
+
+    [Fact]
+    public async void EvaluateExpression_ThrowsWhenTransformDoesntExist()
+    {
+        Evaluator _evaluator = new(new Grammar());
+        var ast = ToTree(@"""hello""|world");
+        await Assert.ThrowsAsync<Exception>(async () => await _evaluator.Eval(ast));
+    }
+
+    [Fact]
+    public async void EvaluateExpression_ObjectLiteral()
+    {
+        Evaluator _evaluator = new(new Grammar());
+        var ast = ToTree(@"{foo: {bar: ""tek""}}");
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal(new Dictionary<string, dynamic>
+        { { "foo", new Dictionary<string, dynamic>
+            { { "bar", "tek" } }
+        }}, result);
+    }
+
+    [Fact]
+    public async void EvaluateExpression_EmptyObjectLiteral()
+    {
+        Evaluator _evaluator = new(new Grammar());
+        var ast = ToTree(@"{}");
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal(new Dictionary<string, dynamic>(), result);
+    }
+
+    [Fact]
+    public async void EvaluateExpression_DotNotationForObjectLiterals()
+    {
+        Evaluator _evaluator = new(new Grammar());
+        var ast = ToTree(@"{foo: ""bar""}.foo");
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal("bar", result);
+    }
+
+    [Fact]
+    public async void EvaluateExpression_AllowAccessToLiteralProperties()
+    {
+        Evaluator _evaluator = new(new Grammar());
+        var ast = ToTree(@"""foo"".Length");
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal("foo".Length, result);
+    }
+
+    [Fact]
+    public async void EvaluateExpression_AppliesTransformsWithMultipleArgs()
+    {
+        var grammar = new Grammar();
+        grammar.AddTransform("concat", (dynamic?[] args) => args[0] + ": " + args[1] + args[2] + args[3]);
+        Evaluator _evaluator = new(grammar);
+        var ast = ToTree(@"""foo""|concat(""baz"", ""bar"", ""tek"")");
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal("foo: bazbartek", result);
+    }
+
+    [Fact]
+    public async void EvaluateExpression_AllowAddMultipleTransforms()
+    {
+        var grammar = new Grammar();
+        grammar.AddTransforms(new Dictionary<string, Func<List<dynamic?>, object?>>
+        {
+            { "concat", (List<dynamic?> args) => args[0] + ": " + args[1] + args[2] + args[3] },
+            { "concat2", (List<dynamic?> args) => args[0] + ": " + args[1] + args[2] + args[3] }
+        });
+        Evaluator _evaluator = new(grammar);
+        var ast = ToTree(@"""foo""|concat(""baz"", ""bar"", ""tek"")|concat2(""baz"", ""bar"", ""tek"")");
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal("foo: bazbartek: bazbartek", result);
+    }
+
+    [Fact]
+    public async void EvaluateExpression_ArrayLiteral()
+    {
+        Evaluator _evaluator = new(new Grammar());
+        var ast = ToTree(@"[""foo"", 1+2]");
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal(new List<dynamic> { "foo", (decimal)3 }, result);
+    }
+
+    [Theory]
+    [InlineData(@"""bar"" in ""foobartek""", true)]
+    [InlineData(@"""baz"" in ""foobartek""", false)]
+    [InlineData(@"""bar"" in [""foo"",""bar"",""tek""]", true)]
+    [InlineData(@"""baz"" in [""foo"",""bar"",""tek""]", false)]
+    public async void EvaluateExpression_AppliesInOperator(string input, bool expected)
+    {
+        Evaluator _evaluator = new(new Grammar());
+        var ast = ToTree(input);
+        var result = await _evaluator.Eval(ast);
+        Assert.Equal(expected, result);
     }
 }

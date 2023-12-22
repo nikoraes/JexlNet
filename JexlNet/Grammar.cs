@@ -300,6 +300,10 @@ public class Grammar
                     {
                         return enumerable.Any(elem => elem == a);
                     }
+                    else if (b is string str)
+                    {
+                        return str.Contains(a);
+                    }
                     else
                     {
                         throw new Exception("Unsupported type for in operator");
@@ -347,9 +351,21 @@ public class Grammar
     {
         Functions.Add(name, func);
     }
+    public void AddFunction(string name, Func<IEnumerable<dynamic?>, object?> func)
+    {
+        Functions.Add(name, async (args) => await Task.Run(() => func(args)));
+    }
+    public void AddFunction(string name, Func<dynamic?[], Task<object?>> func)
+    {
+        Functions.Add(name, async (args) => await func(args.ToArray()));
+    }
+    public void AddFunction(string name, Func<dynamic?[], object?> func)
+    {
+        Functions.Add(name, async (args) => await Task.Run(() => func(args.ToArray())));
+    }
     public void AddFunction(string name, Func<dynamic?, Task<object>> func)
     {
-        Transforms.Add(name, async (args) => await func(args.First()));
+        Functions.Add(name, async (args) => await func(args.First()));
     }
     public void AddFunction(string name, Func<dynamic?, object> func)
     {
@@ -373,10 +389,22 @@ public class Grammar
     * appropriate when the transform would normally return a value, but
     * cannot due to some other failure.
     */
-    public Dictionary<string, Func<IEnumerable<dynamic?>, Task<object?>>> Transforms = [];
-    public void AddTransform(string name, Func<IEnumerable<dynamic?>, Task<object?>> func)
+    public Dictionary<string, Func<List<dynamic?>, Task<object?>>> Transforms = [];
+    public void AddTransform(string name, Func<List<dynamic?>, Task<object?>> func)
     {
         Transforms.Add(name, func);
+    }
+    public void AddTransform(string name, Func<List<dynamic?>, object?> func)
+    {
+        Transforms.Add(name, async (args) => await Task.Run(() => func(args)));
+    }
+    public void AddTransform(string name, Func<dynamic?[], Task<object?>> func)
+    {
+        Transforms.Add(name, async (args) => await func([.. args]));
+    }
+    public void AddTransform(string name, Func<dynamic?[], object?> func)
+    {
+        Transforms.Add(name, async (args) => await Task.Run(() => func([.. args])));
     }
     public void AddTransform(string name, Func<dynamic?, Task<object>> func)
     {
@@ -385,5 +413,19 @@ public class Grammar
     public void AddTransform(string name, Func<dynamic?, object> func)
     {
         Transforms.Add(name, async (args) => await Task.Run(() => func(args.First())));
+    }
+    public void AddTransforms(Dictionary<string, Func<List<dynamic?>, Task<object?>>> transformsDict)
+    {
+        foreach (var kv in transformsDict)
+        {
+            AddTransform(kv.Key, kv.Value);
+        }
+    }
+    public void AddTransforms(Dictionary<string, Func<List<dynamic?>, object?>> transformsDict)
+    {
+        foreach (var kv in transformsDict)
+        {
+            AddTransform(kv.Key, kv.Value);
+        }
     }
 }

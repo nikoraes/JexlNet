@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace JexlNet;
 
 public static class EvaluatorHandlers
@@ -129,6 +131,13 @@ public static class EvaluatorHandlers
         {
             string key = node!.Value!;
             return dict[key];
+        }
+        else if (fromResult != null && node?.Value != null && node!.Value is string)
+        {
+            // Try to access builtin properties
+            Type? type = fromResult?.GetType();
+            PropertyInfo? propertyInfo = type?.GetProperty($"{node!.Value}");
+            return propertyInfo?.GetValue(fromResult);
         }
         return fromResult?[node?.Value];
     }
