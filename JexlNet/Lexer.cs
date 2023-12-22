@@ -3,18 +3,11 @@ using System.Text.RegularExpressions;
 
 namespace JexlNet;
 
-public class Token : IEquatable<Token>
+public class Token(string type, dynamic? value = null, string? raw = null) : IEquatable<Token>
 {
-    public Token() { }
-    public Token(string type, dynamic value, string raw)
-    {
-        Type = type;
-        Value = value;
-        Raw = raw;
-    }
-    public string? Type { get; set; }
-    public dynamic? Value { get; set; }
-    public string? Raw { get; set; }
+    public string Type { get; set; } = type;
+    public dynamic? Value { get; set; } = value;
+    public string? Raw { get; set; } = raw;
 
     public bool Equals(Token? other)
     {
@@ -25,6 +18,16 @@ public class Token : IEquatable<Token>
         return Raw == other.Raw && Type == other.Type && Value == other.Value;
     }
 
+    public override bool Equals(object? obj)
+    {
+        if (obj == null) return false;
+        return Equals(obj as Token);
+    }
+
+    public override int GetHashCode()
+    {
+        throw new ApplicationException("This class does not support GetHashCode and should not be used as a key for a dictionary");
+    }
 }
 
 /// <summary>
@@ -140,12 +143,7 @@ public class Lexer(Grammar grammar)
     /// <returns>A token object</returns>
     private Token CreateToken(string element)
     {
-        var token = new Token
-        {
-            Raw = element,
-            Type = "literal",
-            Value = element
-        };
+        var token = new Token("literal", element, element);
         if (element[0] == '"' || element[0] == '\'')
         {
             token.Value = Unquote(element);
