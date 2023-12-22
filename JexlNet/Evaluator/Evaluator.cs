@@ -1,23 +1,13 @@
 namespace JexlNet;
 
-public class Evaluator
+public class Evaluator(
+    Grammar grammar,
+    Dictionary<string, dynamic>? context = null,
+    dynamic? subject = null)
 {
-    public Evaluator(Grammar gram)
-    {
-        Grammar = gram;
-    }
-
-    public Evaluator(Grammar gram, Dictionary<string, dynamic> context, dynamic subject, Task<dynamic> promise)
-    {
-        Grammar = gram;
-        Context = context;
-        RelContext = subject;
-        Promise = promise;
-    }
-    public Grammar Grammar { get; set; }
-    public Dictionary<string, dynamic>? Context { get; set; }
-    public dynamic? RelContext { get; set; }
-    public Task<dynamic>? Promise { get; set; }
+    public Grammar Grammar { get; set; } = grammar;
+    public Dictionary<string, dynamic>? Context { get; set; } = context;
+    public dynamic? RelContext { get; set; } = subject;
 
 
     /// <summary>
@@ -25,22 +15,12 @@ public class Evaluator
     /// </summary>
     /// <param name="ast">An expression tree object</param>
     /// <returns>Resolves with the resulting value of the expression.</returns>
-    public async Task<dynamic> Eval(Node? ast)
+    public Task<dynamic?> Eval(Node? ast)
     {
-        if (Promise == null)
-        {
-            if (ast == null) return Task.Yield();
-            EvaluatorHandlers.Handlers.TryGetValue(ast.Type, out var handleFunc);
-            if (handleFunc == null) return Task.Yield();
-            return await handleFunc.Invoke(this, ast);
-        }
-        return await Promise.ContinueWith(async (_) =>
-        {
-            if (ast == null) return null;
-            EvaluatorHandlers.Handlers.TryGetValue(ast.Type, out var handleFunc);
-            if (handleFunc == null) return null;
-            return await handleFunc.Invoke(this, ast);
-        });
+        if (ast == null) return Task.FromResult<dynamic?>(null);
+        EvaluatorHandlers.Handlers.TryGetValue(ast.Type, out var handleFunc);
+        if (handleFunc == null) return Task.FromResult<dynamic?>(null);
+        return handleFunc.Invoke(this, ast);
     }
 
     ///<summary>
@@ -50,7 +30,7 @@ public class Evaluator
     ///</summary>
     ///<param name="arr">An array of expression strings to be evaluated</param>
     ///<returns>resolves with the result array</returns>
-    public Task<dynamic[]> EvalArray(List<Node> arr)
+    public Task<dynamic?[]> EvalArray(List<Node> arr)
     {
         return Task.WhenAll(arr.Select(async (item) => await Eval(item).ConfigureAwait(true)));
     }
@@ -62,10 +42,10 @@ public class Evaluator
     ///</summary>
     ///<param name="map">A map of expression names to expression trees to be evaluated</param>
     ///<returns>resolves with the result map.</returns>
-    public Task<Dictionary<string, dynamic>> EvalMap(Dictionary<string, Node> map)
+    public Task<Dictionary<string, dynamic?>> EvalMap(Dictionary<string, Node> map)
     {
         var keys = map.Keys;
-        var result = new Dictionary<string, dynamic>();
+        var result = new Dictionary<string, dynamic?>();
         var asts = keys.Select((key) => Eval(map[key]));
         return Task.WhenAll(asts).ContinueWith((vals) =>
         {
@@ -97,21 +77,21 @@ public class Evaluator
     ///the returned array otherwise, it will be eliminated.</param>
     ///<returns>resolves with an array of values that passed the
     ///expression filter.</returns>
-    public Task<dynamic[]> FilterRelative(dynamic subject, Node expr)
+    public Task<List<dynamic?>> FilterRelative(dynamic subject, Node expr)
     {
-        var promises = new List<Task<dynamic>>();
-        if (subject is not List<dynamic>)
+        var promises = new List<Task<dynamic?>>();
+        if (subject is not List<dynamic?>)
         {
             subject = subject == null ? [] : new List<dynamic>() { subject };
         }
         foreach (var elem in subject)
         {
-            var evalInst = new Evaluator(Grammar, Context, elem, Promise);
+            var evalInst = new Evaluator(Grammar, Context, elem);
             promises.Add(evalInst.Eval(expr));
         }
         return Task.WhenAll(promises).ContinueWith((values) =>
         {
-            var results = new List<dynamic>();
+            var results = new List<dynamic?>();
             var idx = 0;
             foreach (var value in values.Result)
             {
@@ -121,7 +101,7 @@ public class Evaluator
                 }
                 idx++;
             }
-            return results.ToArray();
+            return results;
         });
     }
 

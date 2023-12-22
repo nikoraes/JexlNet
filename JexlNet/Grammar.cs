@@ -23,7 +23,7 @@ public class ElementGrammar
     {
         Type = type;
     }
-    public ElementGrammar(string type, int precedence, Func<dynamic[], dynamic> evaluate, bool evalOnDemand = false)
+    public ElementGrammar(string type, int precedence, Func<dynamic?[], dynamic?> evaluate, bool evalOnDemand = false)
     {
         Type = type;
         Precedence = precedence;
@@ -32,13 +32,13 @@ public class ElementGrammar
     }
     public string Type { get; set; }
     public int Precedence { get; set; }
-    public Func<dynamic[], dynamic>? Evaluate { get; set; }
+    public Func<dynamic?[], dynamic?>? Evaluate { get; set; }
     public bool EvalOnDemand { get; set; }
 }
 
 public class BinaryOperatorGrammar(
     int precedence,
-    Func<dynamic[], dynamic> evaluate,
+    Func<dynamic?[], dynamic?> evaluate,
     bool evalOnDemand = false
     ) : ElementGrammar(
         GrammarType.BinaryOperator,
@@ -50,7 +50,7 @@ public class BinaryOperatorGrammar(
 
 public class UnaryOperatorGrammar(
     int precedence,
-    Func<dynamic[], dynamic> evaluate,
+    Func<dynamic?[], dynamic?> evaluate,
     bool evalOnDemand = false
     ) : ElementGrammar(
         GrammarType.UnaryOperator,
@@ -242,8 +242,15 @@ public class Grammar
                     {
                         throw new Exception("Unsupported number of arguments for && operator");
                     }
-                    var a = args[0];
-                    var b = args[1];
+                    // If it's a string, we consider it truthy if it's non-empty
+                    // If it's a decimal, we consider it truthy it's non-zero
+                    // Align with behaviour in Javascript
+                    var a = args[0]?.GetType() == typeof(string)
+                        ? !string.IsNullOrEmpty(args[0])
+                        : (args[0]?.GetType() == typeof(decimal) ? args[0] != 0 : args[0]);
+                    var b = args[1]?.GetType() == typeof(string)
+                        ? !string.IsNullOrEmpty(args[1])
+                        : (args[1]?.GetType() == typeof(decimal) ? args[1] != 0 : args[1]);
                     if (a is bool || b is bool)
                     {
                         return (bool)a && (bool)b;
@@ -261,8 +268,15 @@ public class Grammar
                     {
                         throw new Exception("Unsupported number of arguments for || operator");
                     }
-                    var a = args[0];
-                    var b = args[1];
+                    // If it's a string, we consider it truthy if it's non-empty
+                    // If it's a decimal, we consider it truthy it's non-zero
+                    // Align with behaviour in Javascript
+                    var a = args[0]?.GetType() == typeof(string)
+                        ? !string.IsNullOrEmpty(args[0])
+                        : (args[0]?.GetType() == typeof(decimal) ? args[0] != 0 : args[0]);
+                    var b = args[1]?.GetType() == typeof(string)
+                        ? !string.IsNullOrEmpty(args[1])
+                        : (args[1]?.GetType() == typeof(decimal) ? args[1] != 0 : args[1]);
                     if (a is bool || b is bool)
                     {
                         return (bool)a || (bool)b;
@@ -328,7 +342,7 @@ public class Grammar
     * appropriate when the function would normally return a value, but
     * cannot due to some other failure.
     */
-    public Dictionary<string, Func<object[], object>> Functions = new();
+    public Dictionary<string, Func<dynamic?[], object?>> Functions = new();
 
     /**
     * A map of transform names to transform functions. A transform function
@@ -347,5 +361,13 @@ public class Grammar
     * appropriate when the transform would normally return a value, but
     * cannot due to some other failure.
     */
-    public Dictionary<string, Func<object, object[], object>> Transforms = new();
+    public Dictionary<string, Func<dynamic?[], object?>> Transforms = new();
+    public void AddTransform(string name, Func<dynamic?[], object> func)
+    {
+        Transforms.Add(name, func);
+    }
+    public void AddTransform(string name, Func<dynamic?, object> func)
+    {
+        Transforms.Add(name, (args) => func(args[0]));
+    }
 }
