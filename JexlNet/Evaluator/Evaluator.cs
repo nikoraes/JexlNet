@@ -111,20 +111,20 @@ public class Evaluator(
     ///indicating a property name)</param>
     ///<param name="expr">The expression tree to run against the subject</param>
     ///<returns>resolves with the value of the drill-down.</returns>
-    public async Task<dynamic?> FilterStatic(dynamic subject, Node expr)
+    public async Task<dynamic?> FilterStatic(dynamic subj, Node expr)
     {
         var result = await Eval(expr);
         if (result is bool)
         {
-            return result ? subject : null;
+            return result ? subj : null;
         }
         else if (result is decimal)
         {
-            return subject[decimal.ToInt32(result)];
+            return subj[decimal.ToInt32(result)];
         }
         else if (result is string)
         {
-            return subject[result];
+            return subj[result];
         }
         else
         {
