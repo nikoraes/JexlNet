@@ -75,7 +75,10 @@ public class Node : Token, IEquatable<Node>
             ((From == null && other.From == null) || (From != null && From.Equals(other.From))) &&
             Name == other.Name &&
             Pool == other.Pool &&
-            ((Args == null && other.Args == null) || (Args != null && other.Args != null && Args.SequenceEqual(other.Args)));
+            ((Args == null && other.Args == null) || (Args != null && other.Args != null && Args.SequenceEqual(other.Args))) &&
+            ((Test == null && other.Test == null) || (Test != null && Test.Equals(other.Test))) &&
+            ((Consequent == null && other.Consequent == null) || (Consequent != null && Consequent.Equals(other.Consequent))) &&
+            ((Alternate == null && other.Alternate == null) || (Alternate != null && Alternate.Equals(other.Alternate)));
     }
 }
 
@@ -125,7 +128,7 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
     private bool _parentStop = false;
     public Node? tree = null;
     public Node? cursor;
-    private Parser? _subParser;
+    public Parser? subParser;
     public bool? nextIdentEncapsulate;
     public bool? nextIdentRelative;
     public dynamic? cursorObjectKey;
@@ -148,11 +151,11 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
         _exprStr += token.Raw;
         if (state.SubHandler != null)
         {
-            if (_subParser == null)
+            if (subParser == null)
             {
                 StartSubExpression(startExpr);
             }
-            var stopState = _subParser!.AddToken(token);
+            var stopState = subParser!.AddToken(token);
             if (stopState != "stop")
             {
                 EndSubExpression();
@@ -229,7 +232,7 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
         {
             throw new Exception($"Unexpected end of expression: {_exprStr}");
         }
-        if (_subParser != null)
+        if (subParser != null)
         {
             EndSubExpression();
         }
@@ -252,11 +255,11 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
     ///</summary>
     private void EndSubExpression()
     {
-        if (_parserStates.TryGetValue(_state, out var state) && state.SubHandler != null && _subParser != null)
+        if (_parserStates.TryGetValue(_state, out var state) && state.SubHandler != null && subParser != null)
         {
-            state.SubHandler(this, _subParser.Complete());
+            state.SubHandler(this, subParser.Complete());
         }
-        _subParser = null;
+        subParser = null;
     }
 
     ///<summary>
@@ -318,7 +321,7 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
             _parentStop = true;
             endStates = _stopMap;
         }
-        _subParser = new Parser(grammar, exprStr, endStates);
+        subParser = new Parser(grammar, exprStr, endStates);
     }
 
 

@@ -98,7 +98,7 @@ public static class ParserHandlers
         parser.PlaceBeforeCursor(new Node("FilterExpression")
         {
             Expr = node,
-            Relative = parser.relative,
+            Relative = parser.subParser?.IsRelative(),
             Subject = parser.cursor
         });
     }

@@ -414,4 +414,225 @@ public class ParserUnitTest
         };
         Assert.Equal(expected, result);
     }
+
+    [Fact]
+    public void AllowsMixingRelativeAndNonRelativeIdentifiers()
+    {
+        _parser.AddTokens(_lexer.Tokenize(@"foo[.bar.baz == tek]"));
+        var result = _parser.Complete();
+        Node expected = new("FilterExpression")
+        {
+            Relative = true,
+            Expr = new("BinaryExpression")
+            {
+                Operator = "==",
+                Left = new("Identifier", "baz")
+                {
+                    From = new("Identifier", "bar")
+                    {
+                        Relative = true,
+                    }
+                },
+                Right = new("Identifier", "tek")
+            },
+            Subject = new("Identifier", "foo")
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void AllowsMixingRelativeAndNonRelativeComplex()
+    {
+        _parser.AddTokens(_lexer.Tokenize(@"foo.bar[.baz == tek.tak]"));
+        var result = _parser.Complete();
+        Node expected = new("FilterExpression")
+        {
+            Relative = true,
+            Expr = new("BinaryExpression")
+            {
+                Operator = "==",
+                Left = new("Identifier", "baz")
+                {
+                    Relative = true,
+                },
+                Right = new("Identifier", "tak")
+                {
+                    From = new("Identifier", "tek")
+                }
+            },
+            Subject = new("Identifier", "bar")
+            {
+                From = new("Identifier", "foo")
+            }
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void AllowsDotNotationForAllOperands()
+    {
+        _parser.AddTokens(_lexer.Tokenize(@"""foo"".length + {foo: ""bar""}.foo"));
+        var result = _parser.Complete();
+        Node expected = new("BinaryExpression")
+        {
+            Operator = "+",
+            Left = new("Identifier", "length")
+            {
+                From = new("Literal", "foo")
+            },
+            Right = new("Identifier", "foo")
+            {
+                From = new("ObjectLiteral")
+                {
+                    Value = new Dictionary<string, Node>
+                    {
+                        { "foo", new("Literal", "bar") }
+                    }
+                }
+            }
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void AllowsDotNotationOnSubexpressions()
+    {
+        _parser.AddTokens(_lexer.Tokenize(@"(""foo"" + ""bar"").length"));
+        var result = _parser.Complete();
+        Node expected = new("Identifier", "length")
+        {
+            From = new("BinaryExpression")
+            {
+                Operator = "+",
+                Left = new("Literal", "foo"),
+                Right = new("Literal", "bar")
+            }
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void AllowsDotNotationOnArrays()
+    {
+        _parser.AddTokens(_lexer.Tokenize(@"[""foo"", ""bar""].length"));
+        var result = _parser.Complete();
+        Node expected = new("Identifier", "length")
+        {
+            From = new("ArrayLiteral")
+            {
+                Value = new List<Node>
+                {
+                    new("Literal", "foo"),
+                    new("Literal", "bar")
+                }
+            }
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesTernaryExpression()
+    {
+        _parser.AddTokens(_lexer.Tokenize(@"foo ? 1 : 0"));
+        var result = _parser.Complete();
+        Node expected = new("ConditionalExpression")
+        {
+            Test = new("Identifier", "foo"),
+            Consequent = new("Literal", (decimal)1),
+            Alternate = new("Literal", (decimal)0)
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesNestedAndGroupedTernaryExpressions()
+    {
+        _parser.AddTokens(_lexer.Tokenize(@"foo ? (bar ? 1 : 2) : 3"));
+        var result = _parser.Complete();
+        Node expected = new("ConditionalExpression")
+        {
+            Test = new("Identifier", "foo"),
+            Consequent = new("ConditionalExpression")
+            {
+                Test = new("Identifier", "bar"),
+                Consequent = new("Literal", (decimal)1),
+                Alternate = new("Literal", (decimal)2)
+            },
+            Alternate = new("Literal", (decimal)3)
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesNestedNonGroupedTernaryExpressions()
+    {
+        _parser.AddTokens(_lexer.Tokenize(@"foo ? bar ? 1 : 2 : 3"));
+        var result = _parser.Complete();
+        Node expected = new("ConditionalExpression")
+        {
+            Test = new("Identifier", "foo"),
+            Consequent = new("ConditionalExpression")
+            {
+                Test = new("Identifier", "bar"),
+                Consequent = new("Literal", (decimal)1),
+                Alternate = new("Literal", (decimal)2)
+            },
+            Alternate = new("Literal", (decimal)3)
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesTernaryExpressionWithObjects()
+    {
+        _parser.AddTokens(_lexer.Tokenize(@"foo ? {bar: ""tek""} : ""baz"""));
+        var result = _parser.Complete();
+        Node expected = new("ConditionalExpression")
+        {
+            Test = new("Identifier", "foo"),
+            Consequent = new("ObjectLiteral")
+            {
+                Value = new Dictionary<string, Node>
+                {
+                    { "bar", new("Literal", "tek") }
+                }
+            },
+            Alternate = new("Literal", "baz")
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void BalancesBinaryBetweenComplexIdentifiers()
+    {
+        _parser.AddTokens(_lexer.Tokenize(@"a.b == c.d"));
+        var result = _parser.Complete();
+        Node expected = new("BinaryExpression")
+        {
+            Operator = "==",
+            Left = new("Identifier", "b")
+            {
+                From = new("Identifier", "a")
+            },
+            Right = new("Identifier", "d")
+            {
+                From = new("Identifier", "c")
+            }
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesWhiteSpaceInExpression()
+    {
+        _parser.AddTokens(_lexer.Tokenize("\t2\r\n+\n\r3\n\n"));
+        var result = _parser.Complete();
+        Node expected = new("BinaryExpression")
+        {
+            Operator = "+",
+            Left = new("Literal", (decimal)2),
+            Right = new("Literal", (decimal)3)
+        };
+        Assert.Equal(expected, result);
+    }
 }
