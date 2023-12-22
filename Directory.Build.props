@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <PackageId>JexlNet</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Niko Raes</Authors>
+    <PackageTags>Jexl JexlNet mapping transformation expression language</PackageTags>
+    <RepositoryUrl>https://github.com/nikoraes/JexlNet</RepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <Description>A .Net native implementation of the JEXL query and transformation language.</Description>
+    <IncludeSymbols>true</IncludeSymbols>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+</Project>
