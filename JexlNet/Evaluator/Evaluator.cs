@@ -15,12 +15,12 @@ public class Evaluator(
     /// </summary>
     /// <param name="ast">An expression tree object</param>
     /// <returns>Resolves with the resulting value of the expression.</returns>
-    public Task<dynamic?> Eval(Node? ast)
+    public async Task<dynamic?> Eval(Node? ast)
     {
-        if (ast == null) return Task.FromResult<dynamic?>(null);
+        if (ast == null) return await Task.FromResult<dynamic?>(null);
         EvaluatorHandlers.Handlers.TryGetValue(ast.Type, out var handleFunc);
-        if (handleFunc == null) return Task.FromResult<dynamic?>(null);
-        return handleFunc.Invoke(this, ast);
+        if (handleFunc == null) return await Task.FromResult<dynamic?>(null);
+        return await handleFunc.Invoke(this, ast);
     }
 
     ///<summary>
@@ -30,9 +30,17 @@ public class Evaluator(
     ///</summary>
     ///<param name="arr">An array of expression strings to be evaluated</param>
     ///<returns>resolves with the result array</returns>
-    public Task<dynamic?[]> EvalArray(List<Node> arr)
+    public async Task<List<dynamic?>> EvalArray(List<Node> arr)
     {
-        return Task.WhenAll(arr.Select(async (item) => await Eval(item).ConfigureAwait(true)));
+        var result = new List<dynamic?>();
+        foreach (var val in arr)
+        {
+            var elemResult = await Eval(val);
+            if (elemResult is Task) await elemResult;
+            result.Add(elemResult);
+        }
+        return result;
+        // return await Task.WhenAll(arr.Select(async (item) => await Eval(item)));
     }
 
     ///<summary>
@@ -42,21 +50,14 @@ public class Evaluator(
     ///</summary>
     ///<param name="map">A map of expression names to expression trees to be evaluated</param>
     ///<returns>resolves with the result map.</returns>
-    public Task<Dictionary<string, dynamic?>> EvalMap(Dictionary<string, Node> map)
+    public async Task<Dictionary<string, dynamic?>> EvalMap(Dictionary<string, Node> map)
     {
-        var keys = map.Keys;
         var result = new Dictionary<string, dynamic?>();
-        var asts = keys.Select((key) => Eval(map[key]));
-        return Task.WhenAll(asts).ContinueWith((vals) =>
+        foreach (var kv in map)
         {
-            var idx = 0;
-            foreach (var val in vals.Result)
-            {
-                result[keys.ElementAt(idx)] = val;
-                idx++;
-            }
-            return result;
-        });
+            result[kv.Key] = await Eval(kv.Value);
+        }
+        return result;
     }
 
     ///<summary>
@@ -77,32 +78,23 @@ public class Evaluator(
     ///the returned array otherwise, it will be eliminated.</param>
     ///<returns>resolves with an array of values that passed the
     ///expression filter.</returns>
-    public Task<List<dynamic?>> FilterRelative(dynamic subject, Node expr)
+    public async Task<List<dynamic?>> FilterRelative(dynamic subj, Node expr)
     {
-        var promises = new List<Task<dynamic?>>();
-        if (subject is not List<dynamic?>)
+        if ((subj as System.Collections.IEnumerable) == null)
         {
-            subject = subject == null ? [] : new List<dynamic>() { subject };
+            subj = subj == null ? [] : new List<dynamic>() { subj };
         }
-        foreach (var elem in subject)
+        List<dynamic?> results = [];
+        foreach (var elem in subj)
         {
-            var evalInst = new Evaluator(Grammar, Context, elem);
-            promises.Add(evalInst.Eval(expr));
-        }
-        return Task.WhenAll(promises).ContinueWith((values) =>
-        {
-            var results = new List<dynamic?>();
-            var idx = 0;
-            foreach (var value in values.Result)
+            Evaluator elementEvaluator = new(Grammar, Context, elem);
+            bool shouldInclude = await elementEvaluator.Eval(expr);
+            if (shouldInclude)
             {
-                if (value)
-                {
-                    results.Add(subject[idx]);
-                }
-                idx++;
+                results.Add(elem);
             }
-            return results;
-        });
+        }
+        return results;
     }
 
     ///<summary>
@@ -119,11 +111,24 @@ public class Evaluator(
     ///indicating a property name)</param>
     ///<param name="expr">The expression tree to run against the subject</param>
     ///<returns>resolves with the value of the drill-down.</returns>
-    public Task<dynamic?> FilterStatic(dynamic subject, Node expr)
+    public async Task<dynamic?> FilterStatic(dynamic subject, Node expr)
     {
-        return Eval(expr).ContinueWith((res) =>
+        var result = await Eval(expr);
+        if (result is bool)
         {
-            return res.Result is bool ? res.Result ? subject : null : subject[res.Result];
-        });
+            return result ? subject : null;
+        }
+        else if (result is decimal)
+        {
+            return subject[decimal.ToInt32(result)];
+        }
+        else if (result is string)
+        {
+            return subject[result];
+        }
+        else
+        {
+            return null;
+        }
     }
 }

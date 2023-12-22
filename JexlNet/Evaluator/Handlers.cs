@@ -9,9 +9,9 @@ public static class EvaluatorHandlers
     /// <param name="evaluator"></param>
     /// <param name="node"></param>
     /// <returns></returns>
-    public static Task<dynamic?> ArrayLiteral(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> ArrayLiteral(Evaluator evaluator, Node? node)
     {
-        return evaluator.EvalArray(node?.Value);
+        return await evaluator.EvalArray(node?.Value);
     }
 
     ///<summary>
@@ -26,7 +26,7 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a BinaryExpression as the top node</param>
     ///<returns>resolves with the value of the BinaryExpression.</returns>
-    public static Task<dynamic?> BinaryExpression(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> BinaryExpression(Evaluator evaluator, Node? node)
     {
         if (node?.Operator == null)
         {
@@ -42,9 +42,9 @@ public static class EvaluatorHandlers
             var wrap = new Func<Node?, dynamic>((subAst) => new { Eval = new Func<Task<dynamic>>(() => evaluator.Eval(subAst)) });
             return Task.FromResult(grammarOp.Evaluate?.Invoke([wrap(node?.Left), wrap(node?.Right)]));
         } */
-        return Task
-            .WhenAll([evaluator.Eval(node?.Left), evaluator.Eval(node?.Right)])
-            .ContinueWith((arr) => grammarOp.Evaluate([arr.Result[0], arr.Result[1]]));
+        var leftResult = await evaluator.Eval(node?.Left);
+        var rightResult = await evaluator.Eval(node?.Right);
+        return grammarOp.Evaluate([leftResult, rightResult]);
     }
 
     ///<summary>
@@ -55,25 +55,22 @@ public static class EvaluatorHandlers
     ///</summary>
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a ConditionalExpression as the top node</param>
-    public static Task<dynamic?> ConditionalExpression(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> ConditionalExpression(Evaluator evaluator, Node? node)
     {
         if (node?.Test == null)
         {
             throw new Exception("ConditionalExpression node has no test");
         }
-        return evaluator.Eval(node?.Test)
-            .ContinueWith((res) =>
+        var testResult = await evaluator.Eval(node?.Test);
+        if (testResult == true)
+        {
+            if (node?.Consequent != null)
             {
-                if (res.Result)
-                {
-                    if (node?.Consequent != null)
-                    {
-                        return evaluator.Eval(node?.Consequent);
-                    }
-                    return res.Result;
-                }
-                return evaluator.Eval(node?.Alternate);
-            });
+                return await evaluator.Eval(node?.Consequent);
+            }
+            return testResult;
+        }
+        return await evaluator.Eval(node?.Alternate);
     }
 
     ///<summary>
@@ -82,22 +79,19 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a FilterExpression as the top node</param>
     ///<returns>resolves with the value of the FilterExpression.</returns>
-    public static Task<dynamic?> FilterExpression(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> FilterExpression(Evaluator evaluator, Node? node)
     {
         if (node?.Subject == null)
         {
             throw new Exception("FilterExpression node has no subject");
         }
-        return evaluator.Eval(node?.Subject)
-            .ContinueWith((subject) =>
-            {
-                var subjectResult = subject.Result;
-                if (node?.Relative == true)
-                {
-                    return (dynamic?)evaluator.FilterRelative(subjectResult, node?.Expr);
-                }
-                return evaluator.FilterStatic(subjectResult, node?.Expr);
-            });
+        var subjectResult = await evaluator.Eval(node?.Subject);
+        Console.WriteLine($"{subjectResult}");
+        if (node?.Relative == true)
+        {
+            return await evaluator.FilterRelative(subjectResult, node?.Expr);
+        }
+        return await evaluator.FilterStatic(subjectResult, node?.Expr);
     }
 
     ///<summary>
@@ -108,26 +102,35 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with an Identifier as the top node</param>
     ///<returns>either the identifier's value, or a Promise that will resolve with the identifier's value.</returns>
-    public static Task<dynamic?> Identifier(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> Identifier(Evaluator evaluator, Node? node)
     {
         if (node?.From == null)
         {
-            return Task.FromResult<dynamic?>(node?.Relative == true ? evaluator.RelContext?[node?.Value] : evaluator.Context?[node?.Value]);
-        }
-        return evaluator.Eval(node?.From)
-            .ContinueWith((from) =>
+            if (node?.Relative == true && evaluator.RelContext != null && evaluator.RelContext?.ContainsKey(node?.Value))
             {
-                var fromResult = from.Result;
-                if (fromResult == null)
-                {
-                    return null;
-                }
-                if (fromResult is List<dynamic> list)
-                {
-                    fromResult = list[0];
-                }
-                return fromResult[node?.Value];
-            });
+                return evaluator.RelContext?[node?.Value];
+            }
+            else if (evaluator.Context != null && evaluator.Context?.ContainsKey(node?.Value))
+            {
+                return evaluator.Context?[node?.Value];
+            }
+            else return null;
+        }
+        var fromResult = await evaluator.Eval(node?.From);
+        if (fromResult == null || node?.Value == null)
+        {
+            return null;
+        }
+        else if (fromResult is List<dynamic> list)
+        {
+            fromResult = list.First();
+        }
+        else if (fromResult is Dictionary<string, dynamic> dict)
+        {
+            string key = node!.Value!;
+            return dict[key];
+        }
+        return fromResult?[node?.Value];
     }
 
     ///<summary>
@@ -136,9 +139,9 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a Literal as its only node</param>
     ///<returns>The value of the Literal node</returns>
-    public static Task<dynamic?> Literal(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> Literal(Evaluator evaluator, Node? node)
     {
-        return Task.FromResult<dynamic?>(node?.Value);
+        return await Task.FromResult<dynamic?>(node?.Value);
     }
 
     ///<summary>
@@ -148,9 +151,9 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a Literal as its only node</param>
     ///<returns>The value of the Literal node</returns>
-    public static Task<dynamic?> ObjectLiteral(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> ObjectLiteral(Evaluator evaluator, Node? node)
     {
-        return evaluator.EvalMap(node?.Value);
+        return await evaluator.EvalMap(node?.Value);
     }
 
     ///<summary>
@@ -160,7 +163,7 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a FunctionCall as the top node</param>
     ///<returns>the value of the function call, or a Promise that will resolve with the resulting value.</returns>
-    public static Task<dynamic?> FunctionCall(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> FunctionCall(Evaluator evaluator, Node? node)
     {
 
         if (node?.Pool == null)
@@ -177,13 +180,13 @@ public static class EvaluatorHandlers
         }
         if (node.Pool == "functions" && evaluator.Grammar.Functions.TryGetValue(node.Name, out var func))
         {
-            return evaluator.EvalArray(node.Args)
-                .ContinueWith((args) => func(args.Result));
+            var argsResult = await evaluator.EvalArray(node.Args);
+            return await func(argsResult);
         }
         else if (node.Pool == "transforms" && evaluator.Grammar.Transforms.TryGetValue(node.Name, out var transform))
         {
-            return evaluator.EvalArray(node.Args)
-                .ContinueWith((args) => transform(args.Result));
+            var argsResult = await evaluator.EvalArray(node.Args);
+            return await transform(argsResult);
         }
         else
         {
@@ -198,7 +201,7 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a UnaryExpression as the top node</param>
     ///<returns>resolves with the value of the UnaryExpression.</returns>
-    public static Task<dynamic?> UnaryExpression(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> UnaryExpression(Evaluator evaluator, Node? node)
     {
         if (node?.Operator == null)
         {
@@ -213,8 +216,8 @@ public static class EvaluatorHandlers
         {
             throw new Exception($"UnaryExpression node has unknown operator: {node.Operator}");
         }
-        return evaluator.Eval(node?.Right)
-            .ContinueWith<dynamic?>((right) => grammarOp.Evaluate(right.Result));
+        var rightResult = await evaluator.Eval(node?.Right);
+        return await grammarOp.Evaluate(rightResult);
     }
 
 

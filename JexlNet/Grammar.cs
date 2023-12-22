@@ -342,7 +342,19 @@ public class Grammar
     * appropriate when the function would normally return a value, but
     * cannot due to some other failure.
     */
-    public Dictionary<string, Func<dynamic?[], object?>> Functions = new();
+    public Dictionary<string, Func<IEnumerable<dynamic?>, Task<object?>>> Functions = [];
+    public void AddFunction(string name, Func<IEnumerable<dynamic?>, Task<object?>> func)
+    {
+        Functions.Add(name, func);
+    }
+    public void AddFunction(string name, Func<dynamic?, Task<object>> func)
+    {
+        Transforms.Add(name, async (args) => await func(args.First()));
+    }
+    public void AddFunction(string name, Func<dynamic?, object> func)
+    {
+        Functions.Add(name, async (args) => await Task.Run(() => func(args.First())));
+    }
 
     /**
     * A map of transform names to transform functions. A transform function
@@ -361,13 +373,17 @@ public class Grammar
     * appropriate when the transform would normally return a value, but
     * cannot due to some other failure.
     */
-    public Dictionary<string, Func<dynamic?[], object?>> Transforms = new();
-    public void AddTransform(string name, Func<dynamic?[], object> func)
+    public Dictionary<string, Func<IEnumerable<dynamic?>, Task<object?>>> Transforms = [];
+    public void AddTransform(string name, Func<IEnumerable<dynamic?>, Task<object?>> func)
     {
         Transforms.Add(name, func);
     }
+    public void AddTransform(string name, Func<dynamic?, Task<object>> func)
+    {
+        Transforms.Add(name, async (args) => await func(args.First()));
+    }
     public void AddTransform(string name, Func<dynamic?, object> func)
     {
-        Transforms.Add(name, (args) => func(args[0]));
+        Transforms.Add(name, async (args) => await Task.Run(() => func(args.First())));
     }
 }
