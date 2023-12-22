@@ -126,9 +126,28 @@ public class EvaluatorUnitTest
         Assert.Equal(new List<Dictionary<string, dynamic>> { new() { { "tek", "baz" } } }, result);
 
         _evaluator = new(new Grammar(), context);
+        ast = ToTree("foo.bar[.tek == \"baz\"][0]");
+        result = await _evaluator.Eval(ast);
+        Assert.Equal(new Dictionary<string, dynamic> { { "tek", "baz" } }, result);
+
+        _evaluator = new(new Grammar(), context);
         ast = ToTree("foo.bar[1]");
         result = await _evaluator.Eval(ast);
         Assert.Equal(new Dictionary<string, dynamic> { { "tek", "baz" } }, result);
-    }
 
+        _evaluator = new(new Grammar(), context);
+        ast = ToTree("foo.bar[.tek == \"baz\"][0].tek");
+        result = await _evaluator.Eval(ast);
+        Assert.Equal("baz", result);
+
+        _evaluator = new(new Grammar(), context);
+        ast = ToTree("foo.bar[.tek == \"baz\"].tek");
+        result = await _evaluator.Eval(ast);
+        Assert.Equal("baz", result);
+
+        _evaluator = new(new Grammar(), context);
+        ast = ToTree("foo.bar[1].tek");
+        result = await _evaluator.Eval(ast);
+        Assert.Equal("baz", result);
+    }
 }
