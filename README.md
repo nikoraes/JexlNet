@@ -1,6 +1,6 @@
 # JexlNet
 
-A C# based JEXL parser and evaluator.
+Powerful context-based expression parser and evaluator in C# using JEXL (Javascript Expression Language) expressions.
 
 NOTE: This library handles the JEXL from [TomFrost's JEXL library](https://github.com/TomFrost/Jexl). It does NOT handle the similarly-named Apache Commons JEXL language.
 
