@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>JexlNet</PackageId>
     <PackageTags>Jexl JexlNet expression mapping transformation</PackageTags>
-    <Description>A C# library that allows to evaluate JEXL expressions.</Description>
+    <Description>Powerful context-based expression parser and evaluator in C# using JEXL (Javascript Expression Language) expressions.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
