@@ -3,8 +3,8 @@ namespace JexlNet;
 public interface IJexl
 {
     public Expression CreateExpression(string exprStr);
-    public Task<dynamic?> EvalAsync(string expression, Dictionary<string, dynamic>? context = null);
-    public dynamic? Eval(string expression, Dictionary<string, dynamic>? context = null);
+    public Task<dynamic?> EvalAsync(string expression, Dictionary<string, dynamic?>? context = null);
+    public dynamic? Eval(string expression, Dictionary<string, dynamic?>? context = null);
 }
 
 public class Jexl : IJexl
@@ -33,7 +33,7 @@ public class Jexl : IJexl
     ///<param name="context">A mapping of variables to values, which will be
     ///made accessible to the Jexl expression when evaluating it</param>
     ///<returns>The result of the evaluation.</returns>
-    public async Task<dynamic?> EvalAsync(string expression, Dictionary<string, dynamic>? context = null)
+    public async Task<dynamic?> EvalAsync(string expression, Dictionary<string, dynamic?>? context = null)
     {
         var expressionObj = new Expression(Grammar, expression);
         return await expressionObj.EvalAsync(context);
@@ -46,7 +46,7 @@ public class Jexl : IJexl
     ///<param name="context">A mapping of variables to values, which will be
     ///made accessible to the Jexl expression when evaluating it</param>
     ///<returns>The result of the evaluation.</returns>
-    public dynamic? Eval(string expression, Dictionary<string, dynamic>? context = null)
+    public dynamic? Eval(string expression, Dictionary<string, dynamic?>? context = null)
     {
         var expressionObj = new Expression(Grammar, expression);
         return expressionObj.Eval(context);

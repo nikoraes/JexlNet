@@ -53,7 +53,7 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_WithContext()
     {
-        var context = new Dictionary<string, dynamic>
+        var context = new Dictionary<string, dynamic?>
         {
             {
                 "foo", new Dictionary<string, dynamic>
@@ -76,7 +76,7 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_AppliesTransforms()
     {
-        var context = new Dictionary<string, dynamic> { { "foo", 10 } };
+        var context = new Dictionary<string, dynamic?> { { "foo", 10 } };
         var grammar = new Grammar();
         grammar.AddTransform("half", (dynamic? val) => val / 2);
         Evaluator _evaluator = new(grammar, context);
@@ -88,7 +88,7 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_AppliesFunctions()
     {
-        var context = new Dictionary<string, dynamic> { { "foo", 10 } };
+        var context = new Dictionary<string, dynamic?> { { "foo", 10 } };
         var grammar = new Grammar();
         grammar.AddFunction("half", (dynamic? val) => val / 2);
         Evaluator _evaluator = new(grammar, context);
@@ -100,7 +100,7 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_AppliesAsyncFunctions()
     {
-        var context = new Dictionary<string, dynamic> { { "foo", 10 } };
+        var context = new Dictionary<string, dynamic?> { { "foo", 10 } };
         var grammar = new Grammar();
         grammar.AddFunction("half", async (dynamic? val) =>
         {
@@ -116,7 +116,7 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_FiltersArrays()
     {
-        var context = new Dictionary<string, dynamic>
+        var context = new Dictionary<string, dynamic?>
         {
             {
                 "foo", new Dictionary<string, dynamic>
@@ -166,7 +166,7 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_AllowFiltersToSelectObjectProperties()
     {
-        var context = new Dictionary<string, dynamic>
+        var context = new Dictionary<string, dynamic?>
         { { "foo", new Dictionary<string, dynamic>
             { { "baz", new Dictionary<string, dynamic>
                         { { "bar", "tek" } }
@@ -307,7 +307,7 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_ReturnsEmptyArrayWhenApplyingFilterToUndefined()
     {
-        var context = new Dictionary<string, dynamic>
+        var context = new Dictionary<string, dynamic?>
         {
             { "a", new Dictionary<string, dynamic>() },
             { "b", 4 }
@@ -322,7 +322,7 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_WithDollarIdentifiers()
     {
-        var context = new Dictionary<string, dynamic>
+        var context = new Dictionary<string, dynamic?>
         {
             { "$", 5 },
             { "$foo", 6 },

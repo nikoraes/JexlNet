@@ -37,7 +37,7 @@ var context = new Dictionary<string, dynamic> {
     { "age", 36 }
 };
 
-// By using Json.Net or System.Text.Json bindings
+// Or by using System.Text.Json or Json.Net (requires separate package JexlNet.JsonNet to be installed)
 string contextJson = 
 @"{
     ""name"": {
@@ -62,10 +62,10 @@ string contextJson =
 }";
 // with System.Text.Json
 JsonElement contextJsonElement = JsonDocument.Parse(contextJson).RootElement;
-Context context = new Context(contextJsonElement);
+Dictionary<string, dynamic?> context = ContextHelpers.ConvertJsonElement(contextJsonElement);
 // or with Json.Net (Newtonsoft)
 JObject contextJObject = JObject.Parse(contextJson);
-Context context = new Context(contextJObject);
+Dictionary<string, dynamic?>? context = JexlNet.JsonNet.ContextHelpers.ConvertJObject(contextJsonElement);
 
 // Initialize Jexl
 var jexl = new Jexl();

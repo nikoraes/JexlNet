@@ -2,14 +2,14 @@ namespace JexlNet;
 
 public class Evaluator
 {
-    public Evaluator(Grammar grammar, Dictionary<string, dynamic>? context = null, dynamic? subject = null)
+    public Evaluator(Grammar grammar, Dictionary<string, dynamic?>? context = null, dynamic? subject = null)
     {
         Grammar = grammar;
         Context = context;
         RelContext = subject;
     }
     internal readonly Grammar Grammar;
-    internal readonly Dictionary<string, dynamic>? Context;
+    internal readonly Dictionary<string, dynamic?>? Context;
     internal readonly dynamic? RelContext;
 
     /// <summary>
