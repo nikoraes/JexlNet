@@ -1,4 +1,4 @@
-name: Release to NuGet
+name: Build, Test and Release to NuGet
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
       uses: actions/setup-dotnet@v4
 
     - name: Build
-      run: dotnet build -c Release
+      run: dotnet build -c Release -p:Version=${{github.event.release.tag_name}} --no-restore
 
     - name: Test
       run: dotnet test -c Release --no-build
