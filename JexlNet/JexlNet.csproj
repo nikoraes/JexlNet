@@ -7,4 +7,5 @@
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
+  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 </Project>
