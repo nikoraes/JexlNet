@@ -63,7 +63,7 @@ string contextJson =
 // with System.Text.Json
 JsonElement contextJsonElement = JsonDocument.Parse(contextJson).RootElement;
 Context context = new Context(contextJsonElement);
-// or with Json.Net
+// or with Json.Net (Newtonsoft)
 JObject contextJObject = JObject.Parse(contextJson);
 Context context = new Context(contextJObject);
 
