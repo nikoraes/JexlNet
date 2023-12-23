@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <PackageId>JexlNet</PackageId>
+    <PackageTags>Jexl JexlNet expression mapping transformation</PackageTags>
+    <Description>A C# library that allows to evaluate JEXL expressions.</Description>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
-  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 </Project>
