@@ -1,6 +1,13 @@
 namespace JexlNet;
 
-public class Expression
+public interface IExpression
+{
+    public Expression? Compile();
+    public Task<dynamic?> EvalAsync(Dictionary<string, dynamic>? context = null);
+    public dynamic? Eval(Dictionary<string, dynamic>? context = null);
+}
+
+public class Expression : IExpression
 {
     public Expression(string exprStr)
     {
@@ -12,8 +19,8 @@ public class Expression
         Grammar = grammar;
         ExprStr = exprStr;
     }
-    private Grammar Grammar { get; set; }
-    private string ExprStr { get; set; }
+    private readonly Grammar Grammar;
+    private readonly string ExprStr;
     private Node? _ast = null;
 
     /// <summary>
@@ -22,7 +29,7 @@ public class Expression
     /// if the language elements of the associated Jexl instance change.
     /// </summary>
     /// <returns>this Expression instance, for convenience</returns>
-    public Expression? Compile()
+    public virtual Expression? Compile()
     {
         var lexer = new Lexer(Grammar);
         var parser = new Parser(Grammar);
@@ -41,10 +48,8 @@ public class Expression
     public async Task<dynamic?> EvalAsync(Dictionary<string, dynamic>? context = null)
     {
         var evaluator = new Evaluator(Grammar, context);
-        return await evaluator.Eval(GetAst());
+        return await evaluator.EvalAsync(GetAst());
     }
-
-    public Task<dynamic?> Eval(Dictionary<string, dynamic>? context = null) => EvalAsync(context);
 
 
     /// <summary>
@@ -53,10 +58,10 @@ public class Expression
     /// <param name="context">A mapping of variables to values, which will be
     /// made accessible to the Jexl expression when evaluating it.</param>
     /// <returns>Resolves with the resulting value of the expression.</returns>
-    public dynamic? EvalSync(Dictionary<string, dynamic>? context = null)
+    public dynamic? Eval(Dictionary<string, dynamic>? context = null)
     {
         var evaluator = new Evaluator(Grammar, context);
-        var task = evaluator.Eval(GetAst());
+        var task = evaluator.EvalAsync(GetAst());
         return task.GetAwaiter().GetResult();
     }
 

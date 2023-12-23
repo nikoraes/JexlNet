@@ -6,7 +6,12 @@ NOTE: This library handles the JEXL from [TomFrost's JEXL library](https://githu
 
 ## Quick start
 
-Context can be provided as a JsonDocument (System.Text.Json.JsonDocument). 
+Expressions can be evaluated synchronously or asynchronously by using the `Eval` and `EvalAsync` methods respectively. 
+
+Context should be a Dictionary<string, dynamic> and can internally use List<dynamic>, string, bool and decimal (all numbers should be decimals to allow exact comparisons). Bindings for Json.Net (Newtonsoft) and System.Text.Json can be used to easily convert JSON strings to the required format. 
+
+The Grammar can be expanded by adding new operators, functions and transforms. 
+
 
 ```csharp
 string contextJson = 
@@ -31,7 +36,8 @@ string contextJson =
     ],
     ""age"": 36
 }";
-JsonDocument context = JsonDocument.Parse(contextJson).RootElement;
+// JsonDocument context = JsonDocument.Parse(contextJson).RootElement;
+Context context = new Context(contextJson)
 
 // Use it with promises or synchronously:
 

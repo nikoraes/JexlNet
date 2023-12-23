@@ -1,170 +1,186 @@
 
 namespace JexlNet;
 
-public class ParserStateTokenType(string? toState = null, Action<Parser, Node?>? handler = null)
+internal class ParserStateTokenType(string? toState = null, Action<Parser, Node?>? handler = null)
 {
-    public string? ToState { get; set; } = toState;
-    public Action<Parser, Node?>? Handler { get; set; } = handler;
+    internal string? ToState { get; set; } = toState;
+    internal Action<Parser, Node?>? Handler { get; set; } = handler;
 }
 
-public class ParserState()
+internal class ParserState()
 {
-    public Dictionary<string, ParserStateTokenType>? TokenTypes { get; set; }
-    public bool? Completable { get; set; }
-    public Dictionary<string, string>? EndStates { get; set; }
-    public Action<Parser, Node?>? SubHandler { get; set; }
+    internal Dictionary<string, ParserStateTokenType>? TokenTypes { get; set; }
+    internal bool? Completable { get; set; }
+    internal Dictionary<string, string>? EndStates { get; set; }
+    internal Action<Parser, Node?>? SubHandler { get; set; }
 
 }
 
-public class ParserStates : Dictionary<string, ParserState>
+internal static class ParserStates
 {
-    public ParserStates() : base()
+    internal static Dictionary<string, ParserState> States = new()
     {
-        Add("expectOperand", new ParserState()
-        {
-            TokenTypes = new Dictionary<string, ParserStateTokenType>() {
-                { "literal", new ParserStateTokenType("expectBinOp") },
-                { "identifier", new ParserStateTokenType("identifier") },
-                { "unaryOp", new ParserStateTokenType() },
-                { "openParen", new ParserStateTokenType("subExpression") },
-                { "openCurl", new ParserStateTokenType("expectObjKey", ParserHandlers.ObjectStart) },
-                { "dot", new ParserStateTokenType("traverse") },
-                { "openBracket", new ParserStateTokenType("arrayVal", ParserHandlers.ArrayStart) }
+        { "expectOperand", new ParserState()
+            {
+                TokenTypes = new Dictionary<string, ParserStateTokenType>() {
+                        { "literal", new ParserStateTokenType("expectBinOp") },
+                        { "identifier", new ParserStateTokenType("identifier") },
+                        { "unaryOp", new ParserStateTokenType() },
+                        { "openParen", new ParserStateTokenType("subExpression") },
+                        { "openCurl", new ParserStateTokenType("expectObjKey", ParserHandlers.ObjectStart) },
+                        { "dot", new ParserStateTokenType("traverse") },
+                        { "openBracket", new ParserStateTokenType("arrayVal", ParserHandlers.ArrayStart) }
+                    }
+                }
+        },
+
+        { "expectBinOp", new ParserState()
+            {
+                TokenTypes = new Dictionary<string, ParserStateTokenType>() {
+                    { "binaryOp", new ParserStateTokenType("expectOperand") },
+                    { "pipe", new ParserStateTokenType("expectTransform") },
+                    { "dot", new ParserStateTokenType("traverse") },
+                    { "question", new ParserStateTokenType("ternaryMid", ParserHandlers.TernaryStart) }
+                },
+                Completable = true
             }
-        });
+        },
 
-        Add("expectBinOp", new ParserState()
-        {
-            TokenTypes = new Dictionary<string, ParserStateTokenType>() {
-                { "binaryOp", new ParserStateTokenType("expectOperand") },
-                { "pipe", new ParserStateTokenType("expectTransform") },
-                { "dot", new ParserStateTokenType("traverse") },
-                { "question", new ParserStateTokenType("ternaryMid", ParserHandlers.TernaryStart) }
-            },
-            Completable = true
-        });
-
-        Add("expectTransform", new ParserState()
-        {
-            TokenTypes = new Dictionary<string, ParserStateTokenType>() {
-                { "identifier", new ParserStateTokenType("postTransform", ParserHandlers.Transform) }
+        { "expectTransform", new ParserState()
+            {
+                TokenTypes = new Dictionary<string, ParserStateTokenType>() {
+                    { "identifier", new ParserStateTokenType("postTransform", ParserHandlers.Transform) }
+                }
             }
-        });
+        },
 
-        Add("expectObjKey", new ParserState()
-        {
-            TokenTypes = new Dictionary<string, ParserStateTokenType>() {
-                { "literal", new ParserStateTokenType("expectKeyValSep", ParserHandlers.ObjectKey) },
-                { "identifier", new ParserStateTokenType("expectKeyValSep", ParserHandlers.ObjectKey) },
-                { "closeCurl", new ParserStateTokenType("expectBinOp") }
+        { "expectObjKey", new ParserState()
+            {
+                TokenTypes = new Dictionary<string, ParserStateTokenType>() {
+                    { "literal", new ParserStateTokenType("expectKeyValSep", ParserHandlers.ObjectKey) },
+                    { "identifier", new ParserStateTokenType("expectKeyValSep", ParserHandlers.ObjectKey) },
+                    { "closeCurl", new ParserStateTokenType("expectBinOp") }
+                }
             }
-        });
+        },
 
-        Add("expectKeyValSep", new ParserState()
-        {
-            TokenTypes = new Dictionary<string, ParserStateTokenType>() {
-                { "colon", new ParserStateTokenType("objVal") }
+        { "expectKeyValSep", new ParserState()
+            {
+                TokenTypes = new Dictionary<string, ParserStateTokenType>() {
+                    { "colon", new ParserStateTokenType("objVal") }
+                }
             }
-        });
+        },
 
-        Add("postTransform", new ParserState()
-        {
-            TokenTypes = new Dictionary<string, ParserStateTokenType>() {
-                { "openParen", new ParserStateTokenType("argVal") },
-                { "binaryOp", new ParserStateTokenType("expectOperand") },
-                { "dot", new ParserStateTokenType("traverse") },
-                { "openBracket", new ParserStateTokenType("filter") },
-                { "pipe", new ParserStateTokenType("expectTransform") },
-            },
-            Completable = true
-        });
-
-        Add("postArgs", new ParserState()
-        {
-            TokenTypes = new Dictionary<string, ParserStateTokenType>() {
-                { "binaryOp", new ParserStateTokenType("expectOperand") },
-                { "dot", new ParserStateTokenType("traverse") },
-                { "openBracket", new ParserStateTokenType("filter") },
-                { "pipe", new ParserStateTokenType("expectTransform") },
-            },
-            Completable = true
-        });
-
-        Add("identifier", new ParserState()
-        {
-            TokenTypes = new Dictionary<string, ParserStateTokenType>() {
-                { "binaryOp", new ParserStateTokenType("expectOperand") },
-                { "dot", new ParserStateTokenType("traverse") },
-                { "openBracket", new ParserStateTokenType("filter") },
-                { "openParen", new ParserStateTokenType("argVal", ParserHandlers.FunctionCall) },
-                { "pipe", new ParserStateTokenType("expectTransform") },
-                { "question", new ParserStateTokenType("ternaryMid", ParserHandlers.TernaryStart) }
-            },
-            Completable = true
-        });
-
-        Add("traverse", new ParserState()
-        {
-            TokenTypes = new Dictionary<string, ParserStateTokenType>() {
-                { "identifier", new ParserStateTokenType("identifier") }
+        { "postTransform", new ParserState()
+            {
+                TokenTypes = new Dictionary<string, ParserStateTokenType>() {
+                    { "openParen", new ParserStateTokenType("argVal") },
+                    { "binaryOp", new ParserStateTokenType("expectOperand") },
+                    { "dot", new ParserStateTokenType("traverse") },
+                    { "openBracket", new ParserStateTokenType("filter") },
+                    { "pipe", new ParserStateTokenType("expectTransform") },
+                },
+                Completable = true
             }
-        });
+        },
 
-        Add("filter", new ParserState()
-        {
-            SubHandler = ParserHandlers.Filter,
-            EndStates = new() {
-                { "closeBracket", "identifier"}
+        { "postArgs", new ParserState()
+            {
+                TokenTypes = new Dictionary<string, ParserStateTokenType>() {
+                    { "binaryOp", new ParserStateTokenType("expectOperand") },
+                    { "dot", new ParserStateTokenType("traverse") },
+                    { "openBracket", new ParserStateTokenType("filter") },
+                    { "pipe", new ParserStateTokenType("expectTransform") },
+                },
+                Completable = true
             }
-        });
+        },
 
-        Add("subExpression", new ParserState()
-        {
-            SubHandler = ParserHandlers.SubExpression,
-            EndStates = new() {
-                { "closeParen", "expectBinOp"}
+        { "identifier", new ParserState()
+            {
+                TokenTypes = new Dictionary<string, ParserStateTokenType>() {
+                    { "binaryOp", new ParserStateTokenType("expectOperand") },
+                    { "dot", new ParserStateTokenType("traverse") },
+                    { "openBracket", new ParserStateTokenType("filter") },
+                    { "openParen", new ParserStateTokenType("argVal", ParserHandlers.FunctionCall) },
+                    { "pipe", new ParserStateTokenType("expectTransform") },
+                    { "question", new ParserStateTokenType("ternaryMid", ParserHandlers.TernaryStart) }
+                },
+                Completable = true
             }
-        });
+        },
 
-        Add("argVal", new ParserState()
-        {
-            SubHandler = ParserHandlers.ArgumentValue,
-            EndStates = new() {
-                { "comma", "argVal"},
-                { "closeParen", "postArgs"}
+        { "traverse", new ParserState()
+            {
+                TokenTypes = new Dictionary<string, ParserStateTokenType>() {
+                    { "identifier", new ParserStateTokenType("identifier") }
+                }
             }
-        });
+        },
 
-        Add("objVal", new ParserState()
-        {
-            SubHandler = ParserHandlers.ObjectValue,
-            EndStates = new() {
-                { "comma", "expectObjKey"},
-                { "closeCurl", "expectBinOp"}
+        { "filter", new ParserState()
+            {
+                SubHandler = ParserHandlers.Filter,
+                EndStates = new() {
+                    { "closeBracket", "identifier"}
+                }
             }
-        });
+        },
 
-        Add("arrayVal", new ParserState()
-        {
-            SubHandler = ParserHandlers.ArrayValue,
-            EndStates = new() {
-                { "comma", "arrayVal"},
-                { "closeBracket", "expectBinOp"}
+        { "subExpression", new ParserState()
+            {
+                SubHandler = ParserHandlers.SubExpression,
+                EndStates = new() {
+                    { "closeParen", "expectBinOp"}
+                }
             }
-        });
+        },
 
-        Add("ternaryMid", new ParserState()
-        {
-            SubHandler = ParserHandlers.TernaryMid,
-            EndStates = new() {
-                { "colon", "ternaryEnd"}
+        { "argVal", new ParserState()
+            {
+                SubHandler = ParserHandlers.ArgumentValue,
+                EndStates = new() {
+                    { "comma", "argVal"},
+                    { "closeParen", "postArgs"}
+                }
             }
-        });
+        },
 
-        Add("ternaryEnd", new ParserState()
-        {
-            SubHandler = ParserHandlers.TernaryEnd,
-            Completable = true
-        });
-    }
+        { "objVal", new ParserState()
+            {
+                SubHandler = ParserHandlers.ObjectValue,
+                EndStates = new() {
+                    { "comma", "expectObjKey"},
+                    { "closeCurl", "expectBinOp"}
+                }
+            }
+        },
+
+        { "arrayVal", new ParserState()
+            {
+                SubHandler = ParserHandlers.ArrayValue,
+                EndStates = new() {
+                    { "comma", "arrayVal"},
+                    { "closeBracket", "expectBinOp"}
+                }
+            }
+        },
+
+        { "ternaryMid", new ParserState()
+            {
+                SubHandler = ParserHandlers.TernaryMid,
+                EndStates = new() {
+                    { "colon", "ternaryEnd"}
+                }
+            }
+        },
+
+        { "ternaryEnd", new ParserState()
+            {
+                SubHandler = ParserHandlers.TernaryEnd,
+                Completable = true
+            }
+        },
+    };
 }

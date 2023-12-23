@@ -38,19 +38,18 @@ namespace JexlNet;
 ///instead of boolean false.</param>
 public class Parser(Grammar grammar, string prefix = "", Dictionary<string, string>? stopMap = null)
 {
-    public readonly Grammar grammar = grammar;
-    private readonly ParserStates _parserStates = new();
-    private string _state = "expectOperand";
-    private string _exprStr = prefix ?? "";
-    public bool relative = false;
-    private readonly Dictionary<string, string> _stopMap = stopMap ?? [];
-    private bool _parentStop = false;
-    public Node? tree = null;
-    public Node? cursor;
-    public Parser? subParser;
-    public bool? nextIdentEncapsulate;
-    public bool? nextIdentRelative;
-    public dynamic? cursorObjectKey;
+    internal readonly Grammar Grammar = grammar;
+    internal string State = "expectOperand";
+    internal string ExpressionString = prefix ?? "";
+    internal bool Relative = false;
+    internal readonly Dictionary<string, string> StopMap = stopMap ?? [];
+    internal bool ParentStop = false;
+    internal Node? Tree = null;
+    internal Node? Cursor;
+    internal Parser? SubParser;
+    internal bool? NextIdentEncapsulate;
+    internal bool? NextIdentRelative;
+    internal dynamic? CursorObjectKey;
 
     ///<summary>
     ///Processes a new token into the AST and manages the transitions of the state
@@ -61,28 +60,28 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
     ///in the stopState mapb 'false' if tokens can continue.</returns>
     public string AddToken(Node token)
     {
-        if (_state == "complete")
+        if (State == "complete")
         {
             throw new Exception("Cannot add a new token to a completed parser.");
         }
-        var state = _parserStates[_state];
-        var startExpr = _exprStr;
-        _exprStr += token.Raw;
+        var state = ParserStates.States[State];
+        var startExpr = ExpressionString;
+        ExpressionString += token.Raw;
         if (state.SubHandler != null)
         {
-            if (subParser == null)
+            if (SubParser == null)
             {
                 StartSubExpression(startExpr);
             }
-            var stopState = subParser!.AddToken(token);
+            var stopState = SubParser!.AddToken(token);
             if (stopState != "stop")
             {
                 EndSubExpression();
-                if (_parentStop)
+                if (ParentStop)
                 {
                     return stopState;
                 }
-                _state = stopState;
+                State = stopState;
             }
         }
         else if (token.Type != null && state.TokenTypes!.TryGetValue(token.Type, out var typeOpts))
@@ -96,16 +95,16 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
             handleFunc?.Invoke(this, token);
             if (typeOpts.ToState != null)
             {
-                _state = typeOpts.ToState;
+                State = typeOpts.ToState;
             }
         }
-        else if (_stopMap.TryGetValue(token.Type!, out string? value))
+        else if (StopMap.TryGetValue(token.Type!, out string? value))
         {
             return value;
         }
         else
         {
-            throw new Exception($"Token {token.Raw} ({token.Type}) unexpected in expression: {_exprStr}");
+            throw new Exception($"Token {token.Raw} ({token.Type}) unexpected in expression: {ExpressionString}");
         }
 
         return "stop";
@@ -147,38 +146,38 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
     ///the expression, indicating that the expression is incomplete</exception>
     public Node? Complete()
     {
-        if (cursor != null && (!_parserStates.TryGetValue(_state, out var state) || state.Completable != true))
+        if (Cursor != null && (!ParserStates.States.TryGetValue(State, out var state) || state.Completable != true))
         {
-            throw new Exception($"Unexpected end of expression: {_exprStr}");
+            throw new Exception($"Unexpected end of expression: {ExpressionString}");
         }
-        if (subParser != null)
+        if (SubParser != null)
         {
             EndSubExpression();
         }
-        _state = "complete";
-        return cursor != null ? tree : null;
+        State = "complete";
+        return Cursor != null ? Tree : null;
     }
 
     ///<summary>
     ///Indicates whether the expression tree contains a relative path identifier.
     ///</summary>
     ///<returns>true if a relative identifier exists false otherwise.</returns>
-    public bool IsRelative()
+    internal bool IsRelative()
     {
-        return relative;
+        return Relative;
     }
 
     ///<summary>
     ///Ends a subexpression by completing the subParser and passing its result
     ///to the subHandler configured in the current state.
     ///</summary>
-    private void EndSubExpression()
+    internal void EndSubExpression()
     {
-        if (_parserStates.TryGetValue(_state, out var state) && state.SubHandler != null && subParser != null)
+        if (ParserStates.States.TryGetValue(State, out var state) && state.SubHandler != null && SubParser != null)
         {
-            state.SubHandler(this, subParser.Complete());
+            state.SubHandler(this, SubParser.Complete());
         }
-        subParser = null;
+        SubParser = null;
     }
 
     ///<summary>
@@ -187,18 +186,18 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
     ///handles setting the parent of the new node.
     ///</summary>
     ///<param name="node">A node to be added to the AST</param>
-    public void PlaceAtCursor(Node? node)
+    internal void PlaceAtCursor(Node? node)
     {
-        if (cursor == null)
+        if (Cursor == null)
         {
-            tree = node;
+            Tree = node;
         }
         else
         {
-            cursor.Right = node;
-            SetParent(node, cursor);
+            Cursor.Right = node;
+            SetParent(node, Cursor);
         }
-        cursor = node;
+        Cursor = node;
     }
 
     ///<summary>
@@ -208,9 +207,9 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
     ///contains a pointer to what's at the cursor currently.
     ///</summary>
     ///<param name="node">A node to be added to the AST</param>
-    public void PlaceBeforeCursor(Node node)
+    internal void PlaceBeforeCursor(Node node)
     {
-        cursor = cursor!.Parent;
+        Cursor = Cursor!.Parent;
         PlaceAtCursor(node);
     }
 
@@ -221,7 +220,7 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
     ///</summary>
     ///<param name="node">A node of the AST on which to set a new parent</param>
     ///<param name="parent">An existing node of the AST to serve as the parent of the new node</param>
-    public static void SetParent(Node? node, Node? parent)
+    internal static void SetParent(Node? node, Node? parent)
     {
         if (node == null || parent == null) return;
         node.Parent = parent;// new Node() { Value = parent, Writable = true };
@@ -232,15 +231,15 @@ public class Parser(Grammar grammar, string prefix = "", Dictionary<string, stri
     ///subParser.
     ///</summary>
     ///<param name="exprStr">The expression string to prefix to the new Parser</param>
-    private void StartSubExpression(string exprStr)
+    internal void StartSubExpression(string exprStr)
     {
-        var endStates = _parserStates[_state].EndStates;
+        var endStates = ParserStates.States[State].EndStates;
         if (endStates == null)
         {
-            _parentStop = true;
-            endStates = _stopMap;
+            ParentStop = true;
+            endStates = StopMap;
         }
-        subParser = new Parser(grammar, exprStr, endStates);
+        SubParser = new Parser(Grammar, exprStr, endStates);
     }
 
 

@@ -11,9 +11,9 @@ public static class EvaluatorHandlers
     /// <param name="evaluator"></param>
     /// <param name="node"></param>
     /// <returns></returns>
-    public static async Task<dynamic?> ArrayLiteral(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> ArrayLiteralAsync(Evaluator evaluator, Node? node)
     {
-        return await evaluator.EvalArray(node?.Value);
+        return await evaluator.EvalArrayAsync(node?.Value);
     }
 
     ///<summary>
@@ -28,7 +28,7 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a BinaryExpression as the top node</param>
     ///<returns>resolves with the value of the BinaryExpression.</returns>
-    public static async Task<dynamic?> BinaryExpression(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> BinaryExpressionAsync(Evaluator evaluator, Node? node)
     {
         if (node?.Operator == null)
         {
@@ -39,13 +39,14 @@ public static class EvaluatorHandlers
         {
             throw new Exception($"BinaryExpression node has unknown operator: {node.Operator}");
         }
-        /* if (grammarOp.EvalOnDemand == true && node.Left != null && node.Right != null)
+        // EvaluateOnDemand allows to only conditionally evaluate one side of the binary expression
+        if (grammarOp.EvaluateOnDemandAsync != null && node.Left != null && node.Right != null)
         {
-            var wrap = new Func<Node?, dynamic>((subAst) => new { Eval = new Func<Task<dynamic>>(() => evaluator.Eval(subAst)) });
-            return Task.FromResult(grammarOp.Evaluate?.Invoke([wrap(node?.Left), wrap(node?.Right)]));
-        } */
-        var leftResult = await evaluator.Eval(node?.Left);
-        var rightResult = await evaluator.Eval(node?.Right);
+            var wrap = new Func<Node?, Func<Task<dynamic?>>>((subAst) => async () => await evaluator.EvalAsync(subAst));
+            return await grammarOp.EvaluateOnDemandAsync([wrap(node?.Left), wrap(node?.Right)]);
+        }
+        var leftResult = await evaluator.EvalAsync(node?.Left);
+        var rightResult = await evaluator.EvalAsync(node?.Right);
         return grammarOp.Evaluate([leftResult, rightResult]);
     }
 
@@ -63,7 +64,7 @@ public static class EvaluatorHandlers
         {
             throw new Exception("ConditionalExpression node has no test");
         }
-        var testResult = await evaluator.Eval(node?.Test);
+        var testResult = await evaluator.EvalAsync(node?.Test);
         // If it's a string, we consider it truthy if it's non-empty
         // If it's a decimal, we consider it truthy it's non-zero
         // Align with behaviour in Javascript
@@ -73,11 +74,11 @@ public static class EvaluatorHandlers
         {
             if (node?.Consequent != null)
             {
-                return await evaluator.Eval(node?.Consequent);
+                return await evaluator.EvalAsync(node?.Consequent);
             }
             return testResult;
         }
-        return await evaluator.Eval(node?.Alternate);
+        return await evaluator.EvalAsync(node?.Alternate);
     }
 
     ///<summary>
@@ -92,13 +93,13 @@ public static class EvaluatorHandlers
         {
             throw new Exception("FilterExpression node has no subject");
         }
-        var subjectResult = await evaluator.Eval(node?.Subject);
+        var subjectResult = await evaluator.EvalAsync(node?.Subject);
         Console.WriteLine($"{subjectResult}");
         if (node?.Relative == true)
         {
-            return await evaluator.FilterRelative(subjectResult, node?.Expr);
+            return await evaluator.FilterRelativeAsync(subjectResult, node?.Expr);
         }
-        return await evaluator.FilterStatic(subjectResult, node?.Expr);
+        return await evaluator.FilterStaticAsync(subjectResult, node?.Expr);
     }
 
     ///<summary>
@@ -109,7 +110,7 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with an Identifier as the top node</param>
     ///<returns>either the identifier's value, or a Promise that will resolve with the identifier's value.</returns>
-    public static async Task<dynamic?> Identifier(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> IdentifierAsync(Evaluator evaluator, Node? node)
     {
         if (node?.From == null)
         {
@@ -123,7 +124,7 @@ public static class EvaluatorHandlers
             }
             else return null;
         }
-        var fromResult = await evaluator.Eval(node?.From);
+        var fromResult = await evaluator.EvalAsync(node?.From);
         if (fromResult == null || node?.Value == null)
         {
             return null;
@@ -157,7 +158,7 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a Literal as its only node</param>
     ///<returns>The value of the Literal node</returns>
-    public static async Task<dynamic?> Literal(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> LiteralAsync(Evaluator evaluator, Node? node)
     {
         return await Task.FromResult<dynamic?>(node?.Value);
     }
@@ -169,9 +170,9 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a Literal as its only node</param>
     ///<returns>The value of the Literal node</returns>
-    public static async Task<dynamic?> ObjectLiteral(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> ObjectLiteralAsync(Evaluator evaluator, Node? node)
     {
-        return await evaluator.EvalMap(node?.Value);
+        return await evaluator.EvalMapAsync(node?.Value);
     }
 
     ///<summary>
@@ -181,7 +182,7 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a FunctionCall as the top node</param>
     ///<returns>the value of the function call, or a Promise that will resolve with the resulting value.</returns>
-    public static async Task<dynamic?> FunctionCall(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> FunctionCallAsync(Evaluator evaluator, Node? node)
     {
 
         if (node?.Pool == null)
@@ -198,12 +199,12 @@ public static class EvaluatorHandlers
         }
         if (node.Pool == "functions" && evaluator.Grammar.Functions.TryGetValue(node.Name, out var func))
         {
-            var argsResult = await evaluator.EvalArray(node.Args);
+            var argsResult = await evaluator.EvalArrayAsync(node.Args);
             return await func(argsResult);
         }
         else if (node.Pool == "transforms" && evaluator.Grammar.Transforms.TryGetValue(node.Name, out var transform))
         {
-            var argsResult = await evaluator.EvalArray(node.Args);
+            var argsResult = await evaluator.EvalArrayAsync(node.Args);
             return await transform(argsResult);
         }
         else
@@ -219,7 +220,7 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a UnaryExpression as the top node</param>
     ///<returns>resolves with the value of the UnaryExpression.</returns>
-    public static async Task<dynamic?> UnaryExpression(Evaluator evaluator, Node? node)
+    public static async Task<dynamic?> UnaryExpressionAsync(Evaluator evaluator, Node? node)
     {
         if (node?.Operator == null)
         {
@@ -234,21 +235,21 @@ public static class EvaluatorHandlers
         {
             throw new Exception($"UnaryExpression node has unknown operator: {node.Operator}");
         }
-        var rightResult = await evaluator.Eval(node?.Right);
+        var rightResult = await evaluator.EvalAsync(node?.Right);
         return await grammarOp.Evaluate(rightResult);
     }
 
 
     public static readonly Dictionary<string, Func<Evaluator, Node?, Task<dynamic?>>> Handlers = new()
     {
-        { "ArrayLiteral", ArrayLiteral },
-        { "BinaryExpression", BinaryExpression },
+        { "ArrayLiteral", ArrayLiteralAsync },
+        { "BinaryExpression", BinaryExpressionAsync },
         { "ConditionalExpression", ConditionalExpression },
         { "FilterExpression", FilterExpression },
-        { "Identifier", Identifier },
-        { "Literal", Literal },
-        { "ObjectLiteral", ObjectLiteral },
-        { "FunctionCall", FunctionCall },
-        { "UnaryExpression", UnaryExpression }
+        { "Identifier", IdentifierAsync },
+        { "Literal", LiteralAsync },
+        { "ObjectLiteral", ObjectLiteralAsync },
+        { "FunctionCall", FunctionCallAsync },
+        { "UnaryExpression", UnaryExpressionAsync }
     };
 }

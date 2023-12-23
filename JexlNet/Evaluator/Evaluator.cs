@@ -5,9 +5,9 @@ public class Evaluator(
     Dictionary<string, dynamic>? context = null,
     dynamic? subject = null)
 {
-    public Grammar Grammar { get; set; } = grammar;
-    public Dictionary<string, dynamic>? Context { get; set; } = context;
-    public dynamic? RelContext { get; set; } = subject;
+    internal readonly Grammar Grammar = grammar;
+    internal readonly Dictionary<string, dynamic>? Context = context;
+    internal readonly dynamic? RelContext = subject;
 
 
     /// <summary>
@@ -15,7 +15,7 @@ public class Evaluator(
     /// </summary>
     /// <param name="ast">An expression tree object</param>
     /// <returns>Resolves with the resulting value of the expression.</returns>
-    public async Task<dynamic?> Eval(Node? ast)
+    public async Task<dynamic?> EvalAsync(Node? ast)
     {
         if (ast == null) return await Task.FromResult<dynamic?>(null);
         EvaluatorHandlers.Handlers.TryGetValue(ast.Type, out var handleFunc);
@@ -30,12 +30,12 @@ public class Evaluator(
     ///</summary>
     ///<param name="arr">An array of expression strings to be evaluated</param>
     ///<returns>resolves with the result array</returns>
-    public async Task<List<dynamic?>> EvalArray(List<Node> arr)
+    internal async Task<List<dynamic?>> EvalArrayAsync(List<Node> arr)
     {
         var result = new List<dynamic?>();
         foreach (var val in arr)
         {
-            var elemResult = await Eval(val);
+            var elemResult = await EvalAsync(val);
             if (elemResult is Task) await elemResult;
             result.Add(elemResult);
         }
@@ -50,12 +50,12 @@ public class Evaluator(
     ///</summary>
     ///<param name="map">A map of expression names to expression trees to be evaluated</param>
     ///<returns>resolves with the result map.</returns>
-    public async Task<Dictionary<string, dynamic?>> EvalMap(Dictionary<string, Node> map)
+    internal async Task<Dictionary<string, dynamic?>> EvalMapAsync(Dictionary<string, Node> map)
     {
         var result = new Dictionary<string, dynamic?>();
         foreach (var kv in map)
         {
-            result[kv.Key] = await Eval(kv.Value);
+            result[kv.Key] = await EvalAsync(kv.Value);
         }
         return result;
     }
@@ -78,7 +78,7 @@ public class Evaluator(
     ///the returned array otherwise, it will be eliminated.</param>
     ///<returns>resolves with an array of values that passed the
     ///expression filter.</returns>
-    public async Task<List<dynamic?>> FilterRelative(dynamic subj, Node expr)
+    public async Task<List<dynamic?>> FilterRelativeAsync(dynamic subj, Node expr)
     {
         if ((subj as System.Collections.IEnumerable) == null)
         {
@@ -88,7 +88,7 @@ public class Evaluator(
         foreach (var elem in subj)
         {
             Evaluator elementEvaluator = new(Grammar, Context, elem);
-            bool shouldInclude = await elementEvaluator.Eval(expr);
+            bool shouldInclude = await elementEvaluator.EvalAsync(expr);
             if (shouldInclude)
             {
                 results.Add(elem);
@@ -111,9 +111,9 @@ public class Evaluator(
     ///indicating a property name)</param>
     ///<param name="expr">The expression tree to run against the subject</param>
     ///<returns>resolves with the value of the drill-down.</returns>
-    public async Task<dynamic?> FilterStatic(dynamic subj, Node expr)
+    public async Task<dynamic?> FilterStaticAsync(dynamic subj, Node expr)
     {
-        var result = await Eval(expr);
+        var result = await EvalAsync(expr);
         if (result is bool)
         {
             return result ? subj : null;

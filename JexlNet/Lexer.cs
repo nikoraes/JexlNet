@@ -42,8 +42,7 @@ public class Token(string type, dynamic? value = null, string? raw = null) : IEq
 /// <param name="grammar"></param>
 public class Lexer(Grammar grammar)
 {
-    private readonly Grammar _grammar = grammar;
-
+    private readonly Grammar Grammar = grammar;
     public Regex numericRegex = new(@"^-?(?:(?:[0-9]*\.[0-9]+)|[0-9]+)$", RegexOptions.Compiled);
     public Regex identifierRegex = new(@"^[a-zA-Zа-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF$][a-zA-Zа-яА-Я0-9_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF$]*$", RegexOptions.Compiled);
     public Regex escEscRegex = new(@"\\", RegexOptions.Compiled);
@@ -160,7 +159,7 @@ public class Lexer(Grammar grammar)
         {
             token.Value = false;
         }
-        else if (_grammar.Elements.TryGetValue(element, out ElementGrammar? value))
+        else if (Grammar.Elements.TryGetValue(element, out ElementGrammar? value))
         {
             token.Type = value.Type;
         }
@@ -201,7 +200,7 @@ public class Lexer(Grammar grammar)
         if (_splitRegex == null)
         {
             // Sort by most characters to least, then regex escape each
-            var elemArray = _grammar.Elements.Keys
+            var elemArray = Grammar.Elements.Keys
                 .OrderByDescending((a) => a.Length)
                 .Select(EscapeRegex);
             _splitRegex = new Regex(

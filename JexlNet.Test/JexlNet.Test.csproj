@@ -22,7 +22,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Jexlnet\Jexlnet.csproj" />
+    <ProjectReference Include="..\JexlNet\JexlNet.csproj" />
   </ItemGroup>
 
 </Project>
