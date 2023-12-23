@@ -40,28 +40,34 @@ public class ElementGrammar
     public Func<Func<Task<dynamic?>>[], Task<dynamic?>>? EvaluateOnDemandAsync { get; set; }
 }
 
-public class BinaryOperatorGrammar(
-    int precedence,
-    Func<dynamic?[], dynamic?> evaluate,
-    Func<Func<Task<dynamic?>>[], Task<dynamic?>>? evalOnDemand = null
-    ) : ElementGrammar(
-        GrammarType.BinaryOperator,
-        precedence,
-        evaluate,
-        evalOnDemand)
+public class BinaryOperatorGrammar : ElementGrammar
 {
+    public BinaryOperatorGrammar(
+        int precedence,
+        Func<dynamic?[], dynamic?> evaluate,
+        Func<Func<Task<dynamic?>>[], Task<dynamic?>>? evalOnDemand = null
+        ) : base(
+            GrammarType.BinaryOperator,
+            precedence,
+            evaluate,
+            evalOnDemand)
+    {
+    }
 }
 
-public class UnaryOperatorGrammar(
-    int precedence,
-    Func<dynamic?[], dynamic?> evaluate,
-    Func<Func<Task<dynamic?>>[], Task<dynamic?>>? evalOnDemand = null
-    ) : ElementGrammar(
-        GrammarType.UnaryOperator,
-        precedence,
-        evaluate,
-        evalOnDemand)
+public class UnaryOperatorGrammar : ElementGrammar
 {
+    public UnaryOperatorGrammar(
+        int precedence,
+        Func<dynamic?[], dynamic?> evaluate,
+        Func<Func<Task<dynamic?>>[], Task<dynamic?>>? evalOnDemand = null
+        ) : base(
+            GrammarType.UnaryOperator,
+            precedence,
+            evaluate,
+            evalOnDemand)
+    {
+    }
 }
 
 
@@ -425,7 +431,7 @@ public class Grammar
     ///appropriate when the function would normally return a value, but
     ///cannot due to some other failure.
     ///</summary>
-    public readonly Dictionary<string, Func<List<dynamic?>, Task<object>>> Functions = [];
+    public readonly Dictionary<string, Func<List<dynamic?>, Task<object>>> Functions = new();
 
     ///<summary>
     ///A map of transform names to transform functions. A transform function
@@ -444,7 +450,7 @@ public class Grammar
     ///appropriate when the transform would normally return a value, but
     ///cannot due to some other failure.
     ///</summary>
-    public readonly Dictionary<string, Func<List<dynamic?>, Task<object>>> Transforms = [];
+    public readonly Dictionary<string, Func<List<dynamic?>, Task<object>>> Transforms = new();
 
     private void AddFunctionCall<TInput, TResult>(string poolName, string name, Func<TInput, TResult> func)
     {

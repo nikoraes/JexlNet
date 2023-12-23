@@ -1,13 +1,18 @@
 
 namespace JexlNet;
 
-internal class ParserStateTokenType(string? toState = null, Action<Parser, Node?>? handler = null)
+internal class ParserStateTokenType
 {
-    internal string? ToState { get; set; } = toState;
-    internal Action<Parser, Node?>? Handler { get; set; } = handler;
+    public ParserStateTokenType(string? toState = null, Action<Parser, Node?>? handler = null)
+    {
+        ToState = toState;
+        Handler = handler;
+    }
+    internal string? ToState { get; set; }
+    internal Action<Parser, Node?>? Handler { get; set; }
 }
 
-internal class ParserState()
+internal class ParserState
 {
     internal Dictionary<string, ParserStateTokenType>? TokenTypes { get; set; }
     internal bool? Completable { get; set; }

@@ -3,11 +3,18 @@ using System.Text.RegularExpressions;
 
 namespace JexlNet;
 
-public class Token(string type, dynamic? value = null, string? raw = null) : IEquatable<Token>
+public class Token : IEquatable<Token>
 {
-    public string Type { get; set; } = type;
-    public dynamic? Value { get; set; } = value;
-    public string? Raw { get; set; } = raw;
+    public Token(string type, dynamic? value = null, string? raw = null)
+    {
+        Type = type;
+        Value = value;
+        Raw = raw;
+    }
+
+    public string Type { get; set; }
+    public dynamic? Value { get; set; }
+    public string? Raw { get; set; }
 
     public bool Equals(Token? other)
     {
@@ -40,14 +47,18 @@ public class Token(string type, dynamic? value = null, string? raw = null) : IEq
 /// sensible configuration should be left for the Parser to handle.
 /// </summary>
 /// <param name="grammar"></param>
-public class Lexer(Grammar grammar)
+public class Lexer
 {
-    private readonly Grammar Grammar = grammar;
+    public Lexer(Grammar grammar)
+    {
+        Grammar = grammar;
+    }
+    private readonly Grammar Grammar;
     public Regex numericRegex = new(@"^-?(?:(?:[0-9]*\.[0-9]+)|[0-9]+)$", RegexOptions.Compiled);
     public Regex identifierRegex = new(@"^[a-zA-Zа-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF$][a-zA-Zа-яА-Я0-9_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF$]*$", RegexOptions.Compiled);
     public Regex escEscRegex = new(@"\\", RegexOptions.Compiled);
     public Regex whitespaceRegex = new(@"^\s*$", RegexOptions.Compiled);
-    public string[] preOpRegexElems = [
+    public string[] preOpRegexElems = new string[] {
         // Strings
         @"'(?:(?:\\')|[^'])*'",
         @"""(?:(?:\\"")|[^""])*""",
@@ -56,21 +67,21 @@ public class Lexer(Grammar grammar)
         // Booleans
         @"\btrue\b",
         @"\bfalse\b",
-        ];
-    public string[] postOpRegexElems = [
+    };
+    public string[] postOpRegexElems = new string[] {
         // Identifiers
         @"[a-zA-Zа-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\$][a-zA-Z0-9а-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\$]*",
             // Numerics (without negative symbol)
             @"(?:(?:[0-9]*\.[0-9]+)|[0-9]+)",
-        ];
-    public string[] minusNegatesAfter = [
+    };
+    public string[] minusNegatesAfter = new string[] {
         "binaryOp",
             "unaryOp",
             "openParen",
             "openBracket",
             "question",
             "colon",
-        ];
+    };
     private Regex? _splitRegex;
 
     /// <summary>
@@ -94,7 +105,7 @@ public class Lexer(Grammar grammar)
     /// <returns>An array of token objects</returns>
     public List<Token> GetTokens(List<string> elements)
     {
-        List<Token> tokens = [];
+        List<Token> tokens = new();
         bool negate = false;
         for (int i = 0; i < elements.Count; i++)
         {

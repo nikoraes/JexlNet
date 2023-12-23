@@ -36,15 +36,30 @@ namespace JexlNet;
 ///<param name="stopMap">A mapping of token types to any truthy value. When the
 ///token type is encountered, the parser will return the mapped value
 ///instead of boolean false.</param>
-public class Parser(Grammar grammar, string prefix = "", Dictionary<string, string>? stopMap = null)
+public class Parser
 {
-    internal readonly Grammar Grammar = grammar;
-    internal string State = "expectOperand";
-    internal string ExpressionString = prefix ?? "";
-    internal bool Relative = false;
-    internal readonly Dictionary<string, string> StopMap = stopMap ?? [];
-    internal bool ParentStop = false;
-    internal Node? Tree = null;
+    public Parser(Grammar grammar, string prefix = "", Dictionary<string, string>? stopMap = null)
+    {
+        Grammar = grammar;
+        State = "expectOperand";
+        ExpressionString = prefix ?? "";
+        Relative = false;
+        StopMap = stopMap ?? new();
+        ParentStop = false;
+        Tree = null;
+        Cursor = null;
+        SubParser = null;
+        NextIdentEncapsulate = null;
+        NextIdentRelative = null;
+        CursorObjectKey = null;
+    }
+    internal readonly Grammar Grammar;
+    internal string State;
+    internal string ExpressionString;
+    internal bool Relative;
+    internal readonly Dictionary<string, string> StopMap;
+    internal bool ParentStop;
+    internal Node? Tree;
     internal Node? Cursor;
     internal Parser? SubParser;
     internal bool? NextIdentEncapsulate;

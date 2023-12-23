@@ -1,14 +1,16 @@
 namespace JexlNet;
 
-public class Evaluator(
-    Grammar grammar,
-    Dictionary<string, dynamic>? context = null,
-    dynamic? subject = null)
+public class Evaluator
 {
-    internal readonly Grammar Grammar = grammar;
-    internal readonly Dictionary<string, dynamic>? Context = context;
-    internal readonly dynamic? RelContext = subject;
-
+    public Evaluator(Grammar grammar, Dictionary<string, dynamic>? context = null, dynamic? subject = null)
+    {
+        Grammar = grammar;
+        Context = context;
+        RelContext = subject;
+    }
+    internal readonly Grammar Grammar;
+    internal readonly Dictionary<string, dynamic>? Context;
+    internal readonly dynamic? RelContext;
 
     /// <summary>
     /// Evaluates an expression tree within the configured context.
@@ -82,9 +84,9 @@ public class Evaluator(
     {
         if ((subj as System.Collections.IEnumerable) == null)
         {
-            subj = subj == null ? [] : new List<dynamic>() { subj };
+            subj = subj == null ? new List<dynamic>() : new List<dynamic>() { subj };
         }
-        List<dynamic?> results = [];
+        List<dynamic?> results = new();
         foreach (var elem in subj)
         {
             Evaluator elementEvaluator = new(Grammar, Context, elem);

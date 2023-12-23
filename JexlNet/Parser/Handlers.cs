@@ -111,7 +111,7 @@ internal static class ParserHandlers
         parser.PlaceBeforeCursor(new Node("FunctionCall")
         {
             Name = parser.Cursor?.Value,
-            Args = [],
+            Args = new(),
             Pool = "functions"
         });
     }
@@ -264,7 +264,7 @@ internal static class ParserHandlers
         parser.PlaceBeforeCursor(new Node("FunctionCall")
         {
             Name = node?.Value,
-            Args = [parser.Cursor!],
+            Args = new() { parser.Cursor! },
             Pool = "transforms"
         });
     }

@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace JexlNet;
 
@@ -43,11 +44,11 @@ public static class EvaluatorHandlers
         if (grammarOp.EvaluateOnDemandAsync != null && node.Left != null && node.Right != null)
         {
             var wrap = new Func<Node?, Func<Task<dynamic?>>>((subAst) => async () => await evaluator.EvalAsync(subAst));
-            return await grammarOp.EvaluateOnDemandAsync([wrap(node?.Left), wrap(node?.Right)]);
+            return await grammarOp.EvaluateOnDemandAsync(new Func<Task<dynamic?>>[] { wrap(node?.Left), wrap(node?.Right) });
         }
         var leftResult = await evaluator.EvalAsync(node?.Left);
         var rightResult = await evaluator.EvalAsync(node?.Right);
-        return grammarOp.Evaluate([leftResult, rightResult]);
+        return grammarOp.Evaluate(new dynamic?[] { leftResult, rightResult });
     }
 
     ///<summary>
@@ -267,11 +268,11 @@ public static class EvaluatorHandlers
         { "UnaryExpression", UnaryExpressionAsync }
     };
 
-    private static readonly HashSet<Type> _invokableTypes =
-     [
+    private static readonly HashSet<Type> _invokableTypes = new()
+     {
          typeof(Action), typeof(Action<>), typeof(Action<,>),    // etc
          typeof(Func<>), typeof(Func<,>), typeof(Func<,,>),      // etc
-     ];
+     };
 }
 
 
