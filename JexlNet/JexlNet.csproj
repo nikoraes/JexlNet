@@ -5,6 +5,8 @@
     <Description>Powerful context-based expression parser and evaluator in C# using JEXL (Javascript Expression Language) expressions.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
