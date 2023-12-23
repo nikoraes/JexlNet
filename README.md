@@ -274,7 +274,7 @@ var context = new Dictionary<string, dynamic>
 
 Collections, or arrays of objects, can be filtered by including a filter
 expression in brackets. Properties of each collection can be referenced by
-prefixing them with a leading dot. The result will be an array of the objects
+prefixing them with a leading dot. The result will be a list of the objects
 for which the filter expression resulted in a truthy value.
 
 Example context:
@@ -308,10 +308,12 @@ var context = new Dictionary<string, dynamic>
 ### Transforms
 
 The power of Jexl is in transforming data, synchronously or asynchronously.
-Transform functions take one or more arguments: The value to be transformed,
-followed by anything else passed to it in the expression. They must return
-either the transformed value, or a Promise that resolves with the transformed
-value. Add them with `jexl.addTransform(name, function)`.
+Transform functions take one argument or an array or list of more arguments.
+The first argument is the value to be transformed, and the rest are any other
+arguments passed to the transform in the expression. They must return either
+the transformed value, or a Promise that resolves with the transformed
+value. Add them with `jexl.AddTransform(name, function)`.
+Arguments can be `dynamic?`, `dynamic?[]` or `List<dynamic?>`.
 
 ```csharp
 jexl.Grammar.AddTransform("split", (dynamic?[] args) => args[0]?.Split(args[1]));
@@ -330,16 +332,20 @@ While Transforms are the preferred way to change one value into another value,
 Jexl also allows top-level expression functions to be defined. Use these to
 provide access to functions that either don't require an input, or require
 multiple equally-important inputs. They can be added with
-`jexl.addFunction(name, function)`. Like transforms, functions can return a
+`jexl.AddFunction(name, function)`. Like transforms, functions can return a
 value, or a Promise that resolves to the resulting value.
+For functions, arguments are not required, but if they are defined, 
+they must be `dynamic?`, `dynamic?[]` or `List<dynamic?>`.
 
 ```csharp
+jexl.Grammar.AddFunction("getTrue", () => true);
 jexl.Grammar.AddFunction("min", (List<dynamic?> args) => args.Min());
 jexl.Grammar.AddFunction("expensiveQuery", Db.RunExpensiveQuery);
 ```
 
 | Expression                                    | Result                    |
 | --------------------------------------------- | ------------------------- |
+| false || getTrue()                            | true                      |
 | min(4, 2, 19)                                 | 2                         |
 | counts.missions &#124;&#124; expensiveQuery() | Query only runs if needed |
 

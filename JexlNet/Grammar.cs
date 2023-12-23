@@ -552,8 +552,5 @@ public class Grammar
     public void AddFunctions<TResult>(Dictionary<string, Func<TResult>> funcsDict) => AddFunctionCalls("functions", funcsDict);
 
     public void AddTransform<TInput, TResult>(string name, Func<TInput, TResult> func) => AddFunctionCall("transforms", name, func);
-    public void AddTransform<TResult>(string name, Func<TResult> func) => AddFunctionCall("transforms", name, func);
     public void AddTransforms<TInput, TResult>(Dictionary<string, Func<TInput, TResult>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
-    public void AddTransforms<TResult>(Dictionary<string, Func<TResult>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
-
 }
