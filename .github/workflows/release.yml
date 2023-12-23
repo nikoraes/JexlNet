@@ -1,6 +1,9 @@
 name: Release to NuGet
 
 on:
+  push:
+    branches:
+    - main
   release:
     types: [published]
     
@@ -25,4 +28,5 @@ jobs:
       run: dotnet pack -c Release --no-build --output .
       
     - name: Push to NuGet
+      if: github.event_name == 'release'
       run: dotnet nuget push "*.nupkg" --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
