@@ -26,8 +26,8 @@ jobs:
 
     - name: Set VERSION variable from tag
       run: | 
-        echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
-        echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+        TAG=${{github.event.release.tag_name}}
+        echo "VERSION=${TAG#v}" >> $GITHUB_ENV
 
     - name: Build
       run: dotnet build -c Release${{github.event.release.tag_name && ' -p:Version='}}${{github.event.release.tag_name && env.VERSION}}
