@@ -120,18 +120,33 @@ public static class EvaluatorHandlers
             }
             else if (evaluator.Context != null && evaluator.Context?.ContainsKey(node?.Value))
             {
-                return evaluator.Context?[node?.Value];
+                var result = evaluator.Context?[node?.Value];
+                var resultType = result?.GetType();
+                if (_invokableTypes.Contains(resultType) || resultType?.IsGenericType && _invokableTypes.Contains(resultType?.GetGenericTypeDefinition()))
+                {
+                    return await result?.Invoke();
+                }
+                if (result != null && typeof(Task).IsAssignableFrom(resultType))
+                {
+                    return await result;
+                }
+                return result;
             }
             else return null;
         }
         var fromResult = await evaluator.EvalAsync(node?.From);
-        if (fromResult == null || node?.Value == null)
+        Type? fromResultType = fromResult?.GetType();
+        if (fromResultType == null || node?.Value == null)
         {
             return null;
         }
         else if (fromResult is List<dynamic> list)
         {
             fromResult = list.First();
+        }
+        else if (fromResultType!.IsGenericType && fromResultType.GetGenericTypeDefinition() == typeof(List<>))
+        {
+            fromResult = fromResult?.First();
         }
         else if (fromResult is Dictionary<string, dynamic> dict)
         {
@@ -142,11 +157,10 @@ public static class EvaluatorHandlers
             }
             else return null;
         }
-        else if (fromResult != null && node?.Value != null && node!.Value is string)
+        else if ((fromResultType.IsGenericType || fromResultType != null) && node?.Value != null && node!.Value is string)
         {
             // Try to access builtin properties
-            Type? type = fromResult?.GetType();
-            PropertyInfo? propertyInfo = type?.GetProperty($"{node!.Value}");
+            PropertyInfo? propertyInfo = fromResultType?.GetProperty($"{node!.Value}");
             return propertyInfo?.GetValue(fromResult);
         }
         return fromResult?[node?.Value];
@@ -252,4 +266,12 @@ public static class EvaluatorHandlers
         { "FunctionCall", FunctionCallAsync },
         { "UnaryExpression", UnaryExpressionAsync }
     };
+
+    private static readonly HashSet<Type> _invokableTypes =
+     [
+         typeof(Action), typeof(Action<>), typeof(Action<,>),    // etc
+         typeof(Func<>), typeof(Func<,>), typeof(Func<,,>),      // etc
+     ];
 }
+
+

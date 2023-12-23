@@ -14,6 +14,30 @@ The Grammar can be expanded by adding new operators, functions and transforms.
 
 
 ```csharp
+// Native way of defining a context
+var context = new Dictionary<string, dynamic> {
+    { "name", new Dictionary<string, dynamic> {
+        { "first", "Sterling" },
+        { "last", "Archer" }
+    }},
+    { "assoc", new List<dynamic> {
+        new Dictionary<string, dynamic> {
+            { "first", "Lana" },
+            { "last", "Kane" }
+        },
+        new Dictionary<string, dynamic> {
+            { "first", "Cyril" },
+            { "last", "Figgis" }
+        },
+        new Dictionary<string, dynamic> {
+            { "first", "Pam" },
+            { "last", "Poovey" }
+        }
+    }},
+    { "age", 36 }
+};
+
+// By using Json.Net or System.Text.Json bindings
 string contextJson = 
 @"{
     ""name"": {
@@ -36,107 +60,110 @@ string contextJson =
     ],
     ""age"": 36
 }";
-// JsonDocument context = JsonDocument.Parse(contextJson).RootElement;
-Context context = new Context(contextJson)
+// with System.Text.Json
+JsonElement contextJsonElement = JsonDocument.Parse(contextJson).RootElement;
+Context context = new Context(contextJsonElement);
+// or with Json.Net
+JObject contextJObject = JObject.Parse(contextJson);
+Context context = new Context(contextJObject);
 
-// Use it with promises or synchronously:
+// Initialize Jexl
+var jexl = new Jexl();
+
+// Use it with asynchronously or synchronously:
 
 // Filter an array asynchronously...
-dynamic res = await jexl.eval('assoc[.first == "Lana"].last', context)
-Console.WriteLine(res) // Output: Kane
+await jexl.EvalAsync(@"assoc[.first == ""Lana""].last", context);
+// Kane
 
 // Or synchronously!
-console.log(jexl.evalSync('assoc[.first == "Lana"].last')) // Output: Kane
+jexl.Eval(@"assoc[.first == ""Lana""].last", context);
+// Kane
 
 // Do math
-await jexl.eval('age * (3 - 1)', context)
+await jexl.Eval(@"age * (3 - 1)", context);
 // 72
 
 // Concatenate
-await jexl.eval('name.first + " " + name["la" + "st"]', context)
+await jexl.EvalAsync(@"name.first + "" "" + name[""la"" + ""st""]", context);
 // "Sterling Archer"
 
 // Compound
-await jexl.eval(
+await jexl.EvalAsync(
   'assoc[.last == "Figgis"].first == "Cyril" && assoc[.last == "Poovey"].first == "Pam"',
   context
 )
 // true
 
-// Use array indexes
-await jexl.eval('assoc[1]', context)
-// { first: 'Cyril', last: 'Figgis' }
+// Use array indexes and return objects
+await jexl.EvalAsync(@"assoc[1]", context);
+// new Dictionary<string, dynamic> {
+//             { "first", "Cyril" },
+//             { "last", "Figgis" }
+//         }
+// 
 
 // Use conditional logic
-await jexl.eval('age > 62 ? "retired" : "working"', context)
+await jexl.EvalAsync(@"age > 62 ? ""retired"" : ""working""", context);
 // "working"
 
 // Transform
-jexl.addTransform('upper', (val) => val.toUpperCase())
-await jexl.eval('"duchess"|upper + " " + name.last|upper', context)
+jexl.Grammar.AddTransform("upper", (dynamic? val) => val?.ToString().ToUpper());
+await jexl.EvalAsync(@"""duchess""|upper + "" "" + name.last|upper", context);
 // "DUCHESS ARCHER"
 
 // Transform asynchronously, with arguments
-jexl.addTransform('getStat', async (val, stat) => dbSelectByLastName(val, stat))
+jexl.Grammar.AddTransform("getStat", async (dynamic?[] args) => await DbSelectByLastName(args[0], args[1]));
 try {
-  const res = await jexl.eval('name.last|getStat("weight")', context)
-  console.log(res) // Output: 184
+  await jexl.EvalAsync(@"name.last|getStat(""weight"")", context);
+  // Output: 184
 } catch (e) {
   console.log('Database Error', e.stack)
 }
 
 // Functions too, sync or async, args or no args
-jexl.addFunction('getOldestAgent', () => db.getOldestAgent())
-await jexl.eval('age == getOldestAgent().age', context)
+jexl.Grammar.AddFunction("getOldestAgent", GetOldestAgent);
+await jexl.EvalAsync(@"age == getOldestAgent().age", context);
 // false
 
 // Add your own (a)synchronous operators
 // Here's a case-insensitive string equality
-jexl.addBinaryOp(
-  '_=',
-  20,
-  (left, right) => left.toLowerCase() === right.toLowerCase()
-)
-await jexl.eval('"Guest" _= "gUeSt"')
+jexl.Grammar.AddBinaryOperator("_=", 20, (dynamic?[] args) => args[0]?.ToLower() == args[1]?.ToLower());
+await jexl.EvalAsync(@"""Guest"" _= ""gUeSt""");
 // true
 
 // Compile your expression once, evaluate many times!
 const { expr } = jexl
-const danger = expr`"Danger " + place` // Also: jexl.compile('"Danger " + place')
-danger.evalSync({ place: 'zone' }) // Danger zone
-danger.evalSync({ place: 'ZONE!!!' }) // Danger ZONE!!! (Doesn't recompile the expression!)
+var danger = jexl.CreateExpression(@"""Danger "" + place");
+await danger.EvalAsync(new Dictionary<string, dynamic> { { "place", "Zone" } }); // Danger zone
+await danger.EvalAsync(new Dictionary<string, dynamic> { { "place", "ZONE!!!" } }); // Danger ZONE!!! (Doesn't recompile the expression!)
 ```
 
 ## Play with it
 
 - [Jexl Playground](https://czosel.github.io/jexl-playground/) - An interactive Jexl sandbox by Christian Zosel [@czosel](https://github.com/czosel).
-- [Jexl on RunKit](https://npm.runkit.com/jexl) - JS sandbox with Jexl preloaded. Special thanks to Mike Cunneen [@cunneen](https://github.com/cunneen).
 
 ## Installation
 
-Jexl works on the backend, and on the frontend if bundled using a bundler like Parcel or Webpack.
+Install from NuGet:
 
-Install from npm:
+    Install-Package JexlNet
 
-    npm install jexl --save
+Add using statement:
 
-or yarn:
+    using JexlNet;
 
-    yarn add jexl
+And use it:
 
-and use it:
+```csharp
+var jexl = new Jexl();
+var result = jexl.Eval("1 + 1");
+```
 
-    const jexl = require('jexl')
 
 ## Async vs Sync: Which to use
 
-There is little performance difference between `eval` and `evalSync`. The functional
-difference is that, if `eval` is used, Jexl can be customized with asynchronous operators,
-transforms, and even wait for unresolved promises in the context object with zero additional
-overhead or handling on the programmer's part. `evalSync` eliminates those advantages,
-exposing the expression to raw Promise objects if any are returned as the result of a
-custom transform or operator. However, if your application doesn't require async methods,
-the `evalSync` API can be simpler to use.
+There is little performance difference between `EvalAsync` and `Eval`. Both support async functions and transforms. The only difference is that `EvalAsync` returns a `Task<dynamic>` and `Eval` returns a `dynamic`.
 
 ## All the details
 
@@ -152,7 +179,7 @@ the `evalSync` API can be simpler to use.
 | ---------------- | :----------: |
 | Add, Concat      |      +       |
 | Subtract         |      -       |
-| Multiply         |      \*      |
+| Multiply         |      *       |
 | Divide           |      /       |
 | Divide and floor |      //      |
 | Modulus          |      %       |
@@ -220,19 +247,20 @@ property name.
 
 Example context:
 
-```javascript
+```csharp
+var context = new Dictionary<string, dynamic> 
 {
-  name: {
-    first: "Malory",
-    last: "Archer"
-  },
-  exes: [
-    "Nikolai Jakov",
-    "Len Trexler",
-    "Burt Reynolds"
-  ],
-  lastEx: 2
-}
+    { "name", new Dictionary<string, dynamic> {
+        { "first", "Malory" },
+        { "last", "Archer" }
+    }},
+    { "exes", new List<string> {
+        "Nikolai Jakov",
+        "Len Trexler",
+        "Burt Reynolds"
+    }},
+    { "lastEx", 2 }
+};
 ```
 
 | Expression        | Result        |
@@ -251,18 +279,23 @@ for which the filter expression resulted in a truthy value.
 
 Example context:
 
-```javascript
+```csharp
+var context = new Dictionary<string, dynamic>
 {
-    employees: [
-        {first: 'Sterling', last: 'Archer', age: 36},
-        {first: 'Malory', last: 'Archer', age: 75},
-        {first: 'Lana', last: 'Kane', age: 33},
-        {first: 'Cyril', last: 'Figgis', age: 45},
-        {first: 'Cheryl', last: 'Tunt', age: 28}
-    ],
-    retireAge: 62
-}
+    {
+        "employees", new List<dynamic>
+        {
+            new Dictionary<string, dynamic> { { "first", "Sterling" }, { "last", "Archer" }, { "age", 36 } },
+            new Dictionary<string, dynamic> { { "first", "Malory" }, { "last", "Archer" }, { "age", 75 } },
+            new Dictionary<string, dynamic> { { "first", "Lana" }, { "last", "Kane" }, { "age", 33 } },
+            new Dictionary<string, dynamic> { { "first", "Cyril" }, { "last", "Figgis" }, { "age", 45 } },
+            new Dictionary<string, dynamic> { { "first", "Cheryl" }, { "last", "Tunt" }, { "age", 28 } }
+        }
+    },
+    { "retireAge", 62 }
+};
 ```
+
 
 | Expression                                    | Result                                                                                |
 | --------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -280,9 +313,9 @@ followed by anything else passed to it in the expression. They must return
 either the transformed value, or a Promise that resolves with the transformed
 value. Add them with `jexl.addTransform(name, function)`.
 
-```javascript
-jexl.addTransform('split', (val, char) => val.split(char))
-jexl.addTransform('lower', (val) => val.toLowerCase())
+```csharp
+jexl.Grammar.AddTransform("split", (dynamic?[] args) => args[0]?.Split(args[1]));
+jexl.Grammar.AddTransform("lower", (dynamic? val) => val?.ToLower());
 ```
 
 | Expression                                 | Result                |
@@ -290,36 +323,6 @@ jexl.addTransform('lower', (val) => val.toLowerCase())
 | "Pam Poovey"&#124;lower&#124;split(' ')[1] | poovey                |
 | "password==guest"&#124;split('=' + '=')    | ['password', 'guest'] |
 
-#### Advanced Transforms
-
-Using Transforms, Jexl can support additional string formats like embedded
-JSON, YAML, XML, and more. The following, with the help of the
-[xml2json](https://github.com/buglabs/node-xml2json) module, allows XML to be
-traversed just as easily as plain javascript objects:
-
-```javascript
-const xml2json = require('xml2json')
-
-jexl.addTransform('xml', (val) => xml2json.toJson(val, { object: true }))
-
-const context = {
-  xmlDoc: `
-    <Employees>
-      <Employee>
-        <FirstName>Cheryl</FirstName>
-        <LastName>Tunt</LastName>
-      </Employee>
-      <Employee>
-        <FirstName>Cyril</FirstName>
-        <LastName>Figgis</LastName>
-      </Employee>
-    </Employees>`
-}
-
-var expr = 'xmlDoc|xml.Employees.Employee[.LastName == "Figgis"].FirstName'
-
-jexl.eval(expr, context).then(console.log) // Output: Cyril
-```
 
 ### Functions
 
@@ -330,9 +333,9 @@ multiple equally-important inputs. They can be added with
 `jexl.addFunction(name, function)`. Like transforms, functions can return a
 value, or a Promise that resolves to the resulting value.
 
-```javascript
-jexl.addFunction('min', Math.min)
-jexl.addFunction('expensiveQuery', async () => db.runExpensiveQuery())
+```csharp
+jexl.Grammar.AddFunction("min", (List<dynamic?> args) => args.Min());
+jexl.Grammar.AddFunction("expensiveQuery", Db.RunExpensiveQuery);
 ```
 
 | Expression                                    | Result                    |
@@ -342,139 +345,23 @@ jexl.addFunction('expensiveQuery', async () => db.runExpensiveQuery())
 
 ### Context
 
-Variable contexts are straightforward Javascript objects that can be accessed
-in the expression, but they have a hidden feature: they can include a Promise
-object, and when that property is used, Jexl will wait for the Promise to
-resolve and use that value!
+Variable contexts are Dictionary objects that can be accessed
+in the expression, but they have a hidden feature: they can include an invocable function. This function will be called with the name of the variable being accessed, and the result will be used as the value of that variable. This allows for dynamic variable resolution, such as accessing a database or file system.
 
-## API
+```csharp
 
-### Jexl
-
-#### jexl.Jexl
-
-A reference to the Jexl constructor. To maintain separate instances of Jexl
-with each maintaining its own set of transforms, simply re-instantiate with
-`new jexl.Jexl()`.
-
-#### jexl.addBinaryOp(_{string} operator_, _{number} precedence_, _{function} fn_, _{boolean} [manualEval]_)
-
-Adds a binary operator to the Jexl instance. A binary operator is one that
-considers the values on both its left and right, such as "+" or "==", in order
-to calculate a result. The precedence determines the operator's position in the
-order of operations (please refer to `lib/grammar.js` to see the precedence of
-existing operators). The provided function will be called with two arguments:
-a left value and a right value. It should return either the resulting value,
-or a Promise that resolves to the resulting value.
-
-If `manualEval` is true, the `left` and `right` arguments will be wrapped in
-objects with an `eval` function. Calling `left.eval()` or `right.eval()` will
-return a promise that resolves to that operand's actual value. This is useful to
-conditionally evaluate operands, and is how `&&` and `||` work.
-
-#### jexl.addUnaryOp(_{string} operator_, _{function} fn_)
-
-Adds a unary operator to the Jexl instance. A unary operator is one that
-considers only the value on its right, such as "!", in order to calculate a
-result. The provided function will be called with one argument: the value to
-the operator's right. It should return either the resulting value, or a Promise
-that resolves to the resulting value.
-
-#### jexl.addFunction(_{string} name_, \_{function} func)
-
-Adds an expression function to this Jexl instance. See the **Functions**
-section above for information on the structure of an expression function.
-
-#### jexl.addFunctions(_{{}} map_)
-
-Adds multiple functions from a supplied map of function name to expression
-function.
-
-#### jexl.addTransform(_{string} name_, _{function} transform_)
-
-Adds a transform function to this Jexl instance. See the **Transforms**
-section above for information on the structure of a transform function.
-
-#### jexl.addTransforms(_{{}} map_)
-
-Adds multiple transforms from a supplied map of transform name to transform
-function.
-
-#### jexl.compile(_{string} expression_)
-
-Constructs an Expression object around the given Jexl expression string.
-Expression objects allow a Jexl expression to be compiled only once but
-evaluated many times. See the Expression API below. Note that the only
-difference between this function and `jexl.createExpression` is that this
-function will immediately compile the expression, and throw any errors
-associated with invalid expression syntax.
-
-#### jexl.createExpression(_{string} expression_)
-
-Constructs an Expression object around the given Jexl expression string.
-Expression objects allow a Jexl expression to be compiled only once but
-evaluated many times. See the Expression API below.
-
-#### jexl.getTransform(_{string} name_)
-
-**Returns `{function|undefined}`.** Gets a previously set transform function,
-or `undefined` if no function of that name exists.
-
-#### jexl.eval(_{string} expression_, _{{}} [context]_)
-
-**Returns `{Promise<*>}`.** Evaluates an expression. The context map is optional.
-
-#### jexl.evalSync(_{string} expression_, _{{}} [context]_)
-
-**Returns `{*}`.** Evaluates an expression and returns the result. The context map
-is optional.
-
-#### jexl.expr: _tagged template literal_
-
-A convenient bit of syntactic sugar for `jexl.createExpression`
-
-```javascript
-const someNumber = 10
-const expression = jexl.expr`5 + ${someNumber}`
-console.log(expression.evalSync()) // 15
+```csharp	
+var func = new Func<Task<object?>>(async () =>
+    {
+        await Task.Delay(100);
+        return "bar";
+    });
+var context = new Dictionary<string, dynamic> {
+            { "foo", func }
+        };
+await jexl.EvalAsync(@"foo", context);
+// returns "bar" after 100ms
 ```
-
-Note that `expr` will stay bound to its associated Jexl instance even if it's
-pulled out of context:
-
-```javascript
-const { expr } = jexl
-jexl.addTransform('double', (val) => val * 2)
-const expression = expr`2|double`
-console.log(expression.evalSync()) // 4
-```
-
-#### jexl.removeOp(_{string} operator_)
-
-Removes a binary or unary operator from the Jexl instance. For example, "^" can
-be passed to eliminate the "power of" operator.
-
-### Expression
-
-Expression objects are created via `jexl.createExpression`, `jexl.compile`, or
-`jexl.expr`, and are a convenient way to ensure jexl expressions compile only
-once, even if they're evaluated multiple times.
-
-#### expression.compile()
-
-**Returns self `{Expression}`.** Forces the expression to compile, even if it
-was compiled before. Note that each compile will happen with the latest grammar
-and transforms from the associated Jexl instance.
-
-#### expression.eval(_{{}} [context]_)
-
-**Returns `{Promise<*>}`.** Evaluates the expression. The context map is
-optional.
-
-#### expression.evalSync(_{{}} [context]_)
-
-**Returns `{*}`.** Evaluates the expression and returns the result. The context
-map is optional.
 
 ## Other implementations
 
@@ -488,4 +375,4 @@ JexlNet is licensed under the MIT license. Please see `LICENSE` for full details
 
 ## Credits
 
-This library is a port of [TomFrost's JEXL library](https://github.com/TomFrost/Jexl) so all credit goes to him and the contributors of that library.
+This library is a port of [TomFrost's JEXL library](https://github.com/TomFrost/Jexl) so all credit goes to the author and the contributors of that library.
