@@ -25,7 +25,7 @@ public class ExpressionUnitTest
     {
         var jexl = new Jexl();
         var expr = jexl.CreateExpression("foo");
-        var result = expr.Eval(new Dictionary<string, dynamic> { { "foo", "bar" } });
+        var result = expr.Eval(new Dictionary<string, dynamic?> { { "foo", "bar" } });
         Assert.Equal("bar", result);
     }
 
@@ -34,7 +34,7 @@ public class ExpressionUnitTest
     {
         var jexl = new Jexl();
         var expr = jexl.CreateExpression("foo");
-        var result = await expr.EvalAsync(new Dictionary<string, dynamic> { { "foo", "bar" } });
+        var result = await expr.EvalAsync(new Dictionary<string, dynamic?> { { "foo", "bar" } });
         Assert.Equal("bar", result);
     }
 

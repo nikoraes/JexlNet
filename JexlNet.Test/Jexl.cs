@@ -1,3 +1,6 @@
+using System.Text.Json;
+using Newtonsoft.Json.Linq;
+
 namespace JexlNet.Test;
 
 public class JexlUnitTest
@@ -108,7 +111,7 @@ public class JexlUnitTest
     [Fact]
     public async void FullSample()
     {
-        var context = new Dictionary<string, dynamic> {
+        var context = new Dictionary<string, dynamic?> {
             { "name", new Dictionary<string, dynamic> {
                 { "first", "Sterling" },
                 { "last", "Archer" }
@@ -155,7 +158,7 @@ public class JexlUnitTest
     [Fact]
     public async void FullSample2()
     {
-        var context = new Dictionary<string, dynamic> {
+        var context = new Dictionary<string, dynamic?> {
             { "name", new Dictionary<string, dynamic> {
                 { "first", "Sterling" },
                 { "last", "Archer" }
@@ -227,9 +230,9 @@ public class JexlUnitTest
     [InlineData("exes[lastEx - 1]", "Len Trexler")]
     public async void AccessIdentifiers(string input, string expected)
     {
-        var context = new Dictionary<string, dynamic>
+        var context = new Dictionary<string, dynamic?>
         {
-            { "name", new Dictionary<string, dynamic> {
+            { "name", new Dictionary<string, dynamic?> {
                 { "first", "Malory" },
                 { "last", "Archer" }
             }},
@@ -259,9 +262,9 @@ public class JexlUnitTest
     {
         var jexl = new Jexl();
         var danger = jexl.CreateExpression(@"""Danger "" + place");
-        var res1 = await danger.EvalAsync(new Dictionary<string, dynamic> { { "place", "Zone" } });
+        var res1 = await danger.EvalAsync(new Dictionary<string, dynamic?> { { "place", "Zone" } });
         Assert.Equal("Danger Zone", res1);
-        var res2 = await danger.EvalAsync(new Dictionary<string, dynamic> { { "place", "ZONE!!!" } });
+        var res2 = await danger.EvalAsync(new Dictionary<string, dynamic?> { { "place", "ZONE!!!" } });
         Assert.Equal("Danger ZONE!!!", res2);
     }
 
@@ -273,7 +276,7 @@ public class JexlUnitTest
             await Task.Delay(100);
             return "bar";
         });
-        var context = new Dictionary<string, dynamic> {
+        var context = new Dictionary<string, dynamic?> {
             { "foo", func }
         };
         var jexl = new Jexl();
@@ -292,12 +295,75 @@ public class JexlUnitTest
                 { "bar", "baz" }
             };
         });
-        var context = new Dictionary<string, dynamic> {
+        var context = new Dictionary<string, dynamic?> {
             { "foo", func }
         };
         var jexl = new Jexl();
         var res = await jexl.EvalAsync(@"foo.bar", context);
         Assert.Equal("baz", res);
+    }
 
+    [Fact]
+    public async void SupportJsonContext()
+    {
+        string contextJson =
+        @"{
+            ""name"": {
+                ""first"": ""Sterling"",
+                ""last"": ""Archer""
+            },
+            ""assoc"": [
+                {
+                    ""first"": ""Lana"",
+                    ""last"": ""Kane""
+                },
+                {
+                    ""first"": ""Cyril"",
+                    ""last"": ""Figgis""
+                },
+                {
+                    ""first"": ""Pam"",
+                    ""last"": ""Poovey""
+                }
+            ],
+            ""age"": 36
+        }";
+        JsonElement contextJsonElement = JsonDocument.Parse(contextJson).RootElement;
+        Dictionary<string, dynamic?> context = ContextHelpers.ConvertJsonElement(contextJsonElement);
+        var jexl = new Jexl();
+        var res = await jexl.EvalAsync(@"assoc[.first == 'Cyril'].last", context);
+        Assert.Equal("Figgis", res);
+    }
+
+    [Fact]
+    public async void SupportJsonNetContext()
+    {
+        string contextJson =
+        @"{
+            ""name"": {
+                ""first"": ""Sterling"",
+                ""last"": ""Archer""
+            },
+            ""assoc"": [
+                {
+                    ""first"": ""Lana"",
+                    ""last"": ""Kane""
+                },
+                {
+                    ""first"": ""Cyril"",
+                    ""last"": ""Figgis""
+                },
+                {
+                    ""first"": ""Pam"",
+                    ""last"": ""Poovey""
+                }
+            ],
+            ""age"": 36
+        }";
+        JObject contextJsonElement = JObject.Parse(contextJson);
+        Dictionary<string, dynamic?>? context = JsonNet.ContextHelpers.ConvertJObject(contextJsonElement);
+        var jexl = new Jexl();
+        var res = await jexl.EvalAsync(@"assoc[.first == 'Cyril'].last", context);
+        Assert.Equal("Figgis", res);
     }
 }

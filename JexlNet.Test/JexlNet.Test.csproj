@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\JexlNet\JexlNet.csproj" />
+    <ProjectReference Include="..\JexlNet.JsonNet\JexlNet.JsonNet.csproj" />
   </ItemGroup>
 
 </Project>
