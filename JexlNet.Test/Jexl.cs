@@ -220,6 +220,31 @@ public class JexlUnitTest
         Assert.False(res12);
     }
 
+    [Theory]
+    [InlineData("name.first", "Malory")]
+    [InlineData("name['la' + 'st']", "Archer")]
+    [InlineData("exes[2]", "Burt Reynolds")]
+    [InlineData("exes[lastEx - 1]", "Len Trexler")]
+    public async void AccessIdentifiers(string input, string expected)
+    {
+        var context = new Dictionary<string, dynamic>
+        {
+            { "name", new Dictionary<string, dynamic> {
+                { "first", "Malory" },
+                { "last", "Archer" }
+            }},
+            { "exes", new List<string> {
+                "Nikolai Jakov",
+                "Len Trexler",
+                "Burt Reynolds"
+            }},
+            { "lastEx", 2 }
+        };
+        var jexl = new Jexl();
+        var result = await jexl.EvalAsync(input, context);
+        Assert.Equal(expected, result);
+    }
+
     [Fact]
     public async void AllowAddBinaryOp()
     {
