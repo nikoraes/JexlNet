@@ -3,6 +3,7 @@
     <PackageId>JexlNet</PackageId>
     <PackageTags>Jexl JexlNet expression mapping transformation</PackageTags>
     <Description>A C# library that allows to evaluate JEXL expressions.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
