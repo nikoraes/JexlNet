@@ -4,6 +4,7 @@
     <PackageTags>Jexl JexlNet expression mapping transformation</PackageTags>
     <Description>Powerful context-based expression parser and evaluator in C# using JEXL (Javascript Expression Language) expressions.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
