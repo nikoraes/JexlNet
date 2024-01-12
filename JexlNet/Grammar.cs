@@ -452,6 +452,30 @@ public class Grammar
     ///</summary>
     public readonly Dictionary<string, Func<List<dynamic?>, Task<object>>> Transforms = new();
 
+    ///<summary>
+    ///Add a single function call with no arguments to the grammar (only for functions).
+    ///</summary>
+    private void AddFunctionCall<TResult>(string poolName, string name, Func<TResult> func)
+    {
+        Dictionary<string, Func<List<dynamic?>, Task<object>>> pool;
+        if (poolName == "functions")
+        {
+            pool = Functions;
+        }
+        // Transforms always need an input
+        else throw new Exception("Invalid pool name");
+        if (typeof(Task).IsAssignableFrom(typeof(TResult)))
+        {
+            pool.Add(name, args => (Task<object>)((dynamic)func)());
+        }
+        else
+        {
+            pool.Add(name, args => Task.FromResult((object)((dynamic)func)()));
+        }
+    }
+    ///<summary>
+    ///Add a single function call with a single argument (can be an array or list) to the grammar.
+    ///</summary>
     private void AddFunctionCall<TInput, TResult>(string poolName, string name, Func<TInput, TResult> func)
     {
         Dictionary<string, Func<List<dynamic?>, Task<object>>> pool;
@@ -516,38 +540,23 @@ public class Grammar
             });
         }
     }
-    private void AddFunctionCall<TResult>(string poolName, string name, Func<TResult> func)
-    {
-        Dictionary<string, Func<List<dynamic?>, Task<object>>> pool;
-        if (poolName == "functions")
-        {
-            pool = Functions;
-        }
-        // Transforms always need an input
-        else throw new Exception("Invalid pool name");
-        if (typeof(Task).IsAssignableFrom(typeof(TResult)))
-        {
-            pool.Add(name, args => (Task<object>)((dynamic)func)());
-        }
-        else
-        {
-            pool.Add(name, args => Task.FromResult((object)((dynamic)func)()));
-        }
-    }
-    private void AddFunctionCall<TInput, TInput2, TResult>(string poolName, string name, Func<TInput, TInput2, TResult> func)
+    ///<summary>
+    ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+    ///</summary>
+    private void AddFunctionCall<TInput, TInput2, TResult>(string poolName, string name, Func<TInput?, TInput2?, TResult> func)
     {
         // Define a new function that takes a single input parameter (array)
-        TResult newFunc(object[] args)
+        TResult newFunc(dynamic?[] args)
         {
-            TInput input1 = (TInput)args[0];
-            TInput2 input2;
+            TInput? input1 = (TInput?)args[0];
+            TInput2? input2 = default;
             if (func.Method.GetParameters()[1].ParameterType.IsArray)
             {
                 input2 = (TInput2)((dynamic)args.Skip(1).ToArray());
             }
-            else
+            else if (args.Length > 1)
             {
-                input2 = (TInput2)args[1];
+                input2 = (TInput2?)args[1];
             }
 
             // Call the original function with both inputs joined as an array
@@ -557,13 +566,10 @@ public class Grammar
         // Call the existing method with the new function
         AddFunctionCall(poolName, name, (Func<object[], TResult>)newFunc);
     }
-    private void AddFunctionCalls<TInput, TResult>(string poolName, Dictionary<string, Func<TInput, TResult>> funcsDict)
-    {
-        foreach (var kv in funcsDict)
-        {
-            AddFunctionCall(poolName, kv.Key, kv.Value);
-        }
-    }
+
+    ///<summary>
+    ///Add a dictionary of function calls with no arguments to the grammar (only for functions).
+    ///</summary>
     private void AddFunctionCalls<TResult>(string poolName, Dictionary<string, Func<TResult>> funcsDict)
     {
         foreach (var kv in funcsDict)
@@ -571,13 +577,42 @@ public class Grammar
             AddFunctionCall(poolName, kv.Key, kv.Value);
         }
     }
+    ///<summary>
+    ///Add a dictionary of function calls with a single argument (can be an array or list) to the grammar.
+    ///</summary>
+    private void AddFunctionCalls<TInput, TResult>(string poolName, Dictionary<string, Func<TInput, TResult>> funcsDict)
+    {
+        foreach (var kv in funcsDict)
+        {
+            AddFunctionCall(poolName, kv.Key, kv.Value);
+        }
+    }
+    ///<summary>
+    ///Add a dictionary of function calls with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+    ///</summary>
+    private void AddFunctionCalls<TInput, TInput2, TResult>(string poolName, Dictionary<string, Func<TInput, TInput2, TResult>> funcsDict)
+    {
+        foreach (var kv in funcsDict)
+        {
+            AddFunctionCall(poolName, kv.Key, kv.Value);
+        }
+    }
 
-    public void AddFunction<TInput, TResult>(string name, Func<TInput, TResult> func) => AddFunctionCall("functions", name, func);
+    ///<summary> Add a function to the grammar with no arguments. </summary>
     public void AddFunction<TResult>(string name, Func<TResult> func) => AddFunctionCall("functions", name, func);
-    public void AddFunctions<TInput, TResult>(Dictionary<string, Func<TInput, TResult>> funcsDict) => AddFunctionCalls("functions", funcsDict);
+    ///<summary> Add a function to the grammar with a single argument (can be an array or list). </summary>
+    public void AddFunction<TInput, TResult>(string name, Func<TInput, TResult> func) => AddFunctionCall("functions", name, func);
+    ///<summary> Add a dictionary of functions with no arguments to the grammar. </summary>
     public void AddFunctions<TResult>(Dictionary<string, Func<TResult>> funcsDict) => AddFunctionCalls("functions", funcsDict);
+    ///<summary> Add a dictionary of functions with a single argument (can be an array or list) to the grammar. </summary>
+    public void AddFunctions<TInput, TResult>(Dictionary<string, Func<TInput, TResult>> funcsDict) => AddFunctionCalls("functions", funcsDict);
 
+    ///<summary> Add a transform with a single argument to the grammar. </summary>
     public void AddTransform<TInput, TResult>(string name, Func<TInput, TResult> func) => AddFunctionCall("transforms", name, func);
+    ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
     public void AddTransform<TInput, TInput2, TResult>(string name, Func<TInput, TInput2, TResult> func) => AddFunctionCall("transforms", name, func);
+    ///<summary> Add a dictionary of transforms with a single argument (can be an array or list) to the grammar. </summary>
     public void AddTransforms<TInput, TResult>(Dictionary<string, Func<TInput, TResult>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
+    ///<summary> Add a dictionary of transforms with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+    public void AddTransforms<TInput, TInput2, TResult>(Dictionary<string, Func<TInput, TInput2, TResult>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
 }
