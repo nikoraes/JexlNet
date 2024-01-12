@@ -132,9 +132,9 @@ public class JexlUnitTest
     public void AllowsTransformsToBeAddedInBatch2()
     {
         var jexl = new Jexl();
-        static dynamic? split(dynamic? arg0, dynamic?[] args) => arg0?.Split(args[0]);
-        static dynamic? lower(dynamic? arg0, dynamic?[] args) => arg0?.ToLower();
-        jexl.Grammar.AddTransforms(new Dictionary<string, Func<dynamic?, dynamic?[], object?>> {
+        static dynamic? split(dynamic? arg0, dynamic?[]? args) => arg0?.Split(args?[0]);
+        static dynamic? lower(dynamic? arg0, dynamic?[]? args) => arg0?.ToLower();
+        jexl.Grammar.AddTransforms(new Dictionary<string, Func<dynamic?, dynamic?[]?, object?>> {
             { "split", split },
             { "lower", lower }
         });
