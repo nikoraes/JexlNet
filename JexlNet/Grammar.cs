@@ -590,7 +590,7 @@ public class Grammar
     ///<summary>
     ///Add a dictionary of function calls with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
     ///</summary>
-    private void AddFunctionCalls<TInput, TInput2, TResult>(string poolName, Dictionary<string, Func<TInput, TInput2, TResult>> funcsDict)
+    private void AddFunctionCalls<TInput, TInput2, TResult>(string poolName, Dictionary<string, Func<TInput?, TInput2?, TResult>> funcsDict)
     {
         foreach (var kv in funcsDict)
         {
@@ -610,9 +610,9 @@ public class Grammar
     ///<summary> Add a transform with a single argument to the grammar. </summary>
     public void AddTransform<TInput, TResult>(string name, Func<TInput, TResult> func) => AddFunctionCall("transforms", name, func);
     ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
-    public void AddTransform<TInput, TInput2, TResult>(string name, Func<TInput, TInput2, TResult> func) => AddFunctionCall("transforms", name, func);
+    public void AddTransform<TInput, TInput2, TResult>(string name, Func<TInput?, TInput2?, TResult> func) => AddFunctionCall("transforms", name, func);
     ///<summary> Add a dictionary of transforms with a single argument (can be an array or list) to the grammar. </summary>
     public void AddTransforms<TInput, TResult>(Dictionary<string, Func<TInput, TResult>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
     ///<summary> Add a dictionary of transforms with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
-    public void AddTransforms<TInput, TInput2, TResult>(Dictionary<string, Func<TInput, TInput2, TResult>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
+    public void AddTransforms<TInput, TInput2, TResult>(Dictionary<string, Func<TInput?, TInput2?, TResult>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
 }
