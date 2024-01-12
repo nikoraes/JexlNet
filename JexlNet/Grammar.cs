@@ -523,10 +523,6 @@ public class Grammar
         {
             pool = Functions;
         }
-        else if (poolName == "transforms")
-        {
-            pool = Transforms;
-        }
         else throw new Exception("Invalid pool name");
         if (typeof(Task).IsAssignableFrom(typeof(TResult)))
         {
