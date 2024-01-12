@@ -523,6 +523,7 @@ public class Grammar
         {
             pool = Functions;
         }
+        // Transforms always need an input
         else throw new Exception("Invalid pool name");
         if (typeof(Task).IsAssignableFrom(typeof(TResult)))
         {
@@ -532,6 +533,29 @@ public class Grammar
         {
             pool.Add(name, args => Task.FromResult((object)((dynamic)func)()));
         }
+    }
+    private void AddFunctionCall<TInput, TInput2, TResult>(string poolName, string name, Func<TInput, TInput2, TResult> func)
+    {
+        // Define a new function that takes a single input parameter (array)
+        TResult newFunc(object[] args)
+        {
+            TInput input1 = (TInput)args[0];
+            TInput2 input2;
+            if (func.Method.GetParameters()[1].ParameterType.IsArray)
+            {
+                input2 = (TInput2)((dynamic)args.Skip(1).ToArray());
+            }
+            else
+            {
+                input2 = (TInput2)args[1];
+            }
+
+            // Call the original function with both inputs joined as an array
+            return func(input1, input2);
+        }
+
+        // Call the existing method with the new function
+        AddFunctionCall(poolName, name, (Func<object[], TResult>)newFunc);
     }
     private void AddFunctionCalls<TInput, TResult>(string poolName, Dictionary<string, Func<TInput, TResult>> funcsDict)
     {
@@ -554,5 +578,6 @@ public class Grammar
     public void AddFunctions<TResult>(Dictionary<string, Func<TResult>> funcsDict) => AddFunctionCalls("functions", funcsDict);
 
     public void AddTransform<TInput, TResult>(string name, Func<TInput, TResult> func) => AddFunctionCall("transforms", name, func);
+    public void AddTransform<TInput, TInput2, TResult>(string name, Func<TInput, TInput2, TResult> func) => AddFunctionCall("transforms", name, func);
     public void AddTransforms<TInput, TResult>(Dictionary<string, Func<TInput, TResult>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
 }

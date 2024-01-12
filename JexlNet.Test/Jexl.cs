@@ -99,12 +99,18 @@ public class JexlUnitTest
         jexl.Grammar.AddTransform("add2", (dynamic? val) => val + 2);
         var result2 = jexl.Eval("2|add1|add2");
         Assert.Equal(5, result2);
+        var res3 = jexl.Eval(@"""password==guest""|split('=' + '=')");
+        Assert.Equal(new List<dynamic?> { "password", "guest" }, res3);
         jexl.Grammar.AddTransform("split", (dynamic?[] args) => args[0]?.Split(args[1]));
         jexl.Grammar.AddTransform("lower", (dynamic? val) => val?.ToLower());
-        var res3 = jexl.Eval(@"""Pam Poovey""|lower|split(' ')[1]");
-        Assert.Equal("poovey", res3);
-        var res4 = jexl.Eval(@"""password==guest""|split('=' + '=')");
-        Assert.Equal(new List<dynamic?> { "password", "guest" }, res4);
+        var res4 = jexl.Eval(@"""Pam Poovey""|lower|split(' ')[1]");
+        Assert.Equal("poovey", res4);
+        jexl.Grammar.AddTransform("split2", (dynamic arg0, dynamic?[] args) => arg0?.Split(args[0]));
+        var res5 = jexl.Eval(@"""Pam Poovey""|lower|split2(' ')[1]");
+        Assert.Equal("poovey", res5);
+        jexl.Grammar.AddTransform("split3", (dynamic arg0, dynamic splitchar) => arg0?.Split(splitchar));
+        var res6 = jexl.Eval(@"""Pam Poovey""|lower|split3(' ')[1]");
+        Assert.Equal("poovey", res6);
     }
 
 
