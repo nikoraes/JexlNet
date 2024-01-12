@@ -168,7 +168,7 @@ internal static class ParserHandlers
     ///<param name="node">A token object</param>
     internal static void ObjectKey(this Parser parser, Node? node)
     {
-        // TODO: check whether node.Value is a literal that can be used as a key
+        // TODO: check whether node.Value is a literal that can be used as a key and cast to string
         parser.CursorObjectKey = node?.Value;
     }
 
@@ -216,16 +216,6 @@ internal static class ParserHandlers
     {
         parser.Cursor!.Alternate = node;
     }
-
-
-    /**
-     * Handles a completed consequent subexpression of a ternary operator.
-     * @param {{type: <string>}} ast The subexpression tree
-     */
-    /* exports.ternaryMid = function(ast)
-    {
-        this._cursor.consequent = ast
-    } */
 
     ///<summary>
     ///Handles a completed consequent subexpression of a ternary operator.
