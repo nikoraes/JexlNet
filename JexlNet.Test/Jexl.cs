@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Newtonsoft.Json.Linq;
 
@@ -100,13 +101,60 @@ public class JexlUnitTest
         var result2 = jexl.Eval("2|add1|add2");
         Assert.Equal(5, result2);
         jexl.Grammar.AddTransform("split", (dynamic?[] args) => args[0]?.Split(args[1]));
+        var res3 = jexl.Eval(@"""password==guest""|split('=' + '=')");
+        Assert.Equal(new List<dynamic?> { "password", "guest" }, res3);
         jexl.Grammar.AddTransform("lower", (dynamic? val) => val?.ToLower());
-        var res3 = jexl.Eval(@"""Pam Poovey""|lower|split(' ')[1]");
-        Assert.Equal("poovey", res3);
-        var res4 = jexl.Eval(@"""password==guest""|split('=' + '=')");
-        Assert.Equal(new List<dynamic?> { "password", "guest" }, res4);
+        var res4 = jexl.Eval(@"""Pam Poovey""|lower|split(' ')[1]");
+        Assert.Equal("poovey", res4);
+        jexl.Grammar.AddTransform("split2", (dynamic arg0, dynamic?[] args) => arg0?.Split(args[0]));
+        var res5 = jexl.Eval(@"""Pam Poovey""|lower|split2(' ')[1]");
+        Assert.Equal("poovey", res5);
+        jexl.Grammar.AddTransform("split3", (dynamic arg0, dynamic splitchar) => arg0?.Split(splitchar));
+        var res6 = jexl.Eval(@"""Pam Poovey""|lower|split3(' ')[1]");
+        Assert.Equal("poovey", res6);
     }
 
+    [Fact]
+    public void AllowsTransformsToBeAddedInBatch()
+    {
+        var jexl = new Jexl();
+        static dynamic? split(dynamic?[] args) => args[0]?.Split(args[1]);
+        static dynamic? lower(dynamic?[] args) => args[0]?.ToLower();
+        jexl.Grammar.AddTransforms(new Dictionary<string, Func<dynamic?[], object?>> {
+            { "split", split },
+            { "lower", lower }
+        });
+        var result = jexl.Eval(@"""Pam Poovey""|lower|split(' ')[1]");
+        Assert.Equal("poovey", result);
+    }
+
+    [Fact]
+    public void AllowsTransformsToBeAddedInBatch2()
+    {
+        var jexl = new Jexl();
+        static dynamic? split(dynamic? arg0, dynamic?[] args) => arg0?.Split(args[0]);
+        static dynamic? lower(dynamic? arg0, dynamic?[] args) => arg0?.ToLower();
+        jexl.Grammar.AddTransforms(new Dictionary<string, Func<dynamic?, dynamic?[], object?>> {
+            { "split", split },
+            { "lower", lower }
+        });
+        var result = jexl.Eval(@"""Pam Poovey""|lower|split(' ')[1]");
+        Assert.Equal("poovey", result);
+    }
+
+    [Fact]
+    public void AllowsTransformsToBeAddedInBatch3()
+    {
+        var jexl = new Jexl();
+        static dynamic? split(dynamic? arg0, dynamic? arg) => arg0?.Split(arg);
+        static dynamic? lower(dynamic? arg0, dynamic? arg) => arg0?.ToLower();
+        jexl.Grammar.AddTransforms(new Dictionary<string, Func<dynamic?, dynamic?, object?>> {
+            { "split", split },
+            { "lower", lower }
+        });
+        var result = jexl.Eval(@"""Pam Poovey""|lower|split(' ')[1]");
+        Assert.Equal("poovey", result);
+    }
 
     [Fact]
     public async void FullSample()
@@ -282,7 +330,6 @@ public class JexlUnitTest
         var jexl = new Jexl();
         var res = await jexl.EvalAsync(@"foo", context);
         Assert.Equal("bar", res);
-
     }
 
     [Fact]

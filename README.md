@@ -313,11 +313,15 @@ The first argument is the value to be transformed, and the rest are any other
 arguments passed to the transform in the expression. They must return either
 the transformed value, or a Promise that resolves with the transformed
 value. Add them with `jexl.AddTransform(name, function)`.
-Arguments can be `dynamic?`, `dynamic?[]` or `List<dynamic?>`.
+Arguments can be `dynamic?`, `dynamic?[]` or `List<dynamic?>`. In case of 
+enumerables the first element is the value to be transformed and the rest 
+are the arguments. It is also possible to use a first `dynamic?` argument as 
+the value to be transformed and the rest as the arguments.
 
 ```csharp
-jexl.Grammar.AddTransform("split", (dynamic?[] args) => args[0]?.Split(args[1]));
 jexl.Grammar.AddTransform("lower", (dynamic? val) => val?.ToLower());
+jexl.Grammar.AddTransform("split", (dynamic?[] args) => args[0]?.Split(args[1]));
+jexl.Grammar.AddTransform("split", (dynamic? val, dynamic?[] args) => val?.Split(args[0]));
 ```
 
 | Expression                                 | Result                |
