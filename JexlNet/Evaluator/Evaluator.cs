@@ -1,15 +1,17 @@
+using System.Text.Json.Nodes;
+
 namespace JexlNet;
 
 public class Evaluator
 {
-    public Evaluator(Grammar grammar, Dictionary<string, dynamic?>? context = null, dynamic? subject = null)
+    public Evaluator(Grammar grammar, JsonObject? context = null, dynamic? subject = null)
     {
         Grammar = grammar;
         Context = context;
         RelContext = subject;
     }
     internal readonly Grammar Grammar;
-    internal readonly Dictionary<string, dynamic?>? Context;
+    internal readonly JsonObject? Context;
     internal readonly dynamic? RelContext;
 
     /// <summary>
@@ -17,9 +19,9 @@ public class Evaluator
     /// </summary>
     /// <param name="ast">An expression tree object</param>
     /// <returns>Resolves with the resulting value of the expression.</returns>
-    public async Task<dynamic?> EvalAsync(Node? ast)
+    public async Task<JsonNode?> EvalAsync(Node? ast)
     {
-        if (ast == null) return await Task.FromResult<dynamic?>(null);
+        if (ast == null) return await Task.FromResult<JsonNode?>(null);
         EvaluatorHandlers.Handlers.TryGetValue(ast.Type, out var handleFunc);
         if (handleFunc == null) return await Task.FromResult<dynamic?>(null);
         return await handleFunc.Invoke(this, ast);
@@ -52,9 +54,9 @@ public class Evaluator
     ///</summary>
     ///<param name="map">A map of expression names to expression trees to be evaluated</param>
     ///<returns>resolves with the result map.</returns>
-    internal async Task<Dictionary<string, dynamic?>> EvalMapAsync(Dictionary<string, Node> map)
+    internal async Task<JsonObject> EvalMapAsync(Dictionary<string, Node> map)
     {
-        var result = new Dictionary<string, dynamic?>();
+        var result = new JsonObject();
         foreach (var kv in map)
         {
             result[kv.Key] = await EvalAsync(kv.Value);
@@ -80,7 +82,7 @@ public class Evaluator
     ///the returned array otherwise, it will be eliminated.</param>
     ///<returns>resolves with an array of values that passed the
     ///expression filter.</returns>
-    public async Task<List<dynamic?>> FilterRelativeAsync(dynamic subj, Node expr)
+    public async Task<JsonArray> FilterRelativeAsync(dynamic subj, Node expr)
     {
         if ((subj as System.Collections.IEnumerable) == null)
         {
