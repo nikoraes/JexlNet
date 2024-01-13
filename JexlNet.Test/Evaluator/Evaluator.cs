@@ -233,7 +233,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(@"""foo"".Length");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("foo".Length, result);
+        Assert.Equal(JsonValue.Create("foo".Length), result);
     }
 
     [Fact]
@@ -242,7 +242,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(@""""".Length");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("".Length, result);
+        Assert.Equal(JsonValue.Create("".Length), result);
     }
 
     [Fact]
@@ -253,7 +253,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(grammar);
         var ast = ToTree(@"""foo""|concat(""baz"", ""bar"", ""tek"")");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("foo: bazbartek", result);
+        Assert.Equal("foo: bazbartek", result?.ToString());
     }
 
     [Fact]
@@ -268,7 +268,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(grammar);
         var ast = ToTree(@"""foo""|concat(""baz"", ""bar"", ""tek"")|concat2(""baz"", ""bar"", ""tek"")");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("foo: bazbartek: bazbartek", result);
+        Assert.Equal("foo: bazbartek: bazbartek", result?.ToString());
     }
 
     [Fact]
