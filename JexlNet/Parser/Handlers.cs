@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+
 namespace JexlNet;
 
 internal static class ParserHandlers
@@ -22,7 +24,7 @@ internal static class ParserHandlers
     ///<param name="parser"></param>
     internal static void ArrayStart(this Parser parser, Node? node)
     {
-        parser.PlaceAtCursor(new Node("ArrayLiteral") { Value = new List<Node>() });
+        parser.PlaceAtCursor(new Node("ArrayLiteral") { Value = new JsonArray() });
     }
 
     ///<summary>
@@ -32,7 +34,7 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void ArrayValue(this Parser parser, Node? node)
     {
-        if (node != null && parser.Cursor != null && parser.Cursor.Value is List<Node> list)
+        if (node != null && parser.Cursor != null && parser.Cursor.Value is JsonArray list)
         {
             list.Add(node);
         }
@@ -46,8 +48,10 @@ internal static class ParserHandlers
     ///<param name="token">A token object</param>
     internal static void BinaryOp(this Parser parser, Node? node)
     {
-        var precedence = parser.Grammar.Elements[node?.Value].Precedence ?? 0;
-        var parent = parser.Cursor?.Parent;
+        string gramarElementKey = node?.Value?.GetValue<string>() ?? throw new ApplicationException("node.Value is null");
+        ElementGrammar grammarElement = parser.Grammar.Elements.TryGetValue(gramarElementKey, out ElementGrammar? value) ? value : throw new ApplicationException($"Grammar element {gramarElementKey} not found");
+        int precedence = grammarElement.Precedence;
+        Node? parent = parser.Cursor?.Parent;
         while (parent != null && parent.Operator != null && parser.Grammar.Elements[parent.Operator].Precedence >= precedence)
         {
             parser.Cursor = parent;
@@ -55,7 +59,7 @@ internal static class ParserHandlers
         }
         var newNode = new Node("BinaryExpression")
         {
-            Operator = node?.Value,
+            Operator = gramarElementKey,
             Left = parser.Cursor
         };
         Parser.SetParent(parser.Cursor, newNode);
@@ -110,7 +114,7 @@ internal static class ParserHandlers
     {
         parser.PlaceBeforeCursor(new Node("FunctionCall")
         {
-            Name = parser.Cursor?.Value,
+            Name = parser.Cursor?.Value?.GetValue<string>(),
             Args = new(),
             Pool = "functions"
         });
@@ -168,8 +172,7 @@ internal static class ParserHandlers
     ///<param name="node">A token object</param>
     internal static void ObjectKey(this Parser parser, Node? node)
     {
-        // TODO: check whether node.Value is a literal that can be used as a key and cast to string
-        parser.CursorObjectKey = node?.Value;
+        parser.CursorObjectKey = node?.Value?.GetValue<string>();
     }
 
     ///<summary>
@@ -179,7 +182,7 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void ObjectStart(this Parser parser, Node? node)
     {
-        parser.PlaceAtCursor(new Node("ObjectLiteral") { Value = new Dictionary<string, Node>() });
+        parser.PlaceAtCursor(new Node("ObjectLiteral") { Value = new JsonObject() });
     }
 
     ///<summary>
@@ -190,9 +193,9 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void ObjectValue(this Parser parser, Node? node)
     {
-        if (parser.Cursor != null && parser.Cursor.Value is Dictionary<string, Node> dict)
+        if (parser.Cursor != null && parser.Cursor.Value is Dictionary<string, Node> dict && node != null && parser.CursorObjectKey != null)
         {
-            dict[parser.CursorObjectKey!] = node;
+            dict[parser.CursorObjectKey] = node;
         }
     }
 

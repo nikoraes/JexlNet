@@ -64,7 +64,7 @@ public class Parser
     internal Parser? SubParser;
     internal bool? NextIdentEncapsulate;
     internal bool? NextIdentRelative;
-    internal dynamic? CursorObjectKey;
+    internal string? CursorObjectKey;
 
     ///<summary>
     ///Processes a new token into the AST and manages the transitions of the state
@@ -228,7 +228,6 @@ public class Parser
         PlaceAtCursor(node);
     }
 
-
     ///<summary>
     ///Sets the parent of a node by creating a non-enumerable _parent property
     ///that points to the supplied parent argument.
@@ -256,7 +255,4 @@ public class Parser
         }
         SubParser = new Parser(Grammar, exprStr, endStates);
     }
-
-
-
 }

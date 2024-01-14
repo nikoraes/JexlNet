@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace JexlNet;
@@ -12,7 +14,7 @@ public class Evaluator
     }
     internal readonly Grammar Grammar;
     internal readonly JsonObject? Context;
-    internal readonly dynamic? RelContext;
+    internal readonly JsonObject? RelContext;
 
     /// <summary>
     /// Evaluates an expression tree within the configured context.
@@ -23,7 +25,7 @@ public class Evaluator
     {
         if (ast == null) return await Task.FromResult<JsonNode?>(null);
         EvaluatorHandlers.Handlers.TryGetValue(ast.Type, out var handleFunc);
-        if (handleFunc == null) return await Task.FromResult<dynamic?>(null);
+        if (handleFunc == null) return await Task.FromResult<JsonNode?>(null);
         return await handleFunc.Invoke(this, ast);
     }
 
@@ -34,13 +36,14 @@ public class Evaluator
     ///</summary>
     ///<param name="arr">An array of expression strings to be evaluated</param>
     ///<returns>resolves with the result array</returns>
-    internal async Task<List<dynamic?>> EvalArrayAsync(List<Node> arr)
+    internal async Task<JsonArray> EvalArrayAsync(List<Node> arr)
     {
-        var result = new List<dynamic?>();
+        var result = new JsonArray();
         foreach (var val in arr)
         {
             var elemResult = await EvalAsync(val);
-            if (elemResult is Task) await elemResult;
+            // Not possible for JsonNode to be a Task
+            // if (elemResult is Task) await elemResult;
             result.Add(elemResult);
         }
         return result;
@@ -82,18 +85,18 @@ public class Evaluator
     ///the returned array otherwise, it will be eliminated.</param>
     ///<returns>resolves with an array of values that passed the
     ///expression filter.</returns>
-    public async Task<JsonArray> FilterRelativeAsync(dynamic subj, Node expr)
+    public async Task<JsonArray> FilterRelativeAsync(JsonNode subj, Node expr)
     {
-        if ((subj as System.Collections.IEnumerable) == null)
+        if (subj is not JsonArray)
         {
-            subj = subj == null ? new List<dynamic>() : new List<dynamic>() { subj };
+            subj = new JsonArray() { subj };
         }
-        List<dynamic?> results = new();
-        foreach (var elem in subj)
+        JsonArray results = new();
+        foreach (var elem in (JsonArray)subj)
         {
             Evaluator elementEvaluator = new(Grammar, Context, elem);
-            bool shouldInclude = await elementEvaluator.EvalAsync(expr);
-            if (shouldInclude)
+            var shouldInclude = await elementEvaluator.EvalAsync(expr);
+            if (shouldInclude?.Equals(true) == true)
             {
                 results.Add(elem);
             }
@@ -115,24 +118,29 @@ public class Evaluator
     ///indicating a property name)</param>
     ///<param name="expr">The expression tree to run against the subject</param>
     ///<returns>resolves with the value of the drill-down.</returns>
-    public async Task<dynamic?> FilterStaticAsync(dynamic subj, Node expr)
+    public async Task<JsonNode?> FilterStaticAsync(JsonNode subj, Node expr)
     {
         var result = await EvalAsync(expr);
-        if (result is bool)
+        if (result == null)
         {
-            return result ? subj : null;
+            return null;
         }
-        else if (result is decimal)
+        else if (result.GetValueKind() == JsonValueKind.True)
         {
-            return subj[decimal.ToInt32(result)];
+            return subj;
         }
-        else if (result is string)
+        else if (result.GetValueKind() == JsonValueKind.Number)
         {
-            return subj[result];
+            return subj[decimal.ToInt32(result.GetValue<decimal>())];
+        }
+        else if (result.GetValueKind() == JsonValueKind.String)
+        {
+            return subj[result.GetValue<string>()];
         }
         else
         {
             return null;
         }
+        // TODO: if the result is an array or object, maybe we can support some mapping like jsonata
     }
 }

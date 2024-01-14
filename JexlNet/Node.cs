@@ -1,9 +1,11 @@
+using System.Text.Json.Nodes;
+
 namespace JexlNet;
 
 public class Node : Token, IEquatable<Node>
 {
     public Node(string type) : base(type) { }
-    public Node(string type, dynamic value) : base(type)
+    public Node(string type, JsonNode value) : base(type)
     {
         Value = value;
     }
@@ -31,36 +33,7 @@ public class Node : Token, IEquatable<Node>
     public bool Equals(Node? other)
     {
         if (other == null) return false;
-        bool equalValue;
-        if (Value is Dictionary<string, Node> dictionary && other.Value is Dictionary<string, Node> dictionary1)
-        {
-            if (dictionary.Count != dictionary1.Count)
-            {
-                return false;
-            }
-            equalValue = true;
-            foreach (var key in dictionary.Keys)
-            {
-                if (!dictionary1.ContainsKey(key))
-                {
-                    equalValue = false;
-                    break;
-                }
-                if (!dictionary[key].Equals(dictionary1[key]))
-                {
-                    equalValue = false;
-                    break;
-                }
-            }
-        }
-        else if (Value is List<Node> list && other.Value is List<Node> list1)
-        {
-            equalValue = list.SequenceEqual(list1);
-        }
-        else
-        {
-            equalValue = Value == other.Value;
-        }
+        bool equalValue = Value == other.Value;
         return
             Type == other.Type &&
             equalValue &&

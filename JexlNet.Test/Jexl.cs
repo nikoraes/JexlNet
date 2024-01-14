@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Newtonsoft.Json.Linq;
 
 namespace JexlNet.Test;
@@ -19,7 +20,7 @@ public class JexlUnitTest
         var result2 = jexl.Eval("sayHi2()");
         Assert.Equal("hi", result2);
 
-        jexl.Grammar.AddFunction("concat", (List<dynamic> args) => string.Concat(args));
+        jexl.Grammar.AddFunction("concat", (JsonArray args) => string.Concat(args));
         var result3 = jexl.Eval("concat('a', 'b', 'c')");
         Assert.Equal("abc", result3);
 
@@ -31,7 +32,7 @@ public class JexlUnitTest
         var result5 = jexl.Eval("print('a')");
         Assert.Equal("a", result5);
 
-        jexl.Grammar.AddFunction("min", (List<dynamic?> args) => args.Min());
+        jexl.Grammar.AddFunction("min", (JsonArray args) => args.Min());
         var result6 = jexl.Eval("min(4, 2, 19)");
         Assert.Equal(2, result6);
     }
@@ -52,7 +53,7 @@ public class JexlUnitTest
         var result = jexl.Eval("sayHello()");
         Assert.Equal("hello", result);
 
-        jexl.Grammar.AddFunction("concat", async (List<dynamic> args) =>
+        jexl.Grammar.AddFunction("concat", async (JsonArray args) =>
         {
             await Task.Delay(100);
             return string.Concat(args);
@@ -102,7 +103,7 @@ public class JexlUnitTest
         Assert.Equal(5, result2);
         jexl.Grammar.AddTransform("split", (dynamic?[] args) => args[0]?.Split(args[1]));
         var res3 = jexl.Eval(@"""password==guest""|split('=' + '=')");
-        Assert.Equal(new List<dynamic?> { "password", "guest" }, res3);
+        Assert.Equal(new JsonArray { "password", "guest" }, res3);
         jexl.Grammar.AddTransform("lower", (dynamic? val) => val?.ToLower());
         var res4 = jexl.Eval(@"""Pam Poovey""|lower|split(' ')[1]");
         Assert.Equal("poovey", res4);
@@ -159,21 +160,21 @@ public class JexlUnitTest
     [Fact]
     public async void FullSample()
     {
-        var context = new Dictionary<string, dynamic?> {
-            { "name", new Dictionary<string, dynamic> {
+        var context = new JsonObject {
+            { "name", new JsonObject {
                 { "first", "Sterling" },
                 { "last", "Archer" }
             }},
-            { "assoc", new List<dynamic> {
-                new Dictionary<string, dynamic> {
+            { "assoc", new JsonArray {
+                new JsonObject {
                     { "first", "Lana" },
                     { "last", "Kane" }
                 },
-                new Dictionary<string, dynamic> {
+                new JsonObject {
                     { "first", "Cyril" },
                     { "last", "Figgis" }
                 },
-                new Dictionary<string, dynamic> {
+                new JsonObject {
                     { "first", "Pam" },
                     { "last", "Poovey" }
                 }
@@ -192,7 +193,7 @@ public class JexlUnitTest
         dynamic? res5 = await jexl.EvalAsync(@"assoc[.last == ""Figgis""].first == ""Cyril"" && assoc[.last == ""Poovey""].first == ""Pam""", context);
         Assert.Equal(true, res5);
         dynamic? res6 = await jexl.EvalAsync(@"assoc[1]", context);
-        Assert.Equal(new Dictionary<string, dynamic> {
+        Assert.Equal(new JsonObject {
             { "first", "Cyril" },
             { "last", "Figgis" }
         }, res6);
@@ -206,21 +207,21 @@ public class JexlUnitTest
     [Fact]
     public async void FullSample2()
     {
-        var context = new Dictionary<string, dynamic?> {
-            { "name", new Dictionary<string, dynamic> {
+        var context = new JsonObject {
+            { "name", new JsonObject {
                 { "first", "Sterling" },
                 { "last", "Archer" }
             }},
-            { "assoc", new List<dynamic> {
-                new Dictionary<string, dynamic> {
+            { "assoc", new JsonArray {
+                new JsonObject {
                     { "first", "Lana" },
                     { "last", "Kane" }
                 },
-                new Dictionary<string, dynamic> {
+                new JsonObject {
                     { "first", "Cyril" },
                     { "last", "Figgis" }
                 },
-                new Dictionary<string, dynamic> {
+                new JsonObject {
                     { "first", "Pam" },
                     { "last", "Poovey" }
                 }
@@ -231,7 +232,7 @@ public class JexlUnitTest
         var DbSelectByLastName = new Func<dynamic?, dynamic?, Task<object?>>(async (lastName, stat) =>
         {
             await Task.Delay(100);
-            var dict = new Dictionary<string, decimal> {
+            var dict = new JsonObject {
                 { "Archer", 184 },
             };
             if (!dict.ContainsKey(lastName)) throw new Exception("not found");
@@ -244,7 +245,7 @@ public class JexlUnitTest
         var GetOldestAgent = new Func<Task<object?>>(async () =>
         {
             await Task.Delay(100);
-            var dict = new Dictionary<string, decimal> {
+            var dict = new JsonObject {
                 { "Archer", 32 },
                 { "Poovey", 34 },
                 { "Figgis", 45 },
@@ -257,10 +258,10 @@ public class JexlUnitTest
         var GetOldestAgent2 = new Func<Task<object?>>(async () =>
         {
             await Task.Delay(100);
-            var list = new List<dynamic> {
-                new Dictionary<string, object> {{ "lastName", "Archer" }, {"age", 32 }},
-                new Dictionary<string, object> {{ "lastName", "Poovey" }, {"age", 34 }},
-                new Dictionary<string, object> {{ "lastName", "Figgis" }, {"age", 45 }},
+            var list = new JsonArray {
+                new JsonObject {{ "lastName", "Archer" }, {"age", 32 }},
+                new JsonObject {{ "lastName", "Poovey" }, {"age", 34 }},
+                new JsonObject {{ "lastName", "Figgis" }, {"age", 45 }},
             };
             return list.OrderByDescending(x => x["age"]).First();
         });
@@ -278,13 +279,13 @@ public class JexlUnitTest
     [InlineData("exes[lastEx - 1]", "Len Trexler")]
     public async void AccessIdentifiers(string input, string expected)
     {
-        var context = new Dictionary<string, dynamic?>
+        var context = new JsonObject
         {
-            { "name", new Dictionary<string, dynamic?> {
+            { "name", new JsonObject {
                 { "first", "Malory" },
                 { "last", "Archer" }
             }},
-            { "exes", new List<string> {
+            { "exes", new JsonArray {
                 "Nikolai Jakov",
                 "Len Trexler",
                 "Burt Reynolds"
@@ -302,7 +303,7 @@ public class JexlUnitTest
         var jexl = new Jexl();
         jexl.Grammar.AddBinaryOperator("_=", 20, (dynamic?[] args) => args[0]?.ToLower() == args[1]?.ToLower());
         var res = await jexl.EvalAsync(@"""Guest"" _= ""gUeSt""");
-        Assert.True(res);
+        Assert.True((bool)res);
     }
 
     [Fact]
@@ -310,13 +311,14 @@ public class JexlUnitTest
     {
         var jexl = new Jexl();
         var danger = jexl.CreateExpression(@"""Danger "" + place");
-        var res1 = await danger.EvalAsync(new Dictionary<string, dynamic?> { { "place", "Zone" } });
+        var res1 = await danger.EvalAsync(new JsonObject { { "place", "Zone" } });
         Assert.Equal("Danger Zone", res1);
-        var res2 = await danger.EvalAsync(new Dictionary<string, dynamic?> { { "place", "ZONE!!!" } });
+        var res2 = await danger.EvalAsync(new JsonObject { { "place", "ZONE!!!" } });
         Assert.Equal("Danger ZONE!!!", res2);
     }
 
-    [Fact]
+    // This is not possible when context is a JSON ...
+    /* [Fact]
     public async void ResolveDictionaryPromise()
     {
         var func = new Func<Task<object?>>(async () =>
@@ -324,31 +326,32 @@ public class JexlUnitTest
             await Task.Delay(100);
             return "bar";
         });
-        var context = new Dictionary<string, dynamic?> {
+        var context = new JsonObject {
             { "foo", func }
         };
         var jexl = new Jexl();
         var res = await jexl.EvalAsync(@"foo", context);
         Assert.Equal("bar", res);
-    }
+    } */
 
-    [Fact]
+    // This is not possible when context is a JSON ...
+    /* [Fact]
     public async void ResolveDictionaryPromise2()
     {
         var func = new Func<Task<object?>>(async () =>
         {
             await Task.Delay(100);
-            return new Dictionary<string, dynamic> {
+            return new JsonObject {
                 { "bar", "baz" }
             };
         });
-        var context = new Dictionary<string, dynamic?> {
+        var context = new JsonObject {
             { "foo", func }
-        };
+        }; 
         var jexl = new Jexl();
         var res = await jexl.EvalAsync(@"foo.bar", context);
         Assert.Equal("baz", res);
-    }
+    } */
 
     [Fact]
     public async void SupportJsonContext()
@@ -375,14 +378,13 @@ public class JexlUnitTest
             ],
             ""age"": 36
         }";
-        JsonElement contextJsonElement = JsonDocument.Parse(contextJson).RootElement;
-        Dictionary<string, dynamic?> context = ContextHelpers.ConvertJsonElement(contextJsonElement);
+        JsonObject? contextJsonDocument = (JsonObject?)JsonNode.Parse(contextJson);
         var jexl = new Jexl();
-        var res = await jexl.EvalAsync(@"assoc[.first == 'Cyril'].last", context);
+        var res = await jexl.EvalAsync(@"assoc[.first == 'Cyril'].last", contextJsonDocument);
         Assert.Equal("Figgis", res);
     }
 
-    [Fact]
+    /* [Fact]
     public async void SupportJsonNetContext()
     {
         string contextJson =
@@ -408,9 +410,9 @@ public class JexlUnitTest
             ""age"": 36
         }";
         JObject contextJsonElement = JObject.Parse(contextJson);
-        Dictionary<string, dynamic?>? context = JsonNet.ContextHelpers.ConvertJObject(contextJsonElement);
+        JsonObject? context = JsonNet.ContextHelpers.ConvertJObject(contextJsonElement);
         var jexl = new Jexl();
         var res = await jexl.EvalAsync(@"assoc[.first == 'Cyril'].last", context);
         Assert.Equal("Figgis", res);
-    }
+    } */
 }

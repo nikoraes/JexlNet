@@ -47,7 +47,7 @@ public class Expression : IExpression
     /// <param name="context">A mapping of variables to values, which will be
     /// made accessible to the Jexl expression when evaluating it.</param>
     /// <returns>Resolves with the resulting value of the expression.</returns>
-    public async Task<JsonNode> EvalAsync(JsonObject? context = null)
+    public async Task<JsonNode?> EvalAsync(JsonObject? context = null)
     {
         var evaluator = new Evaluator(Grammar, context);
         return await evaluator.EvalAsync(GetAst());
@@ -60,7 +60,7 @@ public class Expression : IExpression
     /// <param name="context">A mapping of variables to values, which will be
     /// made accessible to the Jexl expression when evaluating it.</param>
     /// <returns>Resolves with the resulting value of the expression.</returns>
-    public JsonNode Eval(JsonObject? context = null)
+    public JsonNode? Eval(JsonObject? context = null)
     {
         var evaluator = new Evaluator(Grammar, context);
         var task = evaluator.EvalAsync(GetAst());

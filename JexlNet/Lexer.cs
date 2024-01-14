@@ -1,11 +1,12 @@
 using System.Globalization;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 namespace JexlNet;
 
 public class Token : IEquatable<Token>
 {
-    public Token(string type, dynamic? value = null, string? raw = null)
+    public Token(string type, JsonNode? value = null, string? raw = null)
     {
         Type = type;
         Value = value;
@@ -13,7 +14,7 @@ public class Token : IEquatable<Token>
     }
 
     public string Type { get; set; }
-    public dynamic? Value { get; set; }
+    public JsonNode? Value { get; set; }
     public string? Raw { get; set; }
 
     public bool Equals(Token? other)

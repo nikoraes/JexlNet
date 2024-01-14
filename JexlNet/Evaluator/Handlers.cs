@@ -1,5 +1,7 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace JexlNet;
 
@@ -12,7 +14,7 @@ public static class EvaluatorHandlers
     /// <param name="evaluator"></param>
     /// <param name="node"></param>
     /// <returns></returns>
-    public static async Task<dynamic?> ArrayLiteralAsync(Evaluator evaluator, Node? node)
+    public static async Task<JsonArray> ArrayLiteralAsync(Evaluator evaluator, Node? node)
     {
         return await evaluator.EvalArrayAsync(node?.Value);
     }
@@ -29,7 +31,7 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a BinaryExpression as the top node</param>
     ///<returns>resolves with the value of the BinaryExpression.</returns>
-    public static async Task<dynamic?> BinaryExpressionAsync(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode> BinaryExpressionAsync(Evaluator evaluator, Node? node)
     {
         if (node?.Operator == null)
         {
@@ -43,12 +45,12 @@ public static class EvaluatorHandlers
         // EvaluateOnDemand allows to only conditionally evaluate one side of the binary expression
         if (grammarOp.EvaluateOnDemandAsync != null && node.Left != null && node.Right != null)
         {
-            var wrap = new Func<Node?, Func<Task<dynamic?>>>((subAst) => async () => await evaluator.EvalAsync(subAst));
-            return await grammarOp.EvaluateOnDemandAsync(new Func<Task<dynamic?>>[] { wrap(node?.Left), wrap(node?.Right) });
+            var wrap = new Func<Node?, Func<Task<JsonNode?>>>((subAst) => async () => await evaluator.EvalAsync(subAst));
+            return await grammarOp.EvaluateOnDemandAsync(new Func<Task<JsonNode?>>[] { wrap(node!.Left), wrap(node!.Right) });
         }
         var leftResult = await evaluator.EvalAsync(node?.Left);
         var rightResult = await evaluator.EvalAsync(node?.Right);
-        return grammarOp.Evaluate(new dynamic?[] { leftResult, rightResult });
+        return grammarOp.Evaluate(new JsonArray { leftResult, rightResult });
     }
 
     ///<summary>
@@ -65,13 +67,15 @@ public static class EvaluatorHandlers
         {
             throw new Exception("ConditionalExpression node has no test");
         }
-        var testResult = await evaluator.EvalAsync(node?.Test);
+        JsonNode? testResult = await evaluator.EvalAsync(node?.Test);
         // If it's a string, we consider it truthy if it's non-empty
         // If it's a decimal, we consider it truthy it's non-zero
         // Align with behaviour in Javascript
-        if (testResult?.GetType() == typeof(string)
-            ? !string.IsNullOrEmpty(testResult)
-            : (testResult?.GetType() == typeof(decimal) ? testResult != 0 : testResult == true))
+        if (testResult != null &&
+            ((testResult.GetValueKind() == JsonValueKind.String && !string.IsNullOrEmpty(testResult.GetValue<string>())) ||
+            (testResult.GetValueKind() == JsonValueKind.Number && testResult.GetValue<decimal>() != 0) ||
+            (testResult.GetValueKind() == JsonValueKind.True))
+        )
         {
             if (node?.Consequent != null)
             {
@@ -88,19 +92,25 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a FilterExpression as the top node</param>
     ///<returns>resolves with the value of the FilterExpression.</returns>
-    public static async Task<dynamic?> FilterExpression(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode?> FilterExpression(Evaluator evaluator, Node? node)
     {
         if (node?.Subject == null)
         {
             throw new Exception("FilterExpression node has no subject");
         }
-        var subjectResult = await evaluator.EvalAsync(node?.Subject);
-        Console.WriteLine($"{subjectResult}");
-        if (node?.Relative == true)
+        JsonNode? subjectResult = await evaluator.EvalAsync(node?.Subject);
+        if (subjectResult == null || node?.Expr == null)
         {
-            return await evaluator.FilterRelativeAsync(subjectResult, node?.Expr);
+            return null;
         }
-        return await evaluator.FilterStaticAsync(subjectResult, node?.Expr);
+        else if (node?.Relative == true)
+        {
+            return await evaluator.FilterRelativeAsync(subjectResult, node.Expr);
+        }
+        else
+        {
+            return await evaluator.FilterStaticAsync(subjectResult, node!.Expr);
+        }
     }
 
     ///<summary>
@@ -111,7 +121,7 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with an Identifier as the top node</param>
     ///<returns>either the identifier's value, or a Promise that will resolve with the identifier's value.</returns>
-    public static async Task<dynamic?> IdentifierAsync(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode?> IdentifierAsync(Evaluator evaluator, Node? node)
     {
         if (node?.From == null)
         {
@@ -135,23 +145,21 @@ public static class EvaluatorHandlers
             }
             else return null;
         }
-        var fromResult = await evaluator.EvalAsync(node?.From);
-        Type? fromResultType = fromResult?.GetType();
-        if (fromResultType == null || node?.Value == null)
+        JsonNode? fromResult = await evaluator.EvalAsync(node?.From);
+        if (fromResult == null || node?.Value == null)
         {
             return null;
         }
-        else if (fromResult is List<dynamic> list)
+        else if (fromResult is JsonArray list)
         {
             fromResult = list.First();
         }
-        else if (fromResultType!.IsGenericType && fromResultType.GetGenericTypeDefinition() == typeof(List<>))
+        else if (fromResult is JsonObject dict && !string.IsNullOrEmpty(node?.Value))
         {
-            fromResult = fromResult?.First();
-        }
-        else if (fromResult is Dictionary<string, dynamic> dict)
-        {
-            string key = node!.Value!;
+            string key = node.Value;
+
+
+
             if (dict.TryGetValue(key, out dynamic? value))
             {
                 return value;

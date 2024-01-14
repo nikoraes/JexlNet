@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
 namespace JexlNet;
 public static class GrammarType
 {
@@ -26,8 +29,8 @@ public class ElementGrammar
     public ElementGrammar(
         string type,
         int precedence,
-        Func<dynamic?[], dynamic?> evaluate,
-        Func<Func<Task<dynamic?>>[], Task<dynamic?>>? evalOnDemand = null)
+        Func<JsonArray, JsonNode> evaluate,
+        Func<Func<Task<JsonNode?>>[], Task<JsonNode>>? evalOnDemand = null)
     {
         Type = type;
         Precedence = precedence;
@@ -36,16 +39,16 @@ public class ElementGrammar
     }
     public string Type { get; set; }
     public int Precedence { get; set; }
-    public Func<dynamic?[], dynamic?>? Evaluate { get; set; }
-    public Func<Func<Task<dynamic?>>[], Task<dynamic?>>? EvaluateOnDemandAsync { get; set; }
+    public Func<JsonArray, JsonNode>? Evaluate { get; set; }
+    public Func<Func<Task<JsonNode?>>[], Task<JsonNode>>? EvaluateOnDemandAsync { get; set; }
 }
 
 public class BinaryOperatorGrammar : ElementGrammar
 {
     public BinaryOperatorGrammar(
         int precedence,
-        Func<dynamic?[], dynamic?> evaluate,
-        Func<Func<Task<dynamic?>>[], Task<dynamic?>>? evalOnDemand = null
+        Func<JsonArray, JsonNode> evaluate,
+        Func<Func<Task<JsonNode?>>[], Task<JsonNode>>? evalOnDemand = null
         ) : base(
             GrammarType.BinaryOperator,
             precedence,
@@ -59,8 +62,8 @@ public class UnaryOperatorGrammar : ElementGrammar
 {
     public UnaryOperatorGrammar(
         int precedence,
-        Func<dynamic?[], dynamic?> evaluate,
-        Func<Func<Task<dynamic?>>[], Task<dynamic?>>? evalOnDemand = null
+        Func<JsonArray, JsonNode> evaluate,
+        Func<Func<Task<JsonNode?>>[], Task<JsonNode>>? evalOnDemand = null
         ) : base(
             GrammarType.UnaryOperator,
             precedence,
@@ -93,91 +96,176 @@ public class Grammar
             {
                 "+", new BinaryOperatorGrammar(30, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for + operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    return a + b;
+                    if (a == null || b == null)
+                    {
+                        throw new Exception("Binary operator cannot be applied to null values");
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.String || b.GetValueKind() == JsonValueKind.String)
+                    {
+                        return a.GetValue<string>() + b.GetValue<string>();
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.Number && b.GetValueKind() == JsonValueKind.Number)
+                    {
+                        return a.GetValue<decimal>() + b.GetValue<decimal>();
+                    }
+                    else if (a is JsonArray aArr && b is JsonArray bArr)
+                    {
+                        return new JsonArray(aArr.Concat(bArr).ToArray());
+                    }
+                    else
+                    {
+                        throw new Exception("Unsupported type for + operator");
+                    }
                 })
             },
             {
                 "-", new BinaryOperatorGrammar(30, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
-                        throw new Exception("Unsupported number of arguments for - operator");
+                        throw new Exception("Unsupported number of arguments for + operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    return a - b;
+                    if (a == null || b == null)
+                    {
+                        throw new Exception("Binary operator cannot be applied to null values");
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.Number && a.GetValueKind() == JsonValueKind.Number)
+                    {
+                        return a.GetValue<decimal>() - b.GetValue<decimal>();
+                    }
+                    else
+                    {
+                        throw new Exception("Unsupported type for + operator");
+                    }
                 })
             },
             {
                 "*", new BinaryOperatorGrammar(40, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for * operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    return a * b;
+                    if (a == null || b == null)
+                    {
+                        throw new Exception("Binary operator cannot be applied to null values");
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.Number && a.GetValueKind() == JsonValueKind.Number)
+                    {
+                        return a.GetValue<decimal>() * b.GetValue<decimal>();
+                    }
+                    else
+                    {
+                        throw new Exception("Unsupported type for + operator");
+                    }
                 })
             },
             {
                 "/", new BinaryOperatorGrammar(40, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for / operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    return a / b;
+                    if (a == null || b == null)
+                    {
+                        throw new Exception("Binary operator cannot be applied to null values");
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.Number && a.GetValueKind() == JsonValueKind.Number)
+                    {
+                        return a.GetValue<decimal>() / b.GetValue<decimal>();
+                    }
+                    else
+                    {
+                        throw new Exception("Unsupported type for + operator");
+                    }
                 })
             },
             {
                 "//", new BinaryOperatorGrammar(40, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for // operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    return Math.Floor(a / b);
+                    if (a == null || b == null)
+                    {
+                        throw new Exception("Binary operator cannot be applied to null values");
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.Number && a.GetValueKind() == JsonValueKind.Number)
+                    {
+                        return Math.Floor(a.GetValue<decimal>() / b.GetValue<decimal>());
+                    }
+                    else
+                    {
+                        throw new Exception("Unsupported type for + operator");
+                    }
                 })
             },
             {
                 "%", new BinaryOperatorGrammar(40, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for % operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    return a % b;
+                    if (a == null || b == null)
+                    {
+                        throw new Exception("Binary operator cannot be applied to null values");
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.Number && a.GetValueKind() == JsonValueKind.Number)
+                    {
+                        return a.GetValue<decimal>() % b.GetValue<decimal>();
+                    }
+                    else
+                    {
+                        throw new Exception("Unsupported type for + operator");
+                    }
                 })
             },
             {
                 "^", new BinaryOperatorGrammar(50, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for ^ operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    return Math.Pow(a, b);
+                    if (a == null || b == null)
+                    {
+                        throw new Exception("Binary operator cannot be applied to null values");
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.Number && a.GetValueKind() == JsonValueKind.Number)
+                    {
+                        return Math.Pow(a.GetValue<double>(), b.GetValue<double>());
+                    }
+                    else
+                    {
+                        throw new Exception("Unsupported type for + operator");
+                    }
                 })
             },
             {
                 "==", new BinaryOperatorGrammar(20, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for == operator");
                     }
@@ -189,7 +277,7 @@ public class Grammar
             {
                 "!=", new BinaryOperatorGrammar(20, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for != operator");
                     }
@@ -201,161 +289,173 @@ public class Grammar
             {
                 ">", new BinaryOperatorGrammar(20, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for > operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    return a > b;
+                    return a?.GetValue<decimal>() > b?.GetValue<decimal>();
                 })
             },
             {
                 ">=", new BinaryOperatorGrammar(20, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for >= operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    return a >= b;
+                    return a?.GetValue<decimal>() >= b?.GetValue<decimal>();
                 })
             },
             {
                 "<", new BinaryOperatorGrammar(20, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for < operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    return a < b;
+                    return a?.GetValue<decimal>() < b?.GetValue<decimal>();
                 })
             },
             {
                 "<=", new BinaryOperatorGrammar(20, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for <= operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    return a <= b;
+                    return a?.GetValue<decimal>() <= b?.GetValue<decimal>();
                 })
             },
             {
                 "&&", new BinaryOperatorGrammar(10, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for && operator");
                     }
                     // If it's a string, we consider it truthy if it's non-empty
                     // If it's a decimal, we consider it truthy it's non-zero
                     // Align with behaviour in Javascript
-                    var a = args[0]?.GetType() == typeof(string)
-                        ? !string.IsNullOrEmpty(args[0])
-                        : (args[0]?.GetType() == typeof(decimal) ? args[0] != 0 : args[0]);
-                    var b = args[1]?.GetType() == typeof(string)
-                        ? !string.IsNullOrEmpty(args[1])
-                        : (args[1]?.GetType() == typeof(decimal) ? args[1] != 0 : args[1]);
-                    if (a is bool || b is bool)
-                    {
-                        return (bool)a && (bool)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for && operator");
-                    }
+                    bool a = args[0]?.GetValueKind() == JsonValueKind.String
+                        ? !string.IsNullOrEmpty(args[0]?.GetValue<string>())
+                        : (
+                            args[0]?.GetValueKind() == JsonValueKind.Number
+                            ? args[0]?.GetValue<decimal>() != 0
+                            : args[0]?.GetValueKind() == JsonValueKind.True
+                        );
+                    bool b = args[1]?.GetValueKind() == JsonValueKind.String
+                        ? !string.IsNullOrEmpty(args[1]?.GetValue<string>())
+                        : (
+                            args[1]?.GetValueKind() == JsonValueKind.Number
+                            ? args[1]?.GetValue<decimal>() != 0
+                            : args[1]?.GetValueKind() == JsonValueKind.True
+                        );
+                    return a && b;
                 }, async (wrapperFunctions) =>
                 {
-                    var leftVal = await wrapperFunctions[0]();
-                    if (
-                        (leftVal is string && string.IsNullOrEmpty(leftVal)) ||
-                        (leftVal is decimal && leftVal == 0) ||
-                        (leftVal is bool && !leftVal)
+                    JsonNode? leftVal = await wrapperFunctions[0]();
+                    if (leftVal == null ||
+                        (leftVal.GetValueKind() == JsonValueKind.String && string.IsNullOrEmpty(leftVal.GetValue<string>())) ||
+                        (leftVal.GetValueKind() == JsonValueKind.Number && leftVal.GetValue<decimal>() == 0) ||
+                        (leftVal.GetValueKind() == JsonValueKind.False)
                     )
                     {
-                        return false;
+                        return JsonValue.Create(false);
                     }
                     else
                     {
-                        var rightVal = await wrapperFunctions[1]();
-                        return (
-                            (rightVal is string && !string.IsNullOrEmpty(rightVal)) ||
-                            (rightVal is decimal && rightVal != 0) ||
-                            (rightVal is bool && rightVal)
-                        );
+                        JsonNode? rightVal = await wrapperFunctions[1]();
+                        if (rightVal != null &&
+                            ((rightVal.GetValueKind() == JsonValueKind.String && !string.IsNullOrEmpty(rightVal.GetValue<string>())) ||
+                            (rightVal.GetValueKind() == JsonValueKind.Number && leftVal.GetValue<decimal>() != 0) ||
+                            (rightVal.GetValueKind() == JsonValueKind.True))
+                        )
+                        {
+                            return rightVal;
+                        }
+                        else return JsonValue.Create(false);
                     }
-
-
                 })
             },
             {
                 "||", new BinaryOperatorGrammar(10, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for || operator");
                     }
                     // If it's a string, we consider it truthy if it's non-empty
                     // If it's a decimal, we consider it truthy it's non-zero
                     // Align with behaviour in Javascript
-                    var a = args[0]?.GetType() == typeof(string)
-                        ? !string.IsNullOrEmpty(args[0])
-                        : (args[0]?.GetType() == typeof(decimal) ? args[0] != 0 : args[0]);
-                    var b = args[1]?.GetType() == typeof(string)
-                        ? !string.IsNullOrEmpty(args[1])
-                        : (args[1]?.GetType() == typeof(decimal) ? args[1] != 0 : args[1]);
-                    if (a is bool || b is bool)
-                    {
-                        return (bool)a || (bool)b;
-                    }
-                    else
-                    {
-                        throw new Exception("Unsupported type for || operator");
-                    }
+                    bool a = args[0]?.GetValueKind() == JsonValueKind.String
+                        ? !string.IsNullOrEmpty(args[0]?.GetValue<string>())
+                        : (
+                            args[0]?.GetValueKind() == JsonValueKind.Number
+                            ? args[0]?.GetValue<decimal>() != 0
+                            : args[0]?.GetValueKind() == JsonValueKind.True
+                        );
+                    bool b = args[1]?.GetValueKind() == JsonValueKind.String
+                        ? !string.IsNullOrEmpty(args[1]?.GetValue<string>())
+                        : (
+                            args[1]?.GetValueKind() == JsonValueKind.Number
+                            ? args[1]?.GetValue<decimal>() != 0
+                            : args[1]?.GetValueKind() == JsonValueKind.True
+                        );
+                    return a || b;
                 }, async (wrapperFunctions) =>
                 {
-                    var leftVal = await wrapperFunctions[0]();
-                    if (
-                        (leftVal is string && !string.IsNullOrEmpty(leftVal)) ||
-                        (leftVal is decimal && leftVal != 0) ||
-                        (leftVal is bool && leftVal)
+                    JsonNode? leftVal = await wrapperFunctions[0]();
+                    if (leftVal != null &&
+                        ((leftVal.GetValueKind() == JsonValueKind.String && !string.IsNullOrEmpty(leftVal.GetValue<string>())) ||
+                        (leftVal.GetValueKind() == JsonValueKind.Number && leftVal.GetValue<decimal>() != 0) ||
+                        (leftVal.GetValueKind() == JsonValueKind.True))
                     )
                     {
                         return leftVal;
                     }
                     else
                     {
-                        var rightVal = await wrapperFunctions[1]();
-                        return (
-                            (rightVal is string && !string.IsNullOrEmpty(rightVal)) ||
-                            (rightVal is decimal && rightVal != 0) ||
-                            (rightVal is bool && rightVal)
-                        );
+                        JsonNode? rightVal = await wrapperFunctions[1]();
+                        if (rightVal != null &&
+                            ((rightVal.GetValueKind() == JsonValueKind.String && string.IsNullOrEmpty(rightVal.GetValue<string>())) ||
+                            (rightVal.GetValueKind() == JsonValueKind.Number && rightVal.GetValue<decimal>() == 0) ||
+                            (rightVal.GetValueKind() == JsonValueKind.False))
+                        )
+                        {
+                            return rightVal;
+                        }
+                        else return JsonValue.Create(false);
                     }
                 })
             },
             {
                 "in", new BinaryOperatorGrammar(20, (args) =>
                 {
-                    if (args.Length != 2)
+                    if (args.Count != 2)
                     {
                         throw new Exception("Unsupported number of arguments for in operator");
                     }
                     var a = args[0];
                     var b = args[1];
-                    if (b is IEnumerable<dynamic> enumerable)
+                    if (a == null || b == null)
                     {
-                        return enumerable.Any(elem => elem == a);
+                        throw new Exception("Binary operator cannot be applied to null values");
                     }
-                    else if (b is string str)
+                    if (b is JsonArray arr)
                     {
-                        return str.Contains(a);
+                        return JsonValue.Create(arr.Contains(a));
+                    }
+                    else if (b.GetValueKind() == JsonValueKind.String)
+                    {
+                        return JsonValue.Create(b.GetValue<string>().Contains(a.GetValue<string>()));
                     }
                     else
                     {
@@ -366,14 +466,30 @@ public class Grammar
             {
                 "!", new UnaryOperatorGrammar(100, (args) =>
                 {
-                    if (args.Length != 1)
+                    if (args.Count != 1)
                     {
                         throw new Exception("Unsupported number of arguments for ! operator");
                     }
                     var a = args[0];
-                    if (a is bool v)
+                    if (a == null)
                     {
-                        return !v;
+                        return JsonValue.Create(true);
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.String)
+                    {
+                        return JsonValue.Create(string.IsNullOrEmpty(a.GetValue<string>()));
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.Number)
+                    {
+                        return JsonValue.Create(a.GetValue<decimal>() == 0);
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.Array)
+                    {
+                        return JsonValue.Create(a.GetValue<JsonArray>().Count == 0);
+                    }
+                    else if (a.GetValueKind() == JsonValueKind.True || a.GetValueKind() == JsonValueKind.False)
+                    {
+                        return JsonValue.Create(!a.GetValue<bool>());
                     }
                     else
                     {
@@ -399,7 +515,7 @@ public class Grammar
     ///will be called with two arguments: left and right, denoting the values
     ///on either side of the operator. It should return either the resulting
     ///value, or a Promise that resolves with the resulting value.</param>
-    public void AddBinaryOperator(string op, int precedence, Func<dynamic?[], dynamic?> evaluate)
+    public void AddBinaryOperator(string op, int precedence, Func<JsonArray, JsonNode> evaluate)
     {
         Elements.Add(op, new BinaryOperatorGrammar(precedence, evaluate));
     }
@@ -410,7 +526,7 @@ public class Grammar
     ///</summary>
     ///<param name="op">The operator string to be added</param>
     ///<param name="evaluate">A function to run to calculate the result.</param>
-    public void AddUnaryOperator(string op, Func<dynamic?[], dynamic?> evaluate)
+    public void AddUnaryOperator(string op, Func<JsonArray, JsonNode> evaluate)
     {
         Elements.Add(op, new UnaryOperatorGrammar(100, evaluate));
     }
@@ -431,7 +547,7 @@ public class Grammar
     ///appropriate when the function would normally return a value, but
     ///cannot due to some other failure.
     ///</summary>
-    public readonly Dictionary<string, Func<List<dynamic?>, Task<object>>> Functions = new();
+    public readonly Dictionary<string, Func<JsonArray, Task<JsonNode>>> Functions = new();
 
     ///<summary>
     ///A map of transform names to transform functions. A transform function
@@ -450,127 +566,137 @@ public class Grammar
     ///appropriate when the transform would normally return a value, but
     ///cannot due to some other failure.
     ///</summary>
-    public readonly Dictionary<string, Func<List<dynamic?>, Task<object>>> Transforms = new();
+    public readonly Dictionary<string, Func<JsonArray, Task<JsonNode>>> Transforms = new();
+
+    private Dictionary<string, Func<JsonArray, Task<JsonNode>>> GetPool(string poolName)
+    {
+        return poolName switch
+        {
+            "functions" => Functions,
+            "transforms" => Transforms,
+            _ => throw new Exception("Invalid pool name"),
+        };
+    }
 
     ///<summary>
     ///Add a single function call with no arguments to the grammar (only for functions).
     ///</summary>
-    private void AddFunctionCall<TResult>(string poolName, string name, Func<TResult> func)
+    private void AddFunctionCall(string poolName, string name, Func<Task<JsonNode>> func)
     {
-        Dictionary<string, Func<List<dynamic?>, Task<object>>> pool;
-        if (poolName == "functions")
-        {
-            pool = Functions;
-        }
-        // Transforms always need an input
-        else throw new Exception("Invalid pool name");
-        if (typeof(Task).IsAssignableFrom(typeof(TResult)))
-        {
-            pool.Add(name, args => (Task<object>)((dynamic)func)());
-        }
-        else
-        {
-            pool.Add(name, args => Task.FromResult((object)((dynamic)func)()));
-        }
+        var pool = GetPool(poolName);
+        pool.Add(name, async args => await func());
+    }
+    ///<summary>
+    ///Add a single function call with no arguments to the grammar (only for functions).
+    ///</summary>
+    private void AddFunctionCall(string poolName, string name, Func<JsonNode> func)
+    {
+        var pool = GetPool(poolName);
+        pool.Add(name, args => Task.FromResult(func()));
     }
     ///<summary>
     ///Add a single function call with a single argument (can be an array or list) to the grammar.
     ///</summary>
-    private void AddFunctionCall<TInput, TResult>(string poolName, string name, Func<TInput, TResult> func)
+    private void AddFunctionCall(string poolName, string name, Func<JsonArray, Task<JsonNode>> func)
     {
-        Dictionary<string, Func<List<dynamic?>, Task<object>>> pool;
-        if (poolName == "functions")
-        {
-            pool = Functions;
-        }
-        else if (poolName == "transforms")
-        {
-            pool = Transforms;
-        }
-        else throw new Exception("Invalid pool name");
-
-        Type inputType = typeof(TInput);
-        Type outputType = typeof(TResult);
-        // Match the signature of the Func to the signature of the Func in the dictionary
-        if (inputType == typeof(List<dynamic?>) && outputType == typeof(Task<object>))
-        {
-            if (func is not Func<List<dynamic?>, Task<object>> newFunc)
-            {
-                throw new Exception("Async function must return a Task");
-            }
-            pool.Add(name, newFunc);
-        }
-        else if (typeof(Task).IsAssignableFrom(typeof(TResult)))
-        // Async function which needs to be awaited
-        {
-            pool.Add(name, async args =>
-            {
-                if (inputType.IsArray)
-                {
-                    return (object)(await ((dynamic)func)(args.ToArray()));
-                }
-                else if (typeof(TInput) == typeof(List<dynamic?>))
-                {
-                    return (object)(await ((dynamic)func)(args));
-                }
-                else
-                {
-                    return (object)(await ((dynamic)func)(args.First()));
-                }
-            });
-        }
-        else
-        // Synchronous function
-        {
-            pool.Add(name, args =>
-            {
-                Type argsType = args.GetType();
-                if (inputType.IsArray)
-                {
-                    return Task.FromResult((object)((dynamic)func)(args.ToArray()));
-                }
-                else if (typeof(TInput) == typeof(List<dynamic?>))
-                {
-                    return Task.FromResult((object)((dynamic)func)(args));
-                }
-                else
-                {
-                    return Task.FromResult((object)((dynamic)func)(args.First()));
-                }
-            });
-        }
+        var pool = GetPool(poolName);
+        pool.Add(name, func);
+    }
+    ///<summary>
+    ///Add a single function call with a single argument (can be an array or list) to the grammar.
+    ///</summary>
+    private void AddFunctionCall(string poolName, string name, Func<JsonArray, JsonNode> func)
+    {
+        var pool = GetPool(poolName);
+        pool.Add(name, args => Task.FromResult(func(args)));
     }
     ///<summary>
     ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
     ///</summary>
-    private void AddFunctionCall<TInput, TInput2, TResult>(string poolName, string name, Func<TInput?, TInput2?, TResult> func)
+    private void AddFunctionCall(string poolName, string name, Func<JsonNode?, JsonNode?, Task<JsonNode>> func)
     {
         // Define a new function that takes a single input parameter (array)
-        TResult newFunc(dynamic?[] args)
+        Task<JsonNode> newFunc(JsonArray args)
         {
-            TInput? input1 = (TInput?)args[0];
-            TInput2? input2 = default;
-            if (func.Method.GetParameters()[1].ParameterType.IsArray)
-            {
-                input2 = (TInput2)((dynamic)args.Skip(1).ToArray());
-            }
-            else if (args.Length > 1)
-            {
-                input2 = (TInput2?)args[1];
-            }
+            JsonNode? input1 = args[0];
+            JsonNode? input2 = args[1];
 
             // Call the original function with both inputs joined as an array
             return func(input1, input2);
         }
 
         // Call the existing method with the new function
-        AddFunctionCall(poolName, name, (Func<object[], TResult>)newFunc);
+        AddFunctionCall(poolName, name, newFunc);
+    }
+    ///<summary>
+    ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+    ///</summary>
+    private void AddFunctionCall(string poolName, string name, Func<JsonNode?, JsonNode?, JsonNode> func)
+    {
+        // Define a new function that takes a single input parameter (array)
+        JsonNode newFunc(JsonArray args)
+        {
+            JsonNode? input1 = args[0];
+            JsonNode? input2 = args[1];
+
+            // Call the original function with both inputs joined as an array
+            return func(input1, input2);
+        }
+
+        // Call the existing method with the new function
+        AddFunctionCall(poolName, name, newFunc);
+    }
+    ///<summary>
+    ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+    ///</summary>
+    private void AddFunctionCall(string poolName, string name, Func<JsonNode?, JsonArray?, Task<JsonNode>> func)
+    {
+        // Define a new function that takes a single input parameter (array)
+        Task<JsonNode> newFunc(JsonArray args)
+        {
+            JsonNode? input1 = args[0];
+            JsonArray? input2 = new(args.Skip(1).ToArray());
+
+            // Call the original function with both inputs joined as an array
+            return func(input1, input2);
+        }
+
+        // Call the existing method with the new function
+        AddFunctionCall(poolName, name, newFunc);
+    }
+    ///<summary>
+    ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+    ///</summary>
+    private void AddFunctionCall(string poolName, string name, Func<JsonNode?, JsonArray?, JsonNode> func)
+    {
+        // Define a new function that takes a single input parameter (array)
+        JsonNode newFunc(JsonArray args)
+        {
+            JsonNode? input1 = args[0];
+            JsonArray? input2 = new(args.Skip(1).ToArray());
+
+            // Call the original function with both inputs joined as an array
+            return func(input1, input2);
+        }
+
+        // Call the existing method with the new function
+        AddFunctionCall(poolName, name, newFunc);
     }
 
     ///<summary>
     ///Add a dictionary of function calls with no arguments to the grammar (only for functions).
     ///</summary>
-    private void AddFunctionCalls<TResult>(string poolName, Dictionary<string, Func<TResult>> funcsDict)
+    private void AddFunctionCalls(string poolName, Dictionary<string, Func<Task<JsonNode>>> funcsDict)
+    {
+        foreach (var kv in funcsDict)
+        {
+            AddFunctionCall(poolName, kv.Key, kv.Value);
+        }
+    }
+    ///<summary>
+    ///Add a dictionary of function calls with no arguments to the grammar (only for functions).
+    ///</summary>
+    private void AddFunctionCalls(string poolName, Dictionary<string, Func<JsonNode>> funcsDict)
     {
         foreach (var kv in funcsDict)
         {
@@ -580,7 +706,17 @@ public class Grammar
     ///<summary>
     ///Add a dictionary of function calls with a single argument (can be an array or list) to the grammar.
     ///</summary>
-    private void AddFunctionCalls<TInput, TResult>(string poolName, Dictionary<string, Func<TInput, TResult>> funcsDict)
+    private void AddFunctionCalls(string poolName, Dictionary<string, Func<JsonArray, Task<JsonNode>>> funcsDict)
+    {
+        foreach (var kv in funcsDict)
+        {
+            AddFunctionCall(poolName, kv.Key, kv.Value);
+        }
+    }
+    ///<summary>
+    ///Add a dictionary of function calls with a single argument (can be an array or list) to the grammar.
+    ///</summary>
+    private void AddFunctionCalls(string poolName, Dictionary<string, Func<JsonArray, JsonNode>> funcsDict)
     {
         foreach (var kv in funcsDict)
         {
@@ -590,7 +726,37 @@ public class Grammar
     ///<summary>
     ///Add a dictionary of function calls with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
     ///</summary>
-    private void AddFunctionCalls<TInput, TInput2, TResult>(string poolName, Dictionary<string, Func<TInput?, TInput2?, TResult>> funcsDict)
+    private void AddFunctionCalls(string poolName, Dictionary<string, Func<JsonNode?, JsonNode?, Task<JsonNode>>> funcsDict)
+    {
+        foreach (var kv in funcsDict)
+        {
+            AddFunctionCall(poolName, kv.Key, kv.Value);
+        }
+    }
+    ///<summary>
+    ///Add a dictionary of function calls with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+    ///</summary>
+    private void AddFunctionCalls(string poolName, Dictionary<string, Func<JsonNode?, JsonNode?, JsonNode>> funcsDict)
+    {
+        foreach (var kv in funcsDict)
+        {
+            AddFunctionCall(poolName, kv.Key, kv.Value);
+        }
+    }
+    ///<summary>
+    ///Add a dictionary of function calls with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+    ///</summary>
+    private void AddFunctionCalls(string poolName, Dictionary<string, Func<JsonNode?, JsonArray?, Task<JsonNode>>> funcsDict)
+    {
+        foreach (var kv in funcsDict)
+        {
+            AddFunctionCall(poolName, kv.Key, kv.Value);
+        }
+    }
+    ///<summary>
+    ///Add a dictionary of function calls with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+    ///</summary>
+    private void AddFunctionCalls(string poolName, Dictionary<string, Func<JsonNode?, JsonArray?, JsonNode>> funcsDict)
     {
         foreach (var kv in funcsDict)
         {
@@ -599,20 +765,34 @@ public class Grammar
     }
 
     ///<summary> Add a function to the grammar with no arguments. </summary>
-    public void AddFunction<TResult>(string name, Func<TResult> func) => AddFunctionCall("functions", name, func);
+    public void AddFunction(string name, Func<Task<JsonNode>> func) => AddFunctionCall("functions", name, func);
+    ///<summary> Add a function to the grammar with no arguments. </summary>
+    public void AddFunction(string name, Func<JsonNode> func) => AddFunctionCall("functions", name, func);
     ///<summary> Add a function to the grammar with a single argument (can be an array or list). </summary>
-    public void AddFunction<TInput, TResult>(string name, Func<TInput, TResult> func) => AddFunctionCall("functions", name, func);
+    public void AddFunction(string name, Func<JsonArray, Task<JsonNode>> func) => AddFunctionCall("functions", name, func);
+    ///<summary> Add a function to the grammar with a single argument (can be an array or list). </summary>
+    public void AddFunction(string name, Func<JsonArray, JsonNode> func) => AddFunctionCall("functions", name, func);
     ///<summary> Add a dictionary of functions with no arguments to the grammar. </summary>
-    public void AddFunctions<TResult>(Dictionary<string, Func<TResult>> funcsDict) => AddFunctionCalls("functions", funcsDict);
+    public void AddFunctions(Dictionary<string, Func<JsonNode>> funcsDict) => AddFunctionCalls("functions", funcsDict);
     ///<summary> Add a dictionary of functions with a single argument (can be an array or list) to the grammar. </summary>
-    public void AddFunctions<TInput, TResult>(Dictionary<string, Func<TInput, TResult>> funcsDict) => AddFunctionCalls("functions", funcsDict);
+    public void AddFunctions(Dictionary<string, Func<JsonArray, JsonNode>> funcsDict) => AddFunctionCalls("functions", funcsDict);
 
     ///<summary> Add a transform with a single argument to the grammar. </summary>
-    public void AddTransform<TInput, TResult>(string name, Func<TInput, TResult> func) => AddFunctionCall("transforms", name, func);
+    public void AddTransform(string name, Func<JsonArray, Task<JsonNode>> func) => AddFunctionCall("transforms", name, func);
+    ///<summary> Add a transform with a single argument to the grammar. </summary>
+    public void AddTransform(string name, Func<JsonArray, JsonNode> func) => AddFunctionCall("transforms", name, func);
     ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
-    public void AddTransform<TInput, TInput2, TResult>(string name, Func<TInput?, TInput2?, TResult> func) => AddFunctionCall("transforms", name, func);
+    public void AddTransform(string name, Func<JsonNode?, JsonNode?, Task<JsonNode>> func) => AddFunctionCall("transforms", name, func);
+    ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+    public void AddTransform(string name, Func<JsonNode?, JsonNode?, JsonNode> func) => AddFunctionCall("transforms", name, func);
+    ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+    public void AddTransform(string name, Func<JsonNode?, JsonArray?, Task<JsonNode>> func) => AddFunctionCall("transforms", name, func);
+    ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+    public void AddTransform(string name, Func<JsonNode?, JsonArray?, JsonNode> func) => AddFunctionCall("transforms", name, func);
     ///<summary> Add a dictionary of transforms with a single argument (can be an array or list) to the grammar. </summary>
-    public void AddTransforms<TInput, TResult>(Dictionary<string, Func<TInput, TResult>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
+    public void AddTransforms(Dictionary<string, Func<JsonArray, JsonNode>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
     ///<summary> Add a dictionary of transforms with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
-    public void AddTransforms<TInput, TInput2, TResult>(Dictionary<string, Func<TInput?, TInput2?, TResult>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
+    public void AddTransforms(Dictionary<string, Func<JsonNode?, JsonNode?, JsonNode>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
+    ///<summary> Add a dictionary of transforms with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+    public void AddTransforms(Dictionary<string, Func<JsonNode?, JsonArray?, JsonNode>> funcsDict) => AddFunctionCalls("transforms", funcsDict);
 }

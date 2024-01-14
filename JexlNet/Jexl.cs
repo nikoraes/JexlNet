@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace JexlNet;
@@ -40,6 +41,15 @@ public class Jexl : IJexl
         var expressionObj = new Expression(Grammar, expression);
         return await expressionObj.EvalAsync(context);
     }
+
+    /* public async Task<JsonElement> EvalAsync(string expression, JsonDocument context)
+    {
+        if (context.RootElement.ValueKind != JsonValueKind.Object)
+            throw new ArgumentException("Context must be an object", nameof(context));
+        var expressionObj = new Expression(Grammar, expression);
+        var result = await expressionObj.EvalAsync(JsonObject.Create(context.RootElement));
+        return JsonElement.ParseValue(result);
+    } */
 
     ///<summary>
     ///Synchronously evaluates a Jexl string within an optional context.

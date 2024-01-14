@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Newtonsoft.Json.Linq;
 
 namespace JexlNet.Test;
 
@@ -277,7 +278,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(@"[""foo"", 1+2]");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(new List<dynamic> { "foo", (decimal)3 }, result);
+        Assert.Equal(new JsonArray { "foo", 3 }, result);
     }
 
     [Theory]
@@ -318,22 +319,27 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_ReturnsEmptyArrayWhenApplyingFilterToUndefined()
     {
-        var context = new Dictionary<string, dynamic?>
+        /* var context = new Dictionary<string, dynamic?>
         {
             { "a", new Dictionary<string, dynamic>() },
+            { "b", 4 }
+        }; */
+        JsonObject context = new()
+        {
+            { "a", new JsonObject() },
             { "b", 4 }
         };
         Evaluator _evaluator = new(new Grammar(), context);
         var ast = ToTree(@"a.b[.c == d]");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(new List<dynamic>(), result);
-        Assert.Empty(result);
+        Assert.Equal(new JsonArray { }, result);
+        Assert.Empty(result!.AsArray());
     }
 
     [Fact]
     public async void EvaluateExpression_WithDollarIdentifiers()
     {
-        var context = new Dictionary<string, dynamic?>
+        JsonObject context = new()
         {
             { "$", 5 },
             { "$foo", 6 },
