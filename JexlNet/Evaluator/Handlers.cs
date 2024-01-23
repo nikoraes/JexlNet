@@ -14,9 +14,10 @@ public static class EvaluatorHandlers
     /// <param name="evaluator"></param>
     /// <param name="node"></param>
     /// <returns></returns>
-    public static async Task<JsonArray> ArrayLiteralAsync(Evaluator evaluator, Node? node)
+    public static async Task<JsonArray> ArrayLiteralAsync(Evaluator evaluator, Node node)
     {
-        return await evaluator.EvalArrayAsync(node?.Value);
+
+        return await evaluator.EvalArrayAsync(node.Value);
     }
 
     ///<summary>
@@ -243,7 +244,7 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a UnaryExpression as the top node</param>
     ///<returns>resolves with the value of the UnaryExpression.</returns>
-    public static async Task<dynamic?> UnaryExpressionAsync(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode?> UnaryExpressionAsync(Evaluator evaluator, Node? node)
     {
         if (node?.Operator == null)
         {
@@ -269,8 +270,8 @@ public static class EvaluatorHandlers
         { "BinaryExpression", BinaryExpressionAsync },
         { "ConditionalExpression", ConditionalExpression },
         { "FilterExpression", FilterExpression },
-        { "Identifier", IdentifierAsync },
-        { "Literal", LiteralAsync },
+        { GrammarType.Identifier, IdentifierAsync },
+        { GrammarType.Literal, LiteralAsync },
         { "ObjectLiteral", ObjectLiteralAsync },
         { "FunctionCall", FunctionCallAsync },
         { "UnaryExpression", UnaryExpressionAsync }

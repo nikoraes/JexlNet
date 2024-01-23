@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+
 namespace JexlNet.Test;
 
 public class ParserUnitTest
@@ -8,13 +10,14 @@ public class ParserUnitTest
     public void ConstructsASTForOnePlusTwo()
     {
         Parser _parser = new(new Grammar());
-        _parser.AddTokens(_lexer.Tokenize("1 + 2"));
+        var tokens = _lexer.Tokenize("1 + 2");
+        _parser.AddTokens(tokens);
         var result = _parser.Complete();
-        Node expected = new("BinaryExpression")
+        Node expected = new(GrammarType.BinaryExpression)
         {
             Operator = "+",
-            Left = new("Literal", (decimal)1),
-            Right = new("Literal", (decimal)2)
+            Left = new(GrammarType.Literal, JsonValue.Create((decimal)1)),
+            Right = new(GrammarType.Literal, JsonValue.Create((decimal)2))
         };
         Assert.Equal(expected, result);
     }
@@ -25,15 +28,15 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("2+3*4"));
         var result = _parser.Complete();
-        Node expected = new("BinaryExpression")
+        Node expected = new(GrammarType.BinaryExpression)
         {
             Operator = "+",
-            Left = new("Literal", (decimal)2),
-            Right = new("BinaryExpression")
+            Left = new(GrammarType.Literal, (decimal)2),
+            Right = new(GrammarType.BinaryExpression)
             {
                 Operator = "*",
-                Left = new("Literal", (decimal)3),
-                Right = new("Literal", (decimal)4)
+                Left = new(GrammarType.Literal, (decimal)3),
+                Right = new(GrammarType.Literal, (decimal)4)
             },
         };
         Assert.Equal(expected, result);
@@ -45,16 +48,16 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("2*3+4"));
         var result = _parser.Complete();
-        Node expected = new("BinaryExpression")
+        Node expected = new(GrammarType.BinaryExpression)
         {
             Operator = "+",
-            Left = new("BinaryExpression")
+            Left = new(GrammarType.BinaryExpression)
             {
                 Operator = "*",
-                Left = new("Literal", (decimal)2),
-                Right = new("Literal", (decimal)3)
+                Left = new(GrammarType.Literal, (decimal)2),
+                Right = new(GrammarType.Literal, (decimal)3)
             },
-            Right = new("Literal", (decimal)4)
+            Right = new(GrammarType.Literal, (decimal)4)
         };
         Assert.Equal(expected, result);
     }
@@ -65,30 +68,30 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("2+3*4==5/6-7"));
         var result = _parser.Complete();
-        Node expected = new("BinaryExpression")
+        Node expected = new(GrammarType.BinaryExpression)
         {
             Operator = "==",
-            Left = new("BinaryExpression")
+            Left = new(GrammarType.BinaryExpression)
             {
                 Operator = "+",
-                Left = new("Literal", (decimal)2),
-                Right = new("BinaryExpression")
+                Left = new(GrammarType.Literal, (decimal)2),
+                Right = new(GrammarType.BinaryExpression)
                 {
                     Operator = "*",
-                    Left = new("Literal", (decimal)3),
-                    Right = new("Literal", (decimal)4)
+                    Left = new(GrammarType.Literal, (decimal)3),
+                    Right = new(GrammarType.Literal, (decimal)4)
                 },
             },
-            Right = new("BinaryExpression")
+            Right = new(GrammarType.BinaryExpression)
             {
                 Operator = "-",
-                Left = new("BinaryExpression")
+                Left = new(GrammarType.BinaryExpression)
                 {
                     Operator = "/",
-                    Left = new("Literal", (decimal)5),
-                    Right = new("Literal", (decimal)6)
+                    Left = new(GrammarType.Literal, (decimal)5),
+                    Right = new(GrammarType.Literal, (decimal)6)
                 },
-                Right = new("Literal", (decimal)7)
+                Right = new(GrammarType.Literal, (decimal)7)
             }
         };
         Assert.Equal(expected, result);
@@ -100,24 +103,24 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("1*!!true-2"));
         var result = _parser.Complete();
-        Node expected = new("BinaryExpression")
+        Node expected = new(GrammarType.BinaryExpression)
         {
             Operator = "-",
-            Left = new("BinaryExpression")
+            Left = new(GrammarType.BinaryExpression)
             {
                 Operator = "*",
-                Left = new("Literal", (decimal)1),
-                Right = new("UnaryExpression")
+                Left = new(GrammarType.Literal, (decimal)1),
+                Right = new(GrammarType.UnaryExpression)
                 {
                     Operator = "!",
-                    Right = new("UnaryExpression")
+                    Right = new(GrammarType.UnaryExpression)
                     {
                         Operator = "!",
-                        Right = new("Literal", true)
+                        Right = new(GrammarType.Literal, true)
                     }
                 }
             },
-            Right = new("Literal", (decimal)2)
+            Right = new(GrammarType.Literal, (decimal)2)
         };
         Assert.Equal(expected, result);
     }
@@ -128,16 +131,16 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("(2+3)*4"));
         var result = _parser.Complete();
-        Node expected = new("BinaryExpression")
+        Node expected = new(GrammarType.BinaryExpression)
         {
             Operator = "*",
-            Left = new("BinaryExpression")
+            Left = new(GrammarType.BinaryExpression)
             {
                 Operator = "+",
-                Left = new("Literal", (decimal)2),
-                Right = new("Literal", (decimal)3)
+                Left = new(GrammarType.Literal, (decimal)2),
+                Right = new(GrammarType.Literal, (decimal)3)
             },
-            Right = new("Literal", (decimal)4)
+            Right = new(GrammarType.Literal, (decimal)4)
         };
         Assert.Equal(expected, result);
     }
@@ -148,21 +151,21 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("(4*(2+3))/5"));
         var result = _parser.Complete();
-        Node expected = new("BinaryExpression")
+        Node expected = new(GrammarType.BinaryExpression)
         {
             Operator = "/",
-            Left = new("BinaryExpression")
+            Left = new(GrammarType.BinaryExpression)
             {
                 Operator = "*",
-                Left = new("Literal", (decimal)4),
-                Right = new("BinaryExpression")
+                Left = new(GrammarType.Literal, (decimal)4),
+                Right = new(GrammarType.BinaryExpression)
                 {
                     Operator = "+",
-                    Left = new("Literal", (decimal)2),
-                    Right = new("Literal", (decimal)3)
+                    Left = new(GrammarType.Literal, (decimal)2),
+                    Right = new(GrammarType.Literal, (decimal)3)
                 }
             },
-            Right = new("Literal", (decimal)5)
+            Right = new(GrammarType.Literal, (decimal)5)
         };
         Assert.Equal(expected, result);
     }
@@ -173,16 +176,16 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"{foo: ""bar"", tek: 1+2}"));
         var result = _parser.Complete();
-        Node expected = new("ObjectLiteral")
+        Node expected = new(GrammarType.ObjectLiteral)
         {
-            Value = new Dictionary<string, Node>
+            Object = new Dictionary<string, Node>
             {
-                { "foo", new("Literal", "bar") },
-                { "tek", new("BinaryExpression")
+                { "foo", new(GrammarType.Literal, "bar") },
+                { "tek", new(GrammarType.BinaryExpression)
                     {
                         Operator = "+",
-                        Left = new("Literal", (decimal)1),
-                        Right = new("Literal", (decimal)2)
+                        Left = new(GrammarType.Literal, (decimal)1),
+                        Right = new(GrammarType.Literal, (decimal)2)
                     }
                 }
             }
@@ -196,16 +199,16 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"{'with-dash': ""bar"", tek: 1+2}"));
         var result = _parser.Complete();
-        Node expected = new("ObjectLiteral")
+        Node expected = new(GrammarType.ObjectLiteral)
         {
-            Value = new Dictionary<string, Node>
+            Object = new Dictionary<string, Node>
             {
-                { "with-dash", new("Literal", "bar") },
-                { "tek", new("BinaryExpression")
+                { "with-dash", new(GrammarType.Literal, "bar") },
+                { "tek", new(GrammarType.BinaryExpression)
                     {
                         Operator = "+",
-                        Left = new("Literal", (decimal)1),
-                        Right = new("Literal", (decimal)2)
+                        Left = new(GrammarType.Literal, (decimal)1),
+                        Right = new(GrammarType.Literal, (decimal)2)
                     }
                 }
             }
@@ -219,15 +222,15 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"{foo: {bar: ""tek""}}"));
         var result = _parser.Complete();
-        Node expected = new("ObjectLiteral")
+        Node expected = new(GrammarType.ObjectLiteral)
         {
-            Value = new Dictionary<string, Node>
+            Object = new Dictionary<string, Node>
             {
-                { "foo", new("ObjectLiteral")
+                { "foo", new(GrammarType.ObjectLiteral)
                     {
-                        Value = new Dictionary<string, Node>
+                        Object = new Dictionary<string, Node>
                         {
-                            { "bar", new("Literal", "tek") }
+                            { "bar", new(GrammarType.Literal, "tek") }
                         }
                     }
                 }
@@ -242,9 +245,9 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"{}"));
         var result = _parser.Complete();
-        Node expected = new("ObjectLiteral")
+        Node expected = new(GrammarType.ObjectLiteral)
         {
-            Value = new Dictionary<string, Node>()
+            Object = new Dictionary<string, Node>()
         };
         Assert.Equal(expected, result);
     }
@@ -255,16 +258,16 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"[""foo"", 1+2]"));
         var result = _parser.Complete();
-        Node expected = new("ArrayLiteral")
+        Node expected = new(GrammarType.ArrayLiteral)
         {
-            Value = new List<Node>
+            Array = new List<Node>
             {
-                new("Literal", "foo"),
-                new("BinaryExpression")
+                new(GrammarType.Literal, "foo"),
+                new(GrammarType.BinaryExpression)
                 {
                     Operator = "+",
-                    Left = new("Literal", (decimal)1),
-                    Right = new("Literal", (decimal)2)
+                    Left = new(GrammarType.Literal, (decimal)1),
+                    Right = new(GrammarType.Literal, (decimal)2)
                 }
             }
         };
@@ -277,17 +280,17 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"[""foo"", [""bar"", ""tek""]]"));
         var result = _parser.Complete();
-        Node expected = new("ArrayLiteral")
+        Node expected = new(GrammarType.ArrayLiteral)
         {
-            Value = new List<Node>
+            Array = new List<Node>
             {
-                new("Literal", "foo"),
-                new("ArrayLiteral")
+                new(GrammarType.Literal, "foo"),
+                new(GrammarType.ArrayLiteral)
                 {
-                    Value = new List<Node>
+                    Array = new List<Node>
                     {
-                        new("Literal", "bar"),
-                        new("Literal", "tek")
+                        new(GrammarType.Literal, "bar"),
+                        new(GrammarType.Literal, "tek")
                     }
                 }
             }
@@ -301,9 +304,9 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"[]"));
         var result = _parser.Complete();
-        Node expected = new("ArrayLiteral")
+        Node expected = new(GrammarType.ArrayLiteral)
         {
-            Value = new List<Node>()
+            Array = new List<Node>()
         };
         Assert.Equal(expected, result);
     }
@@ -314,17 +317,17 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo.bar.baz + 1"));
         var result = _parser.Complete();
-        Node expected = new("BinaryExpression")
+        Node expected = new(GrammarType.BinaryExpression)
         {
             Operator = "+",
-            Left = new("Identifier", "baz")
+            Left = new(GrammarType.Identifier, "baz")
             {
-                From = new("Identifier", "bar")
+                From = new(GrammarType.Identifier, "bar")
                 {
-                    From = new("Identifier", "foo")
+                    From = new(GrammarType.Identifier, "foo")
                 }
             },
-            Right = new("Literal", (decimal)1)
+            Right = new(GrammarType.Literal, (decimal)1)
         };
         Assert.Equal(expected, result);
     }
@@ -335,37 +338,37 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo|tr1|tr2.baz|tr3({bar:""tek""})"));
         var result = _parser.Complete();
-        Node expected = new("FunctionCall")
+        Node expected = new(GrammarType.FunctionCall)
         {
             Name = "tr3",
-            Pool = "transforms",
+            Pool = Grammar.PoolType.Transforms,
             Args =
             [
-                new("Identifier", "baz")
+                new(GrammarType.Identifier, "baz")
                 {
-                    From = new("FunctionCall")
+                    From = new(GrammarType.FunctionCall)
                     {
                         Name = "tr2",
-                        Pool = "transforms",
+                        Pool = Grammar.PoolType.Transforms,
                         Args =
                         [
-                            new("FunctionCall")
+                            new(GrammarType.FunctionCall)
                             {
                                 Name = "tr1",
-                                Pool = "transforms",
+                                Pool = Grammar.PoolType.Transforms,
                                 Args =
                                 [
-                                    new("Identifier","foo")
+                                    new(GrammarType.Identifier,"foo")
                                 ]
                             }
                         ]
                     }
                 },
-                new("ObjectLiteral")
+                new(GrammarType.ObjectLiteral)
                 {
-                    Value = new Dictionary<string, Node>
+                    Object = new Dictionary<string, Node>
                     {
-                        { "bar", new("Literal", "tek") }
+                        { "bar", new(GrammarType.Literal, "tek") }
                     }
                 }
             ]
@@ -379,16 +382,16 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo|bar(""tek"", 5, true)"));
         var result = _parser.Complete();
-        Node expected = new("FunctionCall")
+        Node expected = new(GrammarType.FunctionCall)
         {
             Name = "bar",
-            Pool = "transforms",
+            Pool = Grammar.PoolType.Transforms,
             Args =
             [
-                new("Identifier", "foo"),
-                new("Literal", "tek"),
-                new("Literal", (decimal)5),
-                new("Literal", true)
+                new(GrammarType.Identifier, "foo"),
+                new(GrammarType.Literal, "tek"),
+                new(GrammarType.Literal, (decimal)5),
+                new(GrammarType.Literal, true)
             ]
         };
         Assert.Equal(expected, result);
@@ -400,31 +403,31 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo[1][.bar[0]==""tek""].baz"));
         var result = _parser.Complete();
-        Node expected = new("Identifier", "baz")
+        Node expected = new(GrammarType.Identifier, "baz")
         {
-            From = new("FilterExpression")
+            From = new(GrammarType.FilterExpression)
             {
                 Relative = true,
-                Expr = new("BinaryExpression")
+                Expr = new(GrammarType.BinaryExpression)
                 {
                     Operator = "==",
-                    Left = new("FilterExpression")
+                    Left = new(GrammarType.FilterExpression)
                     {
                         Relative = false,
-                        Expr = new("Literal", 0),
-                        Subject = new("Identifier", "bar")
+                        Expr = new(GrammarType.Literal, 0),
+                        Subject = new(GrammarType.Identifier, "bar")
                         {
                             Relative = true,
                         }
                     },
-                    Right = new("Literal", "tek")
+                    Right = new(GrammarType.Literal, "tek")
                 },
             },
-            Subject = new("FilterExpression")
+            Subject = new(GrammarType.FilterExpression)
             {
                 Relative = true,
-                Expr = new("Literal", (decimal)1),
-                Subject = new("Identifier", "foo")
+                Expr = new(GrammarType.Literal, (decimal)1),
+                Subject = new(GrammarType.Identifier, "foo")
             }
         };
         Assert.Equal(expected, result);
@@ -436,22 +439,22 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo[.bar.baz == tek]"));
         var result = _parser.Complete();
-        Node expected = new("FilterExpression")
+        Node expected = new(GrammarType.FilterExpression)
         {
             Relative = true,
-            Expr = new("BinaryExpression")
+            Expr = new(GrammarType.BinaryExpression)
             {
                 Operator = "==",
-                Left = new("Identifier", "baz")
+                Left = new(GrammarType.Identifier, "baz")
                 {
-                    From = new("Identifier", "bar")
+                    From = new(GrammarType.Identifier, "bar")
                     {
                         Relative = true,
                     }
                 },
-                Right = new("Identifier", "tek")
+                Right = new(GrammarType.Identifier, "tek")
             },
-            Subject = new("Identifier", "foo")
+            Subject = new(GrammarType.Identifier, "foo")
         };
         Assert.Equal(expected, result);
     }
@@ -462,24 +465,24 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo.bar[.baz == tek.tak]"));
         var result = _parser.Complete();
-        Node expected = new("FilterExpression")
+        Node expected = new(GrammarType.FilterExpression)
         {
             Relative = true,
-            Expr = new("BinaryExpression")
+            Expr = new(GrammarType.BinaryExpression)
             {
                 Operator = "==",
-                Left = new("Identifier", "baz")
+                Left = new(GrammarType.Identifier, "baz")
                 {
                     Relative = true,
                 },
-                Right = new("Identifier", "tak")
+                Right = new(GrammarType.Identifier, "tak")
                 {
-                    From = new("Identifier", "tek")
+                    From = new(GrammarType.Identifier, "tek")
                 }
             },
-            Subject = new("Identifier", "bar")
+            Subject = new(GrammarType.Identifier, "bar")
             {
-                From = new("Identifier", "foo")
+                From = new(GrammarType.Identifier, "foo")
             }
         };
         Assert.Equal(expected, result);
@@ -489,22 +492,23 @@ public class ParserUnitTest
     public void AllowsDotNotationForAllOperands()
     {
         Parser _parser = new(new Grammar());
-        _parser.AddTokens(_lexer.Tokenize(@"""foo"".length + {foo: ""bar""}.foo"));
+        var tokens = _lexer.Tokenize(@"""foo"".length + {foo: ""bar""}.foo");
+        _parser.AddTokens(tokens);
         var result = _parser.Complete();
-        Node expected = new("BinaryExpression")
+        Node expected = new(GrammarType.BinaryExpression)
         {
             Operator = "+",
-            Left = new("Identifier", "length")
+            Left = new(GrammarType.Identifier, "length")
             {
-                From = new("Literal", "foo")
+                From = new(GrammarType.Literal, "foo")
             },
-            Right = new("Identifier", "foo")
+            Right = new(GrammarType.Identifier, "foo")
             {
-                From = new("ObjectLiteral")
+                From = new(GrammarType.ObjectLiteral)
                 {
-                    Value = new Dictionary<string, Node>
+                    Object = new Dictionary<string, Node>
                     {
-                        { "foo", new("Literal", "bar") }
+                        { "foo", new(GrammarType.Literal, "bar") }
                     }
                 }
             }
@@ -518,13 +522,13 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"(""foo"" + ""bar"").length"));
         var result = _parser.Complete();
-        Node expected = new("Identifier", "length")
+        Node expected = new(GrammarType.Identifier, "length")
         {
-            From = new("BinaryExpression")
+            From = new(GrammarType.BinaryExpression)
             {
                 Operator = "+",
-                Left = new("Literal", "foo"),
-                Right = new("Literal", "bar")
+                Left = new(GrammarType.Literal, "foo"),
+                Right = new(GrammarType.Literal, "bar")
             }
         };
         Assert.Equal(expected, result);
@@ -536,14 +540,14 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"[""foo"", ""bar""].length"));
         var result = _parser.Complete();
-        Node expected = new("Identifier", "length")
+        Node expected = new(GrammarType.Identifier, "length")
         {
-            From = new("ArrayLiteral")
+            From = new(GrammarType.ArrayLiteral)
             {
-                Value = new List<Node>
+                Array = new List<Node>
                 {
-                    new("Literal", "foo"),
-                    new("Literal", "bar")
+                    new(GrammarType.Literal, "foo"),
+                    new(GrammarType.Literal, "bar")
                 }
             }
         };
@@ -556,11 +560,11 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo ? 1 : 0"));
         var result = _parser.Complete();
-        Node expected = new("ConditionalExpression")
+        Node expected = new(GrammarType.ConditionalExpression)
         {
-            Test = new("Identifier", "foo"),
-            Consequent = new("Literal", (decimal)1),
-            Alternate = new("Literal", (decimal)0)
+            Test = new(GrammarType.Identifier, "foo"),
+            Consequent = new(GrammarType.Literal, (decimal)1),
+            Alternate = new(GrammarType.Literal, (decimal)0)
         };
         Assert.Equal(expected, result);
     }
@@ -571,16 +575,16 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo ? (bar ? 1 : 2) : 3"));
         var result = _parser.Complete();
-        Node expected = new("ConditionalExpression")
+        Node expected = new(GrammarType.ConditionalExpression)
         {
-            Test = new("Identifier", "foo"),
-            Consequent = new("ConditionalExpression")
+            Test = new(GrammarType.Identifier, "foo"),
+            Consequent = new(GrammarType.ConditionalExpression)
             {
-                Test = new("Identifier", "bar"),
-                Consequent = new("Literal", (decimal)1),
-                Alternate = new("Literal", (decimal)2)
+                Test = new(GrammarType.Identifier, "bar"),
+                Consequent = new(GrammarType.Literal, (decimal)1),
+                Alternate = new(GrammarType.Literal, (decimal)2)
             },
-            Alternate = new("Literal", (decimal)3)
+            Alternate = new(GrammarType.Literal, (decimal)3)
         };
         Assert.Equal(expected, result);
     }
@@ -591,16 +595,16 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo ? bar ? 1 : 2 : 3"));
         var result = _parser.Complete();
-        Node expected = new("ConditionalExpression")
+        Node expected = new(GrammarType.ConditionalExpression)
         {
-            Test = new("Identifier", "foo"),
-            Consequent = new("ConditionalExpression")
+            Test = new(GrammarType.Identifier, "foo"),
+            Consequent = new(GrammarType.ConditionalExpression)
             {
-                Test = new("Identifier", "bar"),
-                Consequent = new("Literal", (decimal)1),
-                Alternate = new("Literal", (decimal)2)
+                Test = new(GrammarType.Identifier, "bar"),
+                Consequent = new(GrammarType.Literal, (decimal)1),
+                Alternate = new(GrammarType.Literal, (decimal)2)
             },
-            Alternate = new("Literal", (decimal)3)
+            Alternate = new(GrammarType.Literal, (decimal)3)
         };
         Assert.Equal(expected, result);
     }
@@ -611,17 +615,17 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"foo ? {bar: ""tek""} : ""baz"""));
         var result = _parser.Complete();
-        Node expected = new("ConditionalExpression")
+        Node expected = new(GrammarType.ConditionalExpression)
         {
-            Test = new("Identifier", "foo"),
-            Consequent = new("ObjectLiteral")
+            Test = new(GrammarType.Identifier, "foo"),
+            Consequent = new(GrammarType.ObjectLiteral)
             {
-                Value = new Dictionary<string, Node>
+                Object = new Dictionary<string, Node>
                 {
-                    { "bar", new("Literal", "tek") }
+                    { "bar", new(GrammarType.Literal, "tek") }
                 }
             },
-            Alternate = new("Literal", "baz")
+            Alternate = new(GrammarType.Literal, "baz")
         };
         Assert.Equal(expected, result);
     }
@@ -632,16 +636,16 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize(@"a.b == c.d"));
         var result = _parser.Complete();
-        Node expected = new("BinaryExpression")
+        Node expected = new(GrammarType.BinaryExpression)
         {
             Operator = "==",
-            Left = new("Identifier", "b")
+            Left = new(GrammarType.Identifier, "b")
             {
-                From = new("Identifier", "a")
+                From = new(GrammarType.Identifier, "a")
             },
-            Right = new("Identifier", "d")
+            Right = new(GrammarType.Identifier, "d")
             {
-                From = new("Identifier", "c")
+                From = new(GrammarType.Identifier, "c")
             }
         };
         Assert.Equal(expected, result);
@@ -653,11 +657,11 @@ public class ParserUnitTest
         Parser _parser = new(new Grammar());
         _parser.AddTokens(_lexer.Tokenize("\t2\r\n+\n\r3\n\n"));
         var result = _parser.Complete();
-        Node expected = new("BinaryExpression")
+        Node expected = new(GrammarType.BinaryExpression)
         {
             Operator = "+",
-            Left = new("Literal", (decimal)2),
-            Right = new("Literal", (decimal)3)
+            Left = new(GrammarType.Literal, (decimal)2),
+            Right = new(GrammarType.Literal, (decimal)3)
         };
         Assert.Equal(expected, result);
     }

@@ -21,11 +21,11 @@ public class Evaluator
     /// </summary>
     /// <param name="ast">An expression tree object</param>
     /// <returns>Resolves with the resulting value of the expression.</returns>
-    public async Task<JsonNode?> EvalAsync(Node? ast)
+    public async Task<Node?> EvalAsync(Node? ast)
     {
-        if (ast == null) return await Task.FromResult<JsonNode?>(null);
+        if (ast == null) return await Task.FromResult<Node?>(null);
         EvaluatorHandlers.Handlers.TryGetValue(ast.Type, out var handleFunc);
-        if (handleFunc == null) return await Task.FromResult<JsonNode?>(null);
+        if (handleFunc == null) return await Task.FromResult<Node?>(null);
         return await handleFunc.Invoke(this, ast);
     }
 
@@ -36,12 +36,12 @@ public class Evaluator
     ///</summary>
     ///<param name="arr">An array of expression strings to be evaluated</param>
     ///<returns>resolves with the result array</returns>
-    internal async Task<JsonArray> EvalArrayAsync(List<Node> arr)
+    internal async Task<List<Node?>> EvalArrayAsync(List<Node> arr)
     {
-        var result = new JsonArray();
+        List<Node?> result = [];
         foreach (var val in arr)
         {
-            var elemResult = await EvalAsync(val);
+            Node? elemResult = await EvalAsync(val);
             // Not possible for JsonNode to be a Task
             // if (elemResult is Task) await elemResult;
             result.Add(elemResult);
@@ -59,7 +59,7 @@ public class Evaluator
     ///<returns>resolves with the result map.</returns>
     internal async Task<JsonObject> EvalMapAsync(Dictionary<string, Node> map)
     {
-        var result = new JsonObject();
+        JsonObject result = [];
         foreach (var kv in map)
         {
             result[kv.Key] = await EvalAsync(kv.Value);
@@ -91,12 +91,12 @@ public class Evaluator
         {
             subj = new JsonArray() { subj };
         }
-        JsonArray results = new();
+        JsonArray results = [];
         foreach (var elem in (JsonArray)subj)
         {
             Evaluator elementEvaluator = new(Grammar, Context, elem);
-            var shouldInclude = await elementEvaluator.EvalAsync(expr);
-            if (shouldInclude?.Equals(true) == true)
+            JsonNode? shouldInclude = await elementEvaluator.EvalAsync(expr);
+            if (shouldInclude?.GetValueKind() == JsonValueKind.True)
             {
                 results.Add(elem);
             }
@@ -120,7 +120,7 @@ public class Evaluator
     ///<returns>resolves with the value of the drill-down.</returns>
     public async Task<JsonNode?> FilterStaticAsync(JsonNode subj, Node expr)
     {
-        var result = await EvalAsync(expr);
+        JsonNode? result = await EvalAsync(expr);
         if (result == null)
         {
             return null;

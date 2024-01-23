@@ -4,40 +4,6 @@ using System.Text.RegularExpressions;
 
 namespace JexlNet;
 
-public class Token : IEquatable<Token>
-{
-    public Token(string type, JsonNode? value = null, string? raw = null)
-    {
-        Type = type;
-        Value = value;
-        Raw = raw;
-    }
-
-    public string Type { get; set; }
-    public JsonNode? Value { get; set; }
-    public string? Raw { get; set; }
-
-    public bool Equals(Token? other)
-    {
-        if (other == null)
-        {
-            return false;
-        }
-        return Raw == other.Raw && Type == other.Type && Value == other.Value;
-    }
-
-    public override bool Equals(object? obj)
-    {
-        if (obj == null) return false;
-        return Equals(obj as Token);
-    }
-
-    public override int GetHashCode()
-    {
-        throw new ApplicationException("This class does not support GetHashCode and should not be used as a key for a dictionary");
-    }
-}
-
 /// <summary>
 /// Lexer is a collection of stateless, statically-accessed functions for the
 /// lexical parsing of a Jexl string.  Its responsibility is to identify the
@@ -59,7 +25,7 @@ public class Lexer
     public Regex identifierRegex = new(@"^[a-zA-Zа-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF$][a-zA-Zа-яА-Я0-9_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF$]*$", RegexOptions.Compiled);
     public Regex escEscRegex = new(@"\\", RegexOptions.Compiled);
     public Regex whitespaceRegex = new(@"^\s*$", RegexOptions.Compiled);
-    public string[] preOpRegexElems = new string[] {
+    public string[] preOpRegexElems = [
         // Strings
         @"'(?:(?:\\')|[^'])*'",
         @"""(?:(?:\\"")|[^""])*""",
@@ -68,21 +34,21 @@ public class Lexer
         // Booleans
         @"\btrue\b",
         @"\bfalse\b",
-    };
-    public string[] postOpRegexElems = new string[] {
+    ];
+    public string[] postOpRegexElems = [
         // Identifiers
         @"[a-zA-Zа-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\$][a-zA-Z0-9а-яА-Я_\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\$]*",
             // Numerics (without negative symbol)
             @"(?:(?:[0-9]*\.[0-9]+)|[0-9]+)",
-    };
-    public string[] minusNegatesAfter = new string[] {
-        "binaryOp",
-            "unaryOp",
-            "openParen",
-            "openBracket",
-            "question",
-            "colon",
-    };
+    ];
+    public GrammarType[] minusNegatesAfter = [
+        GrammarType.BinaryOperator,
+        GrammarType.UnaryOperator,
+        GrammarType.OpenParen,
+        GrammarType.OpenBracket,
+        GrammarType.Question,
+        GrammarType.Colon,
+    ];
     private Regex? _splitRegex;
 
     /// <summary>
@@ -106,7 +72,7 @@ public class Lexer
     /// <returns>An array of token objects</returns>
     public List<Token> GetTokens(List<string> elements)
     {
-        List<Token> tokens = new();
+        List<Token> tokens = [];
         bool negate = false;
         for (int i = 0; i < elements.Count; i++)
         {
@@ -154,22 +120,22 @@ public class Lexer
     /// <returns>A token object</returns>
     private Token CreateToken(string element)
     {
-        var token = new Token("literal", element, element);
+        Token token = new(GrammarType.Literal, element, JsonValue.Create(element));
         if (element[0] == '"' || element[0] == '\'')
         {
-            token.Value = Unquote(element);
+            token.Value = JsonValue.Create(Unquote(element));
         }
         else if (numericRegex.IsMatch(element))
         {
-            token.Value = decimal.Parse(element, CultureInfo.InvariantCulture);
+            token.Value = JsonValue.Create(decimal.Parse(element, CultureInfo.InvariantCulture));
         }
         else if (element == "true")
         {
-            token.Value = true;
+            token.Value = JsonValue.Create(true);
         }
         else if (element == "false")
         {
-            token.Value = false;
+            token.Value = JsonValue.Create(false);
         }
         else if (Grammar.Elements.TryGetValue(element, out ElementGrammar? value))
         {
@@ -177,7 +143,7 @@ public class Lexer
         }
         else if (identifierRegex.IsMatch(element))
         {
-            token.Type = "identifier";
+            token.Type = GrammarType.Identifier;
         }
         else
         {
