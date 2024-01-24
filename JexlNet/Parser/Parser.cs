@@ -229,7 +229,7 @@ public class Parser
     }
 
     ///<summary>
-    ///Sets the parent of a node by creating a non-enumerable _parent property
+    ///Sets the parent of a node by creating a non-enumerable Parent property
     ///that points to the supplied parent argument.
     ///</summary>
     ///<param name="node">A node of the AST on which to set a new parent</param>

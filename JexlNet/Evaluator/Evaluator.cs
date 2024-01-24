@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -21,11 +20,11 @@ public class Evaluator
     /// </summary>
     /// <param name="ast">An expression tree object</param>
     /// <returns>Resolves with the resulting value of the expression.</returns>
-    public async Task<Node?> EvalAsync(Node? ast)
+    public async Task<JsonNode?> EvalAsync(Node? ast)
     {
-        if (ast == null) return await Task.FromResult<Node?>(null);
+        if (ast == null) return await Task.FromResult<JsonNode?>(null);
         EvaluatorHandlers.Handlers.TryGetValue(ast.Type, out var handleFunc);
-        if (handleFunc == null) return await Task.FromResult<Node?>(null);
+        if (handleFunc == null) return await Task.FromResult<JsonNode?>(null);
         return await handleFunc.Invoke(this, ast);
     }
 
@@ -36,15 +35,15 @@ public class Evaluator
     ///</summary>
     ///<param name="arr">An array of expression strings to be evaluated</param>
     ///<returns>resolves with the result array</returns>
-    internal async Task<List<Node?>> EvalArrayAsync(List<Node> arr)
+    internal async Task<JsonArray> EvalArrayAsync(List<Node> arr)
     {
-        List<Node?> result = [];
+        JsonArray result = [];
         foreach (var val in arr)
         {
-            Node? elemResult = await EvalAsync(val);
+            JsonNode? elemResult = await EvalAsync(val);
             // Not possible for JsonNode to be a Task
             // if (elemResult is Task) await elemResult;
-            result.Add(elemResult);
+            result.Add(elemResult?.DeepClone());
         }
         return result;
         // return await Task.WhenAll(arr.Select(async (item) => await Eval(item)));
@@ -85,20 +84,23 @@ public class Evaluator
     ///the returned array otherwise, it will be eliminated.</param>
     ///<returns>resolves with an array of values that passed the
     ///expression filter.</returns>
-    public async Task<JsonArray> FilterRelativeAsync(JsonNode subj, Node expr)
+    public async Task<JsonArray> FilterRelativeAsync(JsonNode? subj, Node expr)
     {
-        if (subj is not JsonArray)
+        if (subj != null && subj is not JsonArray)
         {
             subj = new JsonArray() { subj };
         }
         JsonArray results = [];
-        foreach (var elem in (JsonArray)subj)
+        if (subj is JsonArray arr)
         {
-            Evaluator elementEvaluator = new(Grammar, Context, elem);
-            JsonNode? shouldInclude = await elementEvaluator.EvalAsync(expr);
-            if (shouldInclude?.GetValueKind() == JsonValueKind.True)
+            foreach (var elem in arr)
             {
-                results.Add(elem);
+                Evaluator elementEvaluator = new(Grammar, Context, elem);
+                JsonNode? shouldInclude = await elementEvaluator.EvalAsync(expr);
+                if (shouldInclude?.GetValueKind() == JsonValueKind.True)
+                {
+                    results.Add(elem?.DeepClone());
+                }
             }
         }
         return results;
@@ -118,20 +120,20 @@ public class Evaluator
     ///indicating a property name)</param>
     ///<param name="expr">The expression tree to run against the subject</param>
     ///<returns>resolves with the value of the drill-down.</returns>
-    public async Task<JsonNode?> FilterStaticAsync(JsonNode subj, Node expr)
+    public async Task<JsonNode?> FilterStaticAsync(JsonNode? subj, Node expr)
     {
         JsonNode? result = await EvalAsync(expr);
-        if (result == null)
+        if (result == null || subj == null)
         {
-            return null;
+            return new JsonArray();
         }
         else if (result.GetValueKind() == JsonValueKind.True)
         {
             return subj;
         }
-        else if (result.GetValueKind() == JsonValueKind.Number)
+        else if (result.GetValueKind() == JsonValueKind.Number && result is JsonValue resultValue)
         {
-            return subj[decimal.ToInt32(result.GetValue<decimal>())];
+            return subj[resultValue.ToInt32()];
         }
         else if (result.GetValueKind() == JsonValueKind.String)
         {

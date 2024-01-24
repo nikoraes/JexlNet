@@ -14,10 +14,10 @@ public static class EvaluatorHandlers
     /// <param name="evaluator"></param>
     /// <param name="node"></param>
     /// <returns></returns>
-    public static async Task<JsonArray> ArrayLiteralAsync(Evaluator evaluator, Node node)
+    public static async Task<JsonNode?> ArrayLiteralAsync(Evaluator evaluator, Node node)
     {
-
-        return await evaluator.EvalArrayAsync(node.Value);
+        if (node?.Array == null) throw new Exception("EvaluatorHandlers.ArrayLiteralAsync: node has no array");
+        return await evaluator.EvalArrayAsync(node.Array);
     }
 
     ///<summary>
@@ -32,16 +32,16 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a BinaryExpression as the top node</param>
     ///<returns>resolves with the value of the BinaryExpression.</returns>
-    public static async Task<JsonNode> BinaryExpressionAsync(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode?> BinaryExpressionAsync(Evaluator evaluator, Node node)
     {
         if (node?.Operator == null)
         {
-            throw new Exception("BinaryExpression node has no operator");
+            throw new Exception("EvaluatorHandlers.BinaryExpression: node has no operator");
         }
         var grammarOp = evaluator.Grammar.Elements[node.Operator];
         if (grammarOp == null || grammarOp.Evaluate == null)
         {
-            throw new Exception($"BinaryExpression node has unknown operator: {node.Operator}");
+            throw new Exception($"EvaluatorHandlers.BinaryExpression: node has unknown operator: {node.Operator}");
         }
         // EvaluateOnDemand allows to only conditionally evaluate one side of the binary expression
         if (grammarOp.EvaluateOnDemandAsync != null && node.Left != null && node.Right != null)
@@ -51,7 +51,7 @@ public static class EvaluatorHandlers
         }
         var leftResult = await evaluator.EvalAsync(node?.Left);
         var rightResult = await evaluator.EvalAsync(node?.Right);
-        return grammarOp.Evaluate(new JsonArray { leftResult, rightResult });
+        return grammarOp.Evaluate([leftResult?.DeepClone(), rightResult?.DeepClone()]);
     }
 
     ///<summary>
@@ -62,11 +62,11 @@ public static class EvaluatorHandlers
     ///</summary>
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a ConditionalExpression as the top node</param>
-    public static async Task<dynamic?> ConditionalExpression(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode?> ConditionalExpression(Evaluator evaluator, Node node)
     {
         if (node?.Test == null)
         {
-            throw new Exception("ConditionalExpression node has no test");
+            throw new Exception("EvaluatorHandlers.ConditionalExpression: node has no test");
         }
         JsonNode? testResult = await evaluator.EvalAsync(node?.Test);
         // If it's a string, we consider it truthy if it's non-empty
@@ -93,18 +93,18 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a FilterExpression as the top node</param>
     ///<returns>resolves with the value of the FilterExpression.</returns>
-    public static async Task<JsonNode?> FilterExpression(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode?> FilterExpression(Evaluator evaluator, Node node)
     {
         if (node?.Subject == null)
         {
-            throw new Exception("FilterExpression node has no subject");
+            throw new Exception("EvaluatorHandlers.FilterExpression: node has no subject");
+        }
+        if (node.Expr == null)
+        {
+            throw new Exception("EvaluatorHandlers.FilterExpression: node has no expression");
         }
         JsonNode? subjectResult = await evaluator.EvalAsync(node?.Subject);
-        if (subjectResult == null || node?.Expr == null)
-        {
-            return null;
-        }
-        else if (node?.Relative == true)
+        if (node?.Relative == true)
         {
             return await evaluator.FilterRelativeAsync(subjectResult, node.Expr);
         }
@@ -122,58 +122,50 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with an Identifier as the top node</param>
     ///<returns>either the identifier's value, or a Promise that will resolve with the identifier's value.</returns>
-    public static async Task<JsonNode?> IdentifierAsync(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode?> IdentifierAsync(Evaluator evaluator, Node node)
     {
-        if (node?.From == null)
+        string nodeValue;
+        if (node.Value != null && node.From == null)
         {
-            if (node?.Relative == true && evaluator.RelContext != null && evaluator.RelContext?.ContainsKey(node?.Value))
+            nodeValue = node.Value.GetValue<string>();
+            if (node?.Relative == true && evaluator.RelContext != null && evaluator.RelContext.ContainsKey(nodeValue))
             {
-                return evaluator.RelContext?[node?.Value];
+                return evaluator.RelContext[nodeValue];
             }
-            else if (evaluator.Context != null && evaluator.Context?.ContainsKey(node?.Value))
+            else if (evaluator.Context != null && evaluator.Context.ContainsKey(nodeValue))
             {
-                var result = evaluator.Context?[node?.Value];
-                var resultType = result?.GetType();
-                if (_invokableTypes.Contains(resultType) || resultType?.IsGenericType && _invokableTypes.Contains(resultType?.GetGenericTypeDefinition()))
-                {
-                    return await result?.Invoke();
-                }
-                if (result != null && typeof(Task).IsAssignableFrom(resultType))
-                {
-                    return await result;
-                }
-                return result;
+                return evaluator.Context?[nodeValue];
             }
             else return null;
         }
-        JsonNode? fromResult = await evaluator.EvalAsync(node?.From);
-        if (fromResult == null || node?.Value == null)
+        JsonNode? fromResult = await evaluator.EvalAsync(node.From);
+        if (fromResult == null || node.Value == null)
         {
             return null;
         }
-        else if (fromResult is JsonArray list)
+        nodeValue = node.Value.GetValue<string>();
+        if (fromResult is JsonArray list)
         {
-            fromResult = list.First();
-        }
-        else if (fromResult is JsonObject dict && !string.IsNullOrEmpty(node?.Value))
-        {
-            string key = node.Value;
-
-
-
-            if (dict.TryGetValue(key, out dynamic? value))
+            if (list.First() is JsonObject dict && !string.IsNullOrEmpty(nodeValue))
             {
-                return value;
+                return dict[nodeValue];
             }
-            else return null;
+            else if (int.TryParse(nodeValue, out int index))
+            {
+                return list[index];
+            }
         }
-        else if ((fromResultType.IsGenericType || fromResultType != null) && node?.Value != null && node!.Value is string)
+        else if (fromResult is JsonObject dict && !string.IsNullOrEmpty(nodeValue))
+        {
+            return dict[nodeValue];
+        }
+        /* else if ((fromResultType.IsGenericType || fromResultType != null) && node?.Value != null && node!.Value is string)
         {
             // Try to access builtin properties
             PropertyInfo? propertyInfo = fromResultType?.GetProperty($"{node!.Value}");
             return propertyInfo?.GetValue(fromResult);
-        }
-        return fromResult?[node?.Value];
+        } */
+        return null;
     }
 
     ///<summary>
@@ -182,9 +174,9 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a Literal as its only node</param>
     ///<returns>The value of the Literal node</returns>
-    public static async Task<dynamic?> LiteralAsync(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode?> LiteralAsync(Evaluator evaluator, Node node)
     {
-        return await Task.FromResult<dynamic?>(node?.Value);
+        return await Task.FromResult(node.Value);
     }
 
     ///<summary>
@@ -194,9 +186,10 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a Literal as its only node</param>
     ///<returns>The value of the Literal node</returns>
-    public static async Task<dynamic?> ObjectLiteralAsync(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode?> ObjectLiteralAsync(Evaluator evaluator, Node node)
     {
-        return await evaluator.EvalMapAsync(node?.Value);
+        if (node?.Object == null) throw new Exception("EvaluatorHandlers.ObjectLiteralAsync: node has no object");
+        return await evaluator.EvalMapAsync(node.Object);
     }
 
     ///<summary>
@@ -206,34 +199,34 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a FunctionCall as the top node</param>
     ///<returns>the value of the function call, or a Promise that will resolve with the resulting value.</returns>
-    public static async Task<dynamic?> FunctionCallAsync(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode?> FunctionCallAsync(Evaluator evaluator, Node node)
     {
 
         if (node?.Pool == null)
         {
-            throw new Exception("FunctionCall node has no pool");
+            throw new Exception("EvaluatorHandlers.FunctionCallAsync: node has no pool");
         }
         if (node.Name == null)
         {
-            throw new Exception("Function or transform not defined");
+            throw new Exception("EvaluatorHandlers.FunctionCallAsync: function or transform not defined");
         }
         if (node.Args == null)
         {
-            throw new Exception("Arguments not defined");
+            throw new Exception("EvaluatorHandlers.FunctionCallAsync: Arguments not defined");
         }
-        if (node.Pool == "functions" && evaluator.Grammar.Functions.TryGetValue(node.Name, out var func))
+        if (node.Pool == Grammar.PoolType.Functions && evaluator.Grammar.Functions.TryGetValue(node.Name, out var func))
         {
-            var argsResult = await evaluator.EvalArrayAsync(node.Args);
+            JsonArray argsResult = await evaluator.EvalArrayAsync(node.Args);
             return await func(argsResult);
         }
-        else if (node.Pool == "transforms" && evaluator.Grammar.Transforms.TryGetValue(node.Name, out var transform))
+        else if (node.Pool == Grammar.PoolType.Transforms && evaluator.Grammar.Transforms.TryGetValue(node.Name, out var transform))
         {
-            var argsResult = await evaluator.EvalArrayAsync(node.Args);
+            JsonArray argsResult = await evaluator.EvalArrayAsync(node.Args);
             return await transform(argsResult);
         }
         else
         {
-            throw new Exception($"Function or transform not found: {node.Pool}.{node.Name}");
+            throw new Exception($"EvaluatorHandlers.FunctionCallAsync: Function or transform not found: {Enum.GetName(typeof(Grammar.PoolType), node.Pool)}.{node.Name}");
         }
     }
 
@@ -244,44 +237,38 @@ public static class EvaluatorHandlers
     ///<param name="evaluator"></param>
     ///<param name="node">An expression tree with a UnaryExpression as the top node</param>
     ///<returns>resolves with the value of the UnaryExpression.</returns>
-    public static async Task<JsonNode?> UnaryExpressionAsync(Evaluator evaluator, Node? node)
+    public static async Task<JsonNode?> UnaryExpressionAsync(Evaluator evaluator, Node node)
     {
         if (node?.Operator == null)
         {
-            throw new Exception("UnaryExpression node has no operator");
+            throw new Exception("EvaluatorHandlers.UnaryExpressionAsync: node has no operator");
         }
         if (node?.Right == null)
         {
-            throw new Exception("UnaryExpression node has no right");
+            throw new Exception("EvaluatorHandlers.UnaryExpressionAsync: node has no right");
         }
         var grammarOp = evaluator.Grammar.Elements[node.Operator];
         if (grammarOp == null || grammarOp.Evaluate == null)
         {
-            throw new Exception($"UnaryExpression node has unknown operator: {node.Operator}");
+            throw new Exception($"EvaluatorHandlers.UnaryExpressionAsync: node has unknown operator: {node.Operator}");
         }
-        var rightResult = await evaluator.EvalAsync(node?.Right);
-        return await grammarOp.Evaluate(rightResult);
+        JsonNode? rightResult = await evaluator.EvalAsync(node?.Right);
+        return grammarOp.Evaluate([rightResult]);
     }
 
 
-    public static readonly Dictionary<string, Func<Evaluator, Node?, Task<dynamic?>>> Handlers = new()
+    public static readonly Dictionary<GrammarType, Func<Evaluator, Node, Task<JsonNode?>>> Handlers = new()
     {
-        { "ArrayLiteral", ArrayLiteralAsync },
-        { "BinaryExpression", BinaryExpressionAsync },
-        { "ConditionalExpression", ConditionalExpression },
-        { "FilterExpression", FilterExpression },
+        { GrammarType.ArrayLiteral, ArrayLiteralAsync },
+        { GrammarType.BinaryExpression, BinaryExpressionAsync },
+        { GrammarType.ConditionalExpression, ConditionalExpression },
+        { GrammarType.FilterExpression, FilterExpression },
         { GrammarType.Identifier, IdentifierAsync },
         { GrammarType.Literal, LiteralAsync },
-        { "ObjectLiteral", ObjectLiteralAsync },
-        { "FunctionCall", FunctionCallAsync },
-        { "UnaryExpression", UnaryExpressionAsync }
+        { GrammarType.ObjectLiteral, ObjectLiteralAsync },
+        { GrammarType.FunctionCall, FunctionCallAsync },
+        { GrammarType.UnaryExpression, UnaryExpressionAsync }
     };
-
-    private static readonly HashSet<Type> _invokableTypes = new()
-     {
-         typeof(Action), typeof(Action<>), typeof(Action<,>),    // etc
-         typeof(Func<>), typeof(Func<,>), typeof(Func<,,>),      // etc
-     };
 }
 
 
