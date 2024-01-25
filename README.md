@@ -7,29 +7,28 @@ NOTE: This library handles the JEXL from [TomFrost's JEXL library](https://githu
 ## Quick start
 
 Expressions can be evaluated synchronously or asynchronously by using the `Eval` and `EvalAsync` methods respectively. 
-
-Context should be a Dictionary<string, dynamic> and can internally use List<dynamic>, string, bool and decimal (all numbers should be decimals to allow exact comparisons). Bindings for Json.Net (Newtonsoft) and System.Text.Json can be used to easily convert JSON strings to the required format. 
+Context should be a JsonObject (or a string which will internally be converted to a JsonObject). The output is always a JsonNode (can be JsonObject, JsonArray or JsonValue).
 
 The Grammar can be expanded by adding new operators, functions and transforms. 
 
 
 ```csharp
-// Native way of defining a context
-var context = new Dictionary<string, dynamic> {
-    { "name", new Dictionary<string, dynamic> {
+// Define context as a JsonObject (System.Text.Json)
+var context = new JsonObject {
+    { "name", new JsonObject {
         { "first", "Sterling" },
         { "last", "Archer" }
     }},
-    { "assoc", new List<dynamic> {
-        new Dictionary<string, dynamic> {
+    { "assoc", new JsonArray {
+        new JsonObject {
             { "first", "Lana" },
             { "last", "Kane" }
         },
-        new Dictionary<string, dynamic> {
+        new JsonObject {
             { "first", "Cyril" },
             { "last", "Figgis" }
         },
-        new Dictionary<string, dynamic> {
+        new JsonObject {
             { "first", "Pam" },
             { "last", "Poovey" }
         }
@@ -37,8 +36,8 @@ var context = new Dictionary<string, dynamic> {
     { "age", 36 }
 };
 
-// Or by using System.Text.Json or Json.Net (requires separate package JexlNet.JsonNet to be installed)
-string contextJson = 
+// Or as a JSON string
+string context = 
 @"{
     ""name"": {
         ""first"": ""Sterling"",
@@ -60,12 +59,6 @@ string contextJson =
     ],
     ""age"": 36
 }";
-// with System.Text.Json
-JsonElement contextJsonElement = JsonDocument.Parse(contextJson).RootElement;
-Dictionary<string, dynamic?> context = ContextHelpers.ConvertJsonElement(contextJsonElement);
-// or with Json.Net (Newtonsoft)
-JObject contextJObject = JObject.Parse(contextJson);
-Dictionary<string, dynamic?>? context = JexlNet.JsonNet.ContextHelpers.ConvertJObject(contextJsonElement);
 
 // Initialize Jexl
 var jexl = new Jexl();
@@ -97,7 +90,7 @@ await jexl.EvalAsync(
 
 // Use array indexes and return objects
 await jexl.EvalAsync(@"assoc[1]", context);
-// new Dictionary<string, dynamic> {
+// new JsonObject {
 //             { "first", "Cyril" },
 //             { "last", "Figgis" }
 //         }
@@ -108,18 +101,14 @@ await jexl.EvalAsync(@"age > 62 ? ""retired"" : ""working""", context);
 // "working"
 
 // Transform
-jexl.Grammar.AddTransform("upper", (dynamic? val) => val?.ToString().ToUpper());
+jexl.Grammar.AddTransform("upper", (JsonValue? val) => val?.ToString().ToUpper());
 await jexl.EvalAsync(@"""duchess""|upper + "" "" + name.last|upper", context);
 // "DUCHESS ARCHER"
 
 // Transform asynchronously, with arguments
-jexl.Grammar.AddTransform("getStat", async (dynamic?[] args) => await DbSelectByLastName(args[0], args[1]));
-try {
-  await jexl.EvalAsync(@"name.last|getStat(""weight"")", context);
-  // Output: 184
-} catch (e) {
-  console.log('Database Error', e.stack)
-}
+jexl.Grammar.AddTransform("getStat", async (JsonNode?[] args) => await DbSelectByLastName(args[0], args[1]));
+await jexl.EvalAsync(@"name.last|getStat(""weight"")", context);
+// Output: 184
 
 // Functions too, sync or async, args or no args
 jexl.Grammar.AddFunction("getOldestAgent", GetOldestAgent);
@@ -128,15 +117,15 @@ await jexl.EvalAsync(@"age == getOldestAgent().age", context);
 
 // Add your own (a)synchronous operators
 // Here's a case-insensitive string equality
-jexl.Grammar.AddBinaryOperator("_=", 20, (dynamic?[] args) => args[0]?.ToLower() == args[1]?.ToLower());
+jexl.Grammar.AddBinaryOperator("_=", 20, (JsonNode?[] args) => args[0]?.ToString().ToLower() == args[1]?.ToString().ToLower());
 await jexl.EvalAsync(@"""Guest"" _= ""gUeSt""");
 // true
 
 // Compile your expression once, evaluate many times!
 const { expr } = jexl
 var danger = jexl.CreateExpression(@"""Danger "" + place");
-await danger.EvalAsync(new Dictionary<string, dynamic> { { "place", "Zone" } }); // Danger zone
-await danger.EvalAsync(new Dictionary<string, dynamic> { { "place", "ZONE!!!" } }); // Danger ZONE!!! (Doesn't recompile the expression!)
+await danger.EvalAsync(new JsonObject { { "place", "Zone" } }); // Danger zone
+await danger.EvalAsync(new JsonObject { { "place", "ZONE!!!" } }); // Danger ZONE!!! (Doesn't recompile the expression!)
 ```
 
 ## Play with it
@@ -159,7 +148,6 @@ And use it:
 var jexl = new Jexl();
 var result = jexl.Eval("1 + 1");
 ```
-
 
 ## Async vs Sync: Which to use
 
@@ -248,9 +236,9 @@ property name.
 Example context:
 
 ```csharp
-var context = new Dictionary<string, dynamic> 
+var context = new JsonObject 
 {
-    { "name", new Dictionary<string, dynamic> {
+    { "name", new JsonObject {
         { "first", "Malory" },
         { "last", "Archer" }
     }},
@@ -280,16 +268,16 @@ for which the filter expression resulted in a truthy value.
 Example context:
 
 ```csharp
-var context = new Dictionary<string, dynamic>
+var context = new JsonObject
 {
     {
         "employees", new List<dynamic>
         {
-            new Dictionary<string, dynamic> { { "first", "Sterling" }, { "last", "Archer" }, { "age", 36 } },
-            new Dictionary<string, dynamic> { { "first", "Malory" }, { "last", "Archer" }, { "age", 75 } },
-            new Dictionary<string, dynamic> { { "first", "Lana" }, { "last", "Kane" }, { "age", 33 } },
-            new Dictionary<string, dynamic> { { "first", "Cyril" }, { "last", "Figgis" }, { "age", 45 } },
-            new Dictionary<string, dynamic> { { "first", "Cheryl" }, { "last", "Tunt" }, { "age", 28 } }
+            new JsonObject { { "first", "Sterling" }, { "last", "Archer" }, { "age", 36 } },
+            new JsonObject { { "first", "Malory" }, { "last", "Archer" }, { "age", 75 } },
+            new JsonObject { { "first", "Lana" }, { "last", "Kane" }, { "age", 33 } },
+            new JsonObject { { "first", "Cyril" }, { "last", "Figgis" }, { "age", 45 } },
+            new JsonObject { { "first", "Cheryl" }, { "last", "Tunt" }, { "age", 28 } }
         }
     },
     { "retireAge", 62 }
@@ -313,15 +301,15 @@ The first argument is the value to be transformed, and the rest are any other
 arguments passed to the transform in the expression. They must return either
 the transformed value, or a Promise that resolves with the transformed
 value. Add them with `jexl.AddTransform(name, function)`.
-Arguments can be `dynamic?`, `dynamic?[]` or `List<dynamic?>`. In case of 
+Arguments can be `JsonNode?` or `JsonNode?[]`. In case of 
 enumerables the first element is the value to be transformed and the rest 
-are the arguments. It is also possible to use a first `dynamic?` argument as 
+are the arguments. It is also possible to use a first `JsonNode?` argument as 
 the value to be transformed and the rest as the arguments.
 
 ```csharp
-jexl.Grammar.AddTransform("lower", (dynamic? val) => val?.ToLower());
-jexl.Grammar.AddTransform("split", (dynamic?[] args) => args[0]?.Split(args[1]));
-jexl.Grammar.AddTransform("split", (dynamic? val, dynamic?[] args) => val?.Split(args[0]));
+jexl.Grammar.AddTransform("lower", (JsonNode? val) => val?.ToString().ToLower());
+jexl.Grammar.AddTransform("split", (JsonNode?[] args) => new JsonArray((args[0]?.ToString().Split(args[1]?.ToString()) ?? []).Select(x => (JsonNode?)x).ToArray()));
+jexl.Grammar.AddTransform("split", (JsonNode? arg0, JsonNode?[] args) => new JsonArray((arg0?.ToString().Split(args[0]?.ToString()) ?? []).Select(x => (JsonNode?)x).ToArray()));
 ```
 
 | Expression                                 | Result                |
@@ -339,11 +327,11 @@ multiple equally-important inputs. They can be added with
 `jexl.AddFunction(name, function)`. Like transforms, functions can return a
 value, or a Promise that resolves to the resulting value.
 For functions, arguments are not required, but if they are defined, 
-they must be `dynamic?`, `dynamic?[]` or `List<dynamic?>`.
+they must be `JsonNode?` or `JsonNode?[]`.
 
 ```csharp
 jexl.Grammar.AddFunction("getTrue", () => true);
-jexl.Grammar.AddFunction("min", (List<dynamic?> args) => args.Min());
+jexl.Grammar.AddFunction("min", (JsonNode?[] args) => args.Select(x => x?.AsValue().ToDecimal()).Min());
 jexl.Grammar.AddFunction("expensiveQuery", Db.RunExpensiveQuery);
 ```
 
@@ -353,25 +341,6 @@ jexl.Grammar.AddFunction("expensiveQuery", Db.RunExpensiveQuery);
 | min(4, 2, 19)                                 | 2                         |
 | counts.missions &#124;&#124; expensiveQuery() | Query only runs if needed |
 
-### Context
-
-Variable contexts are Dictionary objects that can be accessed
-in the expression, but they have a hidden feature: they can include an invocable function. This function will be called with the name of the variable being accessed, and the result will be used as the value of that variable. This allows for dynamic variable resolution, such as accessing a database or file system.
-
-```csharp
-
-```csharp	
-var func = new Func<Task<object?>>(async () =>
-    {
-        await Task.Delay(100);
-        return "bar";
-    });
-var context = new Dictionary<string, dynamic> {
-            { "foo", func }
-        };
-await jexl.EvalAsync(@"foo", context);
-// returns "bar" after 100ms
-```
 
 ## Other implementations
 
