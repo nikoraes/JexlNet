@@ -53,7 +53,6 @@ public class Expression : IExpression
         return await evaluator.EvalAsync(GetAst());
     }
 
-
     /// <summary>
     /// Asynchronously evaluates the expression within an optional context.
     /// </summary>

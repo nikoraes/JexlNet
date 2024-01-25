@@ -10,23 +10,23 @@ public static class JsonValueExtensions
     /// <param name="value"></param>
     public static decimal ToDecimal(this JsonValue value)
     {
-        if (value.AsValue().TryGetValue(out decimal valDecimal))
+        if (value.TryGetValue(out decimal valDecimal))
         {
             return valDecimal;
         }
-        else if (value.AsValue().TryGetValue(out int valInt))
+        else if (value.TryGetValue(out int valInt))
         {
             return Convert.ToDecimal(valInt);
         }
-        else if (value.AsValue().TryGetValue(out double valDouble))
+        else if (value.TryGetValue(out double valDouble))
         {
             return Convert.ToDecimal(valDouble);
         }
-        else if (value.AsValue().TryGetValue(out long valLong))
+        else if (value.TryGetValue(out long valLong))
         {
             return Convert.ToDecimal(valLong);
         }
-        else if (value.AsValue().TryGetValue(out object? valObj))
+        else if (value.TryGetValue(out object? valObj))
         {
             return Convert.ToDecimal(valObj);
         }
@@ -42,23 +42,23 @@ public static class JsonValueExtensions
     /// <param name="value"></param>
     public static double ToDouble(this JsonValue value)
     {
-        if (value.AsValue().TryGetValue(out double valDouble))
+        if (value.TryGetValue(out double valDouble))
         {
             return valDouble;
         }
-        else if (value.AsValue().TryGetValue(out int valInt))
+        else if (value.TryGetValue(out int valInt))
         {
             return Convert.ToDouble(valInt);
         }
-        else if (value.AsValue().TryGetValue(out decimal valDecimal))
+        else if (value.TryGetValue(out decimal valDecimal))
         {
             return Convert.ToDouble(valDecimal);
         }
-        else if (value.AsValue().TryGetValue(out long valLong))
+        else if (value.TryGetValue(out long valLong))
         {
             return Convert.ToDouble(valLong);
         }
-        else if (value.AsValue().TryGetValue(out object? valObj))
+        else if (value.TryGetValue(out object? valObj))
         {
             return Convert.ToDouble(valObj);
         }
@@ -74,23 +74,23 @@ public static class JsonValueExtensions
     /// <param name="value"></param>
     public static int ToInt32(this JsonValue value)
     {
-        if (value.AsValue().TryGetValue(out int valInt))
+        if (value.TryGetValue(out int valInt))
         {
             return valInt;
         }
-        else if (value.AsValue().TryGetValue(out double valDouble))
+        else if (value.TryGetValue(out double valDouble))
         {
             return Convert.ToInt32(valDouble);
         }
-        else if (value.AsValue().TryGetValue(out decimal valDecimal))
+        else if (value.TryGetValue(out decimal valDecimal))
         {
             return Convert.ToInt32(valDecimal);
         }
-        else if (value.AsValue().TryGetValue(out long valLong))
+        else if (value.TryGetValue(out long valLong))
         {
             return Convert.ToInt32(valLong);
         }
-        else if (value.AsValue().TryGetValue(out object? valObj))
+        else if (value.TryGetValue(out object? valObj))
         {
             return Convert.ToInt32(valObj);
         }

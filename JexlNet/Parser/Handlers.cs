@@ -9,8 +9,7 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void ArgumentValue(this Parser parser, Node? node)
     {
-        if (node == null) throw new Exception("ParserHandlers.ArgumentValue: node is null");
-        if (parser.Cursor?.Args == null) throw new Exception("ParserHandlers.ArgumentValue: cursor.Args is null");
+        if (node == null || parser.Cursor?.Args == null) return;
         parser.Cursor.Args.Add(node);
     }
 

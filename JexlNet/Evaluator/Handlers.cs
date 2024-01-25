@@ -47,7 +47,7 @@ public static class EvaluatorHandlers
         if (grammarOp.EvaluateOnDemandAsync != null && node.Left != null && node.Right != null)
         {
             var wrap = new Func<Node?, Func<Task<JsonNode?>>>((subAst) => async () => await evaluator.EvalAsync(subAst));
-            return await grammarOp.EvaluateOnDemandAsync(new Func<Task<JsonNode?>>[] { wrap(node!.Left), wrap(node!.Right) });
+            return await grammarOp.EvaluateOnDemandAsync(new Func<Task<JsonNode?>>[] { wrap(node.Left), wrap(node.Right) });
         }
         var leftResult = await evaluator.EvalAsync(node?.Left);
         var rightResult = await evaluator.EvalAsync(node?.Right);
@@ -217,12 +217,13 @@ public static class EvaluatorHandlers
         if (node.Pool == Grammar.PoolType.Functions && evaluator.Grammar.Functions.TryGetValue(node.Name, out var func))
         {
             JsonArray argsResult = await evaluator.EvalArrayAsync(node.Args);
-            return await func(argsResult);
+            return await func(argsResult.Select((arg) => arg).ToArray());
         }
         else if (node.Pool == Grammar.PoolType.Transforms && evaluator.Grammar.Transforms.TryGetValue(node.Name, out var transform))
         {
             JsonArray argsResult = await evaluator.EvalArrayAsync(node.Args);
-            return await transform(argsResult);
+            // Convert to array of JsonNode
+            return await transform(argsResult.Select((arg) => arg).ToArray());
         }
         else
         {
