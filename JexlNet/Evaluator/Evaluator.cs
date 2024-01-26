@@ -1,27 +1,30 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
 namespace JexlNet;
 
 public class Evaluator
 {
-    public Evaluator(Grammar grammar, Dictionary<string, dynamic?>? context = null, dynamic? subject = null)
+    public Evaluator(Grammar grammar, JsonObject? context = null, dynamic? subject = null)
     {
         Grammar = grammar;
         Context = context;
         RelContext = subject;
     }
     internal readonly Grammar Grammar;
-    internal readonly Dictionary<string, dynamic?>? Context;
-    internal readonly dynamic? RelContext;
+    internal readonly JsonObject? Context;
+    internal readonly JsonObject? RelContext;
 
     /// <summary>
     /// Evaluates an expression tree within the configured context.
     /// </summary>
     /// <param name="ast">An expression tree object</param>
     /// <returns>Resolves with the resulting value of the expression.</returns>
-    public async Task<dynamic?> EvalAsync(Node? ast)
+    public async Task<JsonNode?> EvalAsync(Node? ast)
     {
-        if (ast == null) return await Task.FromResult<dynamic?>(null);
+        if (ast == null) return await Task.FromResult<JsonNode?>(null);
         EvaluatorHandlers.Handlers.TryGetValue(ast.Type, out var handleFunc);
-        if (handleFunc == null) return await Task.FromResult<dynamic?>(null);
+        if (handleFunc == null) return await Task.FromResult<JsonNode?>(null);
         return await handleFunc.Invoke(this, ast);
     }
 
@@ -32,14 +35,15 @@ public class Evaluator
     ///</summary>
     ///<param name="arr">An array of expression strings to be evaluated</param>
     ///<returns>resolves with the result array</returns>
-    internal async Task<List<dynamic?>> EvalArrayAsync(List<Node> arr)
+    internal async Task<JsonArray> EvalArrayAsync(List<Node> arr)
     {
-        var result = new List<dynamic?>();
+        JsonArray result = [];
         foreach (var val in arr)
         {
-            var elemResult = await EvalAsync(val);
-            if (elemResult is Task) await elemResult;
-            result.Add(elemResult);
+            JsonNode? elemResult = await EvalAsync(val);
+            // Not possible for JsonNode to be a Task
+            // if (elemResult is Task) await elemResult;
+            result.Add(elemResult?.DeepClone());
         }
         return result;
         // return await Task.WhenAll(arr.Select(async (item) => await Eval(item)));
@@ -52,9 +56,9 @@ public class Evaluator
     ///</summary>
     ///<param name="map">A map of expression names to expression trees to be evaluated</param>
     ///<returns>resolves with the result map.</returns>
-    internal async Task<Dictionary<string, dynamic?>> EvalMapAsync(Dictionary<string, Node> map)
+    internal async Task<JsonObject> EvalMapAsync(Dictionary<string, Node> map)
     {
-        var result = new Dictionary<string, dynamic?>();
+        JsonObject result = [];
         foreach (var kv in map)
         {
             result[kv.Key] = await EvalAsync(kv.Value);
@@ -80,20 +84,23 @@ public class Evaluator
     ///the returned array otherwise, it will be eliminated.</param>
     ///<returns>resolves with an array of values that passed the
     ///expression filter.</returns>
-    public async Task<List<dynamic?>> FilterRelativeAsync(dynamic subj, Node expr)
+    public async Task<JsonArray> FilterRelativeAsync(JsonNode? subj, Node expr)
     {
-        if ((subj as System.Collections.IEnumerable) == null)
+        if (subj != null && subj is not JsonArray)
         {
-            subj = subj == null ? new List<dynamic>() : new List<dynamic>() { subj };
+            subj = new JsonArray() { subj };
         }
-        List<dynamic?> results = new();
-        foreach (var elem in subj)
+        JsonArray results = [];
+        if (subj is JsonArray arr)
         {
-            Evaluator elementEvaluator = new(Grammar, Context, elem);
-            bool shouldInclude = await elementEvaluator.EvalAsync(expr);
-            if (shouldInclude)
+            foreach (var elem in arr)
             {
-                results.Add(elem);
+                Evaluator elementEvaluator = new(Grammar, Context, elem);
+                JsonNode? shouldInclude = await elementEvaluator.EvalAsync(expr);
+                if (shouldInclude?.GetValueKind() == JsonValueKind.True)
+                {
+                    results.Add(elem?.DeepClone());
+                }
             }
         }
         return results;
@@ -113,24 +120,29 @@ public class Evaluator
     ///indicating a property name)</param>
     ///<param name="expr">The expression tree to run against the subject</param>
     ///<returns>resolves with the value of the drill-down.</returns>
-    public async Task<dynamic?> FilterStaticAsync(dynamic subj, Node expr)
+    public async Task<JsonNode?> FilterStaticAsync(JsonNode? subj, Node expr)
     {
-        var result = await EvalAsync(expr);
-        if (result is bool)
+        JsonNode? result = await EvalAsync(expr);
+        if (result == null || subj == null)
         {
-            return result ? subj : null;
+            return new JsonArray();
         }
-        else if (result is decimal)
+        else if (result.GetValueKind() == JsonValueKind.True)
         {
-            return subj[decimal.ToInt32(result)];
+            return subj;
         }
-        else if (result is string)
+        else if (result.GetValueKind() == JsonValueKind.Number && result is JsonValue resultValue)
         {
-            return subj[result];
+            return subj[resultValue.ToInt32()];
+        }
+        else if (result.GetValueKind() == JsonValueKind.String)
+        {
+            return subj[result.GetValue<string>()];
         }
         else
         {
             return null;
         }
+        // TODO: if the result is an array or object, maybe we can support some mapping like jsonata
     }
 }

@@ -1,28 +1,26 @@
+using System.Text.Json.Nodes;
+
 namespace JexlNet;
 
 public class Node : Token, IEquatable<Node>
 {
-    public Node(string type) : base(type) { }
-    public Node(string type, dynamic value) : base(type)
-    {
-        Value = value;
-    }
-    public Node(Token token) : base(token.Type)
-    {
-        Value = token.Value;
-        Raw = token.Raw;
-    }
+    public Node(GrammarType type, JsonNode? value = null) : base(type, value) { }
+    public Node(GrammarType type, bool value) : base(type, JsonValue.Create(value)) { }
+    public Node(GrammarType type, decimal value) : base(type, JsonValue.Create(value)) { }
+    public Node(GrammarType type, string value) : base(type, JsonValue.Create(value)) { }
+    public Node(Token token) : base(token.Type, token.Raw, token.Value) { }
     public Node? Left { get; set; }
     public Node? Right { get; set; }
     public Node? Parent { get; set; }
-    public bool? Writable { get; set; }
     public List<Node>? Args { get; set; }
+    public List<Node>? Array { get; set; }
+    public Dictionary<string, Node>? Object { get; set; }
     public string? Operator { get; set; }
     public Node? Expr { get; set; }
     public bool? Relative { get; set; }
     public Node? Subject { get; set; }
     public string? Name { get; set; }
-    public string? Pool { get; set; }
+    public Grammar.PoolType? Pool { get; set; }
     public Node? From { get; set; } // Used for chained identifiers
     public Node? Alternate { get; set; }
     public Node? Consequent { get; set; }
@@ -31,39 +29,9 @@ public class Node : Token, IEquatable<Node>
     public bool Equals(Node? other)
     {
         if (other == null) return false;
-        bool equalValue;
-        if (Value is Dictionary<string, Node> dictionary && other.Value is Dictionary<string, Node> dictionary1)
-        {
-            if (dictionary.Count != dictionary1.Count)
-            {
-                return false;
-            }
-            equalValue = true;
-            foreach (var key in dictionary.Keys)
-            {
-                if (!dictionary1.ContainsKey(key))
-                {
-                    equalValue = false;
-                    break;
-                }
-                if (!dictionary[key].Equals(dictionary1[key]))
-                {
-                    equalValue = false;
-                    break;
-                }
-            }
-        }
-        else if (Value is List<Node> list && other.Value is List<Node> list1)
-        {
-            equalValue = list.SequenceEqual(list1);
-        }
-        else
-        {
-            equalValue = Value == other.Value;
-        }
         return
             Type == other.Type &&
-            equalValue &&
+            JsonNode.DeepEquals(Value, other.Value) &&
             Operator == other.Operator &&
             Relative == other.Relative &&
             ((Left == null && other.Left == null) || (Left != null && Left.Equals(other.Left))) &&
@@ -75,13 +43,6 @@ public class Node : Token, IEquatable<Node>
             ((Test == null && other.Test == null) || (Test != null && Test.Equals(other.Test))) &&
             ((Consequent == null && other.Consequent == null) || (Consequent != null && Consequent.Equals(other.Consequent))) &&
             ((Alternate == null && other.Alternate == null) || (Alternate != null && Alternate.Equals(other.Alternate)));
-    }
-
-    public override bool Equals(object? obj)
-    {
-        if (obj == null) return false;
-        if (obj.GetType() != typeof(Node)) return false;
-        return Equals(obj as Node);
     }
 
     public override int GetHashCode()

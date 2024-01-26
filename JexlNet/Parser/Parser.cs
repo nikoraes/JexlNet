@@ -38,13 +38,13 @@ namespace JexlNet;
 ///instead of boolean false.</param>
 public class Parser
 {
-    public Parser(Grammar grammar, string prefix = "", Dictionary<string, string>? stopMap = null)
+    public Parser(Grammar grammar, string prefix = "", Dictionary<GrammarType, GrammarType>? stopMap = null)
     {
         Grammar = grammar;
-        State = "expectOperand";
-        ExpressionString = prefix ?? "";
+        State = GrammarType.ExpectOperand;
+        ExpressionString = prefix;
         Relative = false;
-        StopMap = stopMap ?? new();
+        StopMap = stopMap ?? [];
         ParentStop = false;
         Tree = null;
         Cursor = null;
@@ -54,42 +54,42 @@ public class Parser
         CursorObjectKey = null;
     }
     internal readonly Grammar Grammar;
-    internal string State;
+    internal GrammarType State;
     internal string ExpressionString;
     internal bool Relative;
-    internal readonly Dictionary<string, string> StopMap;
+    internal readonly Dictionary<GrammarType, GrammarType> StopMap;
     internal bool ParentStop;
     internal Node? Tree;
     internal Node? Cursor;
     internal Parser? SubParser;
     internal bool? NextIdentEncapsulate;
     internal bool? NextIdentRelative;
-    internal dynamic? CursorObjectKey;
+    internal string? CursorObjectKey;
 
     ///<summary>
     ///Processes a new token into the AST and manages the transitions of the state
     ///machine.
     ///</summary>
-    ///<param name="token">A token object, as provided by the {@link Lexer#tokenize} function.</param>
+    ///<param name="node">A token object, as provided by the {@link Lexer#tokenize} function.</param>
     ///<returns>the stopState value if this parser encountered a token 
-    ///in the stopState mapb 'false' if tokens can continue.</returns>
-    public string AddToken(Node token)
+    ///in the stopState map 'false' if tokens can continue.</returns>
+    internal GrammarType AddToken(Node node)
     {
-        if (State == "complete")
+        if (State == GrammarType.Complete)
         {
             throw new Exception("Cannot add a new token to a completed parser.");
         }
-        var state = ParserStates.States[State];
-        var startExpr = ExpressionString;
-        ExpressionString += token.Raw;
+        ParserState state = ParserStates.States[State];
+        string startExpr = ExpressionString;
+        ExpressionString += node.Raw;
         if (state.SubHandler != null)
         {
             if (SubParser == null)
             {
                 StartSubExpression(startExpr);
             }
-            var stopState = SubParser!.AddToken(token);
-            if (stopState != "stop")
+            GrammarType stopState = SubParser!.AddToken(node);
+            if (stopState != GrammarType.Stop)
             {
                 EndSubExpression();
                 if (ParentStop)
@@ -99,30 +99,30 @@ public class Parser
                 State = stopState;
             }
         }
-        else if (token.Type != null && state.TokenTypes!.TryGetValue(token.Type, out var typeOpts))
+        else if (state.TokenTypes!.TryGetValue(node.Type, out ParserStateTokenType? typeOpts))
         {
             // var handleFunc = ParserHandlers.Handlers[token.Type!];
-            ParserHandlers.Handlers.TryGetValue(token.Type, out var handleFunc);
+            ParserHandlers.Handlers.TryGetValue(node.Type, out var handleFunc);
             if (typeOpts.Handler != null)
             {
                 handleFunc = typeOpts.Handler;
             }
-            handleFunc?.Invoke(this, token);
+            handleFunc?.Invoke(this, node);
             if (typeOpts.ToState != null)
             {
-                State = typeOpts.ToState;
+                State = (GrammarType)typeOpts.ToState;
             }
         }
-        else if (StopMap.TryGetValue(token.Type!, out string? value))
+        else if (StopMap.TryGetValue(node.Type!, out GrammarType value))
         {
             return value;
         }
         else
         {
-            throw new Exception($"Token {token.Raw} ({token.Type}) unexpected in expression: {ExpressionString}");
+            throw new Exception($"Token {node.Raw} ({node.Type}) unexpected in expression: {ExpressionString}");
         }
 
-        return "stop";
+        return GrammarType.Stop;
     }
 
     ///<summary>
@@ -169,7 +169,7 @@ public class Parser
         {
             EndSubExpression();
         }
-        State = "complete";
+        State = GrammarType.Complete;
         return Cursor != null ? Tree : null;
     }
 
@@ -228,9 +228,8 @@ public class Parser
         PlaceAtCursor(node);
     }
 
-
     ///<summary>
-    ///Sets the parent of a node by creating a non-enumerable _parent property
+    ///Sets the parent of a node by creating a non-enumerable Parent property
     ///that points to the supplied parent argument.
     ///</summary>
     ///<param name="node">A node of the AST on which to set a new parent</param>
@@ -256,7 +255,4 @@ public class Parser
         }
         SubParser = new Parser(Grammar, exprStr, endStates);
     }
-
-
-
 }

@@ -9,10 +9,8 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void ArgumentValue(this Parser parser, Node? node)
     {
-        if (node != null && parser.Cursor != null && parser.Cursor.Args != null)
-        {
-            parser.Cursor.Args.Add(node);
-        }
+        if (node == null || parser.Cursor?.Args == null) return;
+        parser.Cursor.Args.Add(node);
     }
 
     ///<summary>
@@ -22,7 +20,10 @@ internal static class ParserHandlers
     ///<param name="parser"></param>
     internal static void ArrayStart(this Parser parser, Node? node)
     {
-        parser.PlaceAtCursor(new Node("ArrayLiteral") { Value = new List<Node>() });
+        parser.PlaceAtCursor(new Node(GrammarType.ArrayLiteral)
+        {
+            Array = []
+        });
     }
 
     ///<summary>
@@ -32,10 +33,9 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void ArrayValue(this Parser parser, Node? node)
     {
-        if (node != null && parser.Cursor != null && parser.Cursor.Value is List<Node> list)
-        {
-            list.Add(node);
-        }
+        if (parser.Cursor?.Array == null) throw new Exception("ParserHandlers.ArrayValue: cursor.Array is null");
+        if (node == null) return;
+        parser.Cursor.Array.Add(node);
     }
 
     ///<summary>
@@ -44,18 +44,20 @@ internal static class ParserHandlers
     ///</summary>   
     ///<param name="parser"></param>
     ///<param name="token">A token object</param>
-    internal static void BinaryOp(this Parser parser, Node? node)
+    internal static void BinaryOperator(this Parser parser, Node? node)
     {
-        var precedence = parser.Grammar.Elements[node?.Value].Precedence ?? 0;
-        var parent = parser.Cursor?.Parent;
+        string gramarElementKey = node?.Value?.GetValue<string>() ?? throw new ApplicationException("node.Value is null");
+        ElementGrammar grammarElement = parser.Grammar.Elements.TryGetValue(gramarElementKey, out ElementGrammar? value) ? value : throw new ApplicationException($"Grammar element {gramarElementKey} not found");
+        int precedence = grammarElement.Precedence;
+        Node? parent = parser.Cursor?.Parent;
         while (parent != null && parent.Operator != null && parser.Grammar.Elements[parent.Operator].Precedence >= precedence)
         {
             parser.Cursor = parent;
             parent = parser.Cursor?.Parent;
         }
-        var newNode = new Node("BinaryExpression")
+        var newNode = new Node(GrammarType.BinaryExpression)
         {
-            Operator = node?.Value,
+            Operator = gramarElementKey,
             Left = parser.Cursor
         };
         Parser.SetParent(parser.Cursor, newNode);
@@ -74,9 +76,9 @@ internal static class ParserHandlers
     {
         parser.NextIdentEncapsulate =
             parser.Cursor != null &&
-            parser.Cursor.Type != "UnaryExpression" &&
-            (parser.Cursor.Type != "BinaryExpression" ||
-                (parser.Cursor.Type == "BinaryExpression" && parser.Cursor.Right != null));
+            parser.Cursor.Type != GrammarType.UnaryExpression &&
+            (parser.Cursor.Type != GrammarType.BinaryExpression ||
+                (parser.Cursor.Type == GrammarType.BinaryExpression && parser.Cursor.Right != null));
         parser.NextIdentRelative = parser.Cursor == null || (parser.Cursor != null && parser.NextIdentEncapsulate != true);
         if (parser.NextIdentRelative == true)
         {
@@ -92,7 +94,7 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void Filter(this Parser parser, Node? node)
     {
-        parser.PlaceBeforeCursor(new Node("FilterExpression")
+        parser.PlaceBeforeCursor(new Node(GrammarType.FilterExpression)
         {
             Expr = node,
             Relative = parser.SubParser?.IsRelative(),
@@ -108,11 +110,12 @@ internal static class ParserHandlers
     ///<param name="node">A token object</param>
     internal static void FunctionCall(this Parser parser, Node? node)
     {
-        parser.PlaceBeforeCursor(new Node("FunctionCall")
+        if (parser.Cursor?.Value == null) throw new Exception("ParserHandlers.FunctionCall: cursor.Value is null");
+        parser.PlaceBeforeCursor(new Node(GrammarType.FunctionCall)
         {
-            Name = parser.Cursor?.Value,
-            Args = new(),
-            Pool = "functions"
+            Name = parser.Cursor.Value.GetValue<string>(),
+            Args = [],
+            Pool = Grammar.PoolType.Functions
         });
     }
 
@@ -123,7 +126,8 @@ internal static class ParserHandlers
     ///<param name="node">A token object</param>
     internal static void Identifier(this Parser parser, Node? node)
     {
-        var newNode = new Node("Identifier") { Value = node?.Value };
+        if (node?.Value == null) throw new Exception("ParserHandlers.Identifier: node is null");
+        Node newNode = new Node(GrammarType.Identifier, node.Value);
         if (parser.NextIdentEncapsulate == true)
         {
             newNode.From = parser.Cursor;
@@ -149,17 +153,9 @@ internal static class ParserHandlers
     ///<param name="node">A token object</param>
     internal static void Literal(this Parser parser, Node? node)
     {
-        parser.PlaceAtCursor(new Node("Literal") { Value = node?.Value });
+        if (node?.Value == null) throw new Exception("ParserHandlers.Literal: node is null");
+        parser.PlaceAtCursor(new Node(GrammarType.Literal, node.Value));
     }
-
-    /**
-     * Queues a new object literal key to be written once a value is collected.
-     * @param {{type: <string>}} token A token object
-     */
-    /* exports.objKey = function(token)
-    {
-        this._curObjKey = token.value
-    } */
 
     ///<summary>
     ///Queues a new object literal key to be written once a value is collected.
@@ -168,8 +164,8 @@ internal static class ParserHandlers
     ///<param name="node">A token object</param>
     internal static void ObjectKey(this Parser parser, Node? node)
     {
-        // TODO: check whether node.Value is a literal that can be used as a key and cast to string
-        parser.CursorObjectKey = node?.Value;
+        if (node?.Value == null) throw new Exception("ParserHandlers.ObjectKey: node is null");
+        parser.CursorObjectKey = node.Value.GetValue<string>();
     }
 
     ///<summary>
@@ -179,7 +175,10 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void ObjectStart(this Parser parser, Node? node)
     {
-        parser.PlaceAtCursor(new Node("ObjectLiteral") { Value = new Dictionary<string, Node>() });
+        parser.PlaceAtCursor(new Node(GrammarType.ObjectLiteral)
+        {
+            Object = []
+        });
     }
 
     ///<summary>
@@ -190,10 +189,10 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void ObjectValue(this Parser parser, Node? node)
     {
-        if (parser.Cursor != null && parser.Cursor.Value is Dictionary<string, Node> dict)
-        {
-            dict[parser.CursorObjectKey!] = node;
-        }
+        if (node == null) throw new Exception("ParserHandlers.ObjectValue: node is null");
+        if (parser.Cursor?.Object == null) throw new Exception("ParserHandlers.ObjectValue: cursor.Object is null");
+        if (parser.CursorObjectKey == null) throw new Exception("ParserHandlers.ObjectValue: cursorObjectKey is null");
+        parser.Cursor.Object[parser.CursorObjectKey] = node;
     }
 
     ///<summary>
@@ -214,7 +213,8 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void TernaryEnd(this Parser parser, Node? node)
     {
-        parser.Cursor!.Alternate = node;
+        if (parser.Cursor == null) throw new Exception("ParserHandlers.TernaryEnd: cursor is null");
+        parser.Cursor.Alternate = node;
     }
 
     ///<summary>
@@ -224,7 +224,8 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void TernaryMid(this Parser parser, Node? node)
     {
-        parser.Cursor!.Consequent = node;
+        if (parser.Cursor == null) throw new Exception("ParserHandlers.TernaryMid: cursor is null");
+        parser.Cursor.Consequent = node;
     }
 
     ///<summary>
@@ -236,7 +237,7 @@ internal static class ParserHandlers
     ///<param name="node">The subexpression tree</param>
     internal static void TernaryStart(this Parser parser, Node? node)
     {
-        parser.Tree = new Node("ConditionalExpression")
+        parser.Tree = new Node(GrammarType.ConditionalExpression)
         {
             Test = parser.Tree
         };
@@ -251,11 +252,13 @@ internal static class ParserHandlers
     ///<param name="node">A token object</param>
     internal static void Transform(this Parser parser, Node? node)
     {
-        parser.PlaceBeforeCursor(new Node("FunctionCall")
+        if (node?.Value == null) throw new Exception("ParserHandlers.Transform: node.Value is null");
+        if (parser.Cursor == null) throw new Exception("ParserHandlers.Transform: cursor is null");
+        parser.PlaceBeforeCursor(new Node(GrammarType.FunctionCall)
         {
-            Name = node?.Value,
-            Args = new() { parser.Cursor! },
-            Pool = "transforms"
+            Name = node.Value.GetValue<string>(),
+            Args = [parser.Cursor],
+            Pool = Grammar.PoolType.Transforms
         });
     }
 
@@ -265,33 +268,33 @@ internal static class ParserHandlers
     ///</summary>
     ///<param name="parser"></param>
     ///<param name="node">A token object</param>
-    internal static void UnaryOp(this Parser parser, Node? node)
+    internal static void UnaryOperator(this Parser parser, Node? node)
     {
-        parser.PlaceAtCursor(new Node("UnaryExpression")
+        if (node?.Value == null) throw new Exception("ParserHandlers.UnaryOp: node.Value is null");
+        parser.PlaceAtCursor(new Node(GrammarType.UnaryExpression)
         {
-            Operator = node?.Value
+            Operator = node.Value.GetValue<string>()
         });
     }
-
-    internal static readonly Dictionary<string, Action<Parser, Node?>> Handlers = new()
+    internal static readonly Dictionary<GrammarType, Action<Parser, Node?>> Handlers = new()
     {
-        { "argValue", ArgumentValue },
-        { "arrayStart", ArrayStart },
-        { "arrayVal", ArrayValue },
-        { "binaryOp", BinaryOp },
-        { "dot", Dot },
-        { "filter", Filter },
-        { "functionCall", FunctionCall },
-        { "identifier", Identifier },
-        { "literal", Literal },
-        { "objKey", ObjectKey },
-        { "objStart", ObjectStart },
-        { "objVal", ObjectValue },
-        { "subExpression", SubExpression },
-        { "ternaryEnd", TernaryEnd },
-        { "ternaryMid", TernaryMid },
-        { "ternaryStart", TernaryStart },
-        { "transform", Transform },
-        { "unaryOp", UnaryOp }
+        { GrammarType.ArgumentValue, ArgumentValue },
+        { GrammarType.ArrayStart, ArrayStart },
+        { GrammarType.ArrayValue, ArrayValue },
+        { GrammarType.BinaryOperator, BinaryOperator },
+        { GrammarType.Dot, Dot },
+        { GrammarType.Filter, Filter },
+        { GrammarType.FunctionCall, FunctionCall },
+        { GrammarType.Identifier, Identifier },
+        { GrammarType.Literal, Literal },
+        { GrammarType.ObjectKey, ObjectKey },
+        { GrammarType.ObjectStart, ObjectStart },
+        { GrammarType.ObjectValue, ObjectValue },
+        { GrammarType.SubExpression, SubExpression },
+        { GrammarType.TernaryEnd, TernaryEnd },
+        { GrammarType.TernaryMid, TernaryMid },
+        { GrammarType.TernaryStart, TernaryStart },
+        { GrammarType.Transform, Transform },
+        { GrammarType.UnaryOperator, UnaryOperator }
     };
 }

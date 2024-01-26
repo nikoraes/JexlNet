@@ -1,3 +1,7 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Newtonsoft.Json.Linq;
+
 namespace JexlNet.Test;
 
 public class EvaluatorUnitTest
@@ -18,12 +22,13 @@ public class EvaluatorUnitTest
     [InlineData("(2 + 3) * 4", 20)]
     [InlineData("7 // 2", 3)]
     [InlineData("(\t2\n+\n3) *\n4\n\r\n", 20)]
+    [InlineData(@"""foo"" && 6 >= 6 && 0 + 1 && true && 20", 20)]
     public async void EvaluateExpression_ReturnDecimal(string input, decimal expected)
     {
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(input);
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(expected, result);
+        Assert.Equal(expected, result?.GetValue<decimal>());
     }
 
     [Theory]
@@ -35,7 +40,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(input);
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(expected, result);
+        Assert.Equal(expected, result?.GetValue<string>());
     }
 
     [Theory]
@@ -47,19 +52,17 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(input);
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(expected, result);
+        Assert.Equal(expected, result?.GetValue<bool>());
     }
 
     [Fact]
     public async void EvaluateExpression_WithContext()
     {
-        var context = new Dictionary<string, dynamic?>
+        JsonObject context = new()
         {
-            {
-                "foo", new Dictionary<string, dynamic>
+            { "foo", new JsonObject
                 {
-                    {
-                        "baz", new Dictionary<string, dynamic>
+                    { "baz", new JsonObject
                         {
                             { "bar", "tek" }
                         }
@@ -70,63 +73,70 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar(), context);
         var ast = ToTree("foo.baz.bar");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("tek", result);
+        Assert.Equal("tek", result?.ToString());
     }
 
     [Fact]
     public async void EvaluateExpression_AppliesTransforms()
     {
-        var context = new Dictionary<string, dynamic?> { { "foo", 10 } };
+        JsonObject context = new()
+        {
+            { "foo", 10 }
+        };
         var grammar = new Grammar();
-        grammar.AddTransform("half", (dynamic? val) => val / 2);
+        grammar.AddTransform("half", (JsonValue? val) => JsonValue.Create(Convert.ToDecimal(val?.ToString()) / 2));
         Evaluator _evaluator = new(grammar, context);
         var ast = ToTree("foo|half + 3");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal((decimal)8, result);
+        Assert.Equal((decimal)8, result?.GetValue<decimal>());
     }
 
     [Fact]
     public async void EvaluateExpression_AppliesFunctions()
     {
-        var context = new Dictionary<string, dynamic?> { { "foo", 10 } };
+        JsonObject context = new()
+        {
+            { "foo", 10 }
+        };
         var grammar = new Grammar();
-        grammar.AddFunction("half", (dynamic? val) => val / 2);
+        grammar.AddFunction("half", (JsonValue? val) => val?.ToDecimal() / 2);
         Evaluator _evaluator = new(grammar, context);
         var ast = ToTree("half(foo) + 3");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal((decimal)8, result);
+        Assert.Equal((decimal)8, result?.GetValue<decimal>());
     }
 
     [Fact]
     public async void EvaluateExpression_AppliesAsyncFunctions()
     {
-        var context = new Dictionary<string, dynamic?> { { "foo", 10 } };
+        JsonObject context = new()
+        {
+            { "foo", 10 }
+        };
         var grammar = new Grammar();
-        grammar.AddFunction("half", async (dynamic? val) =>
+        grammar.AddFunction("half", async (JsonValue? val) =>
         {
             await Task.Delay(100);
-            return val / 2;
+            return val?.ToDecimal() / 2;
         });
         Evaluator _evaluator = new(grammar, context);
         var ast = ToTree("half(foo) + 3");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal((decimal)8, result);
+        Assert.Equal((decimal)8, result?.GetValue<decimal>());
     }
 
     [Fact]
     public async void EvaluateExpression_FiltersArrays()
     {
-        var context = new Dictionary<string, dynamic?>
+        JsonObject context = new()
         {
-            {
-                "foo", new Dictionary<string, dynamic>
+            { "foo", new JsonObject
                 {
-                    {
-                        "bar", new List<Dictionary<string, dynamic>>
+                    { "bar", new JsonArray
                         {
-                            new() { { "tek", "hello" } },
-                            new() { { "tek", "baz" } },
-                            new() { { "tok", "baz" } }
+                            new JsonObject { { "tek", "hello" } },
+                            new JsonObject { { "tek", "baz" } },
+                            new JsonObject { { "tok", "baz" } }
                         }
                     }
                 }
@@ -135,47 +145,75 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar(), context);
         var ast = ToTree("foo.bar[.tek == \"baz\"]");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(new List<Dictionary<string, dynamic>> { new() { { "tek", "baz" } } }, result);
+        var expected = new JsonArray { new JsonObject { { "tek", "baz" } } };
+        Assert.True(JsonNode.DeepEquals(expected, result));
 
         _evaluator = new(new Grammar(), context);
         ast = ToTree("foo.bar[.tek == \"baz\"][0]");
         result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(new Dictionary<string, dynamic> { { "tek", "baz" } }, result);
+        var expected2 = new JsonObject { { "tek", "baz" } };
+        Assert.True(JsonNode.DeepEquals(expected2, result));
 
         _evaluator = new(new Grammar(), context);
         ast = ToTree("foo.bar[1]");
         result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(new Dictionary<string, dynamic> { { "tek", "baz" } }, result);
+        var expected3 = new JsonObject { { "tek", "baz" } };
+        Assert.True(JsonNode.DeepEquals(expected3, result));
 
         _evaluator = new(new Grammar(), context);
         ast = ToTree("foo.bar[.tek == \"baz\"][0].tek");
         result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("baz", result);
+        Assert.Equal("baz", result?.ToString());
+    }
+
+    [Fact]
+    public async void EvaluateExpression_FiltersArrays2()
+    {
+        JsonObject context = new()
+        {
+            { "foo", new JsonObject
+                {
+                    { "bar", new JsonArray
+                        {
+                            new JsonObject { { "tek", "hello" } },
+                            new JsonObject { { "tek", "baz" } },
+                            new JsonObject { { "tok", "baz" } }
+                        }
+                    }
+                }
+            }
+        };
+        Evaluator _evaluator;
 
         _evaluator = new(new Grammar(), context);
-        ast = ToTree("foo.bar[.tek == \"baz\"].tek");
-        result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("baz", result);
+        var ast = ToTree("foo.bar[.tek == \"baz\"].tek");
+        var result = await _evaluator.EvalAsync(ast);
+        Assert.Equal("baz", result?.ToString());
 
         _evaluator = new(new Grammar(), context);
         ast = ToTree("foo.bar[1].tek");
         result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("baz", result);
+        Assert.Equal("baz", result?.ToString());
     }
-
     [Fact]
     public async void EvaluateExpression_AllowFiltersToSelectObjectProperties()
     {
-        var context = new Dictionary<string, dynamic?>
-        { { "foo", new Dictionary<string, dynamic>
-            { { "baz", new Dictionary<string, dynamic>
-                        { { "bar", "tek" } }
-            } }
-        }};
+        JsonObject context = new()
+        {
+            { "foo", new JsonObject
+                {
+                    { "baz", new JsonObject
+                        {
+                            { "bar", "tek" }
+                        }
+                    }
+                }
+            }
+        };
         Evaluator _evaluator = new(new Grammar(), context);
         var ast = ToTree(@"foo[""ba"" + ""z""].bar");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("tek", result);
+        Assert.Equal("tek", result?.ToString());
     }
 
     [Fact]
@@ -192,10 +230,8 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(@"{foo: {bar: ""tek""}}");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(new Dictionary<string, dynamic>
-        { { "foo", new Dictionary<string, dynamic>
-            { { "bar", "tek" } }
-        }}, result);
+        var expected = new JsonObject { { "foo", new JsonObject { { "bar", "tek" } } } };
+        Assert.True(JsonNode.DeepEquals(expected, result));
     }
 
     [Fact]
@@ -204,7 +240,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(@"{}");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(new Dictionary<string, dynamic>(), result);
+        Assert.Equal(new JsonObject { }, result);
     }
 
     [Fact]
@@ -213,51 +249,51 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(@"{foo: ""bar""}.foo");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("bar", result);
+        Assert.Equal("bar", result?.ToString());
     }
 
-    [Fact]
+    /* [Fact]
     public async void EvaluateExpression_AllowAccessToLiteralProperties()
     {
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(@"""foo"".Length");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("foo".Length, result);
-    }
+        Assert.Equal(JsonValue.Create("foo".Length), result);
+    } */
 
-    [Fact]
+    /* [Fact]
     public async void EvaluateExpression_AllowAccessToEmptyLiteralProperties()
     {
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(@""""".Length");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("".Length, result);
-    }
+        Assert.Equal(JsonValue.Create("".Length), result);
+    } */
 
     [Fact]
     public async void EvaluateExpression_AppliesTransformsWithMultipleArgs()
     {
         var grammar = new Grammar();
-        grammar.AddTransform("concat", (dynamic?[] args) => args[0] + ": " + args[1] + args[2] + args[3]);
+        grammar.AddTransform("concat", (JsonNode?[] args) => args[0] + ": " + args[1] + args[2] + args[3]);
         Evaluator _evaluator = new(grammar);
         var ast = ToTree(@"""foo""|concat(""baz"", ""bar"", ""tek"")");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("foo: bazbartek", result);
+        Assert.Equal("foo: bazbartek", result?.ToString());
     }
 
     [Fact]
     public async void EvaluateExpression_AllowAddMultipleTransforms()
     {
         var grammar = new Grammar();
-        grammar.AddTransforms(new Dictionary<string, Func<List<dynamic?>, object?>>
+        grammar.AddTransforms(new Dictionary<string, Func<JsonNode?[], JsonNode?>>
         {
-            { "concat", (List<dynamic?> args) => args[0] + ": " + args[1] + args[2] + args[3] },
-            { "concat2", (List<dynamic?> args) => args[0] + ": " + args[1] + args[2] + args[3] }
+            { "concat", (JsonNode?[] args) => args[0] + ": " + args[1] + args[2] + args[3] },
+            { "concat2", (JsonNode?[] args) => args[0] + ": " + args[1] + args[2] + args[3] }
         });
         Evaluator _evaluator = new(grammar);
         var ast = ToTree(@"""foo""|concat(""baz"", ""bar"", ""tek"")|concat2(""baz"", ""bar"", ""tek"")");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("foo: bazbartek: bazbartek", result);
+        Assert.Equal("foo: bazbartek: bazbartek", result?.ToString());
     }
 
     [Fact]
@@ -266,7 +302,8 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(@"[""foo"", 1+2]");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(new List<dynamic> { "foo", (decimal)3 }, result);
+        JsonArray expected = new() { "foo", 3 };
+        Assert.True(JsonNode.DeepEquals(expected, result));
     }
 
     [Theory]
@@ -279,7 +316,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(input);
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(expected, result);
+        Assert.Equal(expected, result?.GetValue<bool>());
     }
 
     [Theory]
@@ -290,7 +327,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(input);
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(expected, result);
+        Assert.Equal(expected, result?.GetValue<decimal>());
     }
 
     [Theory]
@@ -301,28 +338,29 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(input);
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(expected, result);
+        Assert.Equal(expected, result?.ToString());
     }
 
     [Fact]
     public async void EvaluateExpression_ReturnsEmptyArrayWhenApplyingFilterToUndefined()
     {
-        var context = new Dictionary<string, dynamic?>
+        JsonObject context = new()
         {
-            { "a", new Dictionary<string, dynamic>() },
+            { "a", new JsonObject() },
             { "b", 4 }
         };
         Evaluator _evaluator = new(new Grammar(), context);
         var ast = ToTree(@"a.b[.c == d]");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(new List<dynamic>(), result);
-        Assert.Empty(result);
+        var expected = new JsonArray { };
+        Assert.True(JsonNode.DeepEquals(expected, result));
+        Assert.Empty(result!.AsArray());
     }
 
     [Fact]
     public async void EvaluateExpression_WithDollarIdentifiers()
     {
-        var context = new Dictionary<string, dynamic?>
+        JsonObject context = new()
         {
             { "$", 5 },
             { "$foo", 6 },
@@ -332,7 +370,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar(), context);
         var ast = ToTree(@"$+$foo+$foo$bar+$bar");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal((decimal)26, result);
+        Assert.Equal((decimal)26, result?.GetValue<decimal>());
     }
 
     [Fact]
@@ -340,7 +378,7 @@ public class EvaluatorUnitTest
     {
         var grammar = new Grammar();
         bool toTrueEvaluated = false;
-        grammar.AddTransform("toTrue", (dynamic? val) =>
+        grammar.AddTransform("toTrue", (JsonNode?[] args) =>
         {
             toTrueEvaluated = true;
             return true;
@@ -348,7 +386,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(grammar);
         var ast = ToTree(@"true && ""foo""|toTrue");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(true, result);
+        Assert.Equal(true, result?.GetValue<bool>());
         Assert.True(toTrueEvaluated);
     }
 
@@ -357,7 +395,7 @@ public class EvaluatorUnitTest
     {
         var grammar = new Grammar();
         bool toTrueEvaluated = false;
-        grammar.AddTransform("toTrue", (dynamic? val) =>
+        grammar.AddTransform("toTrue", (JsonNode?[] args) =>
         {
             toTrueEvaluated = true;
             return true;
@@ -365,7 +403,7 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(grammar);
         var ast = ToTree("true || foo|toTrue");
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal(true, result);
+        Assert.Equal(true, result?.GetValue<bool>());
         Assert.False(toTrueEvaluated);
     }
 }

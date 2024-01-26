@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+
 namespace JexlNet.Test;
 
 public class ExpressionUnitTest
@@ -25,8 +27,8 @@ public class ExpressionUnitTest
     {
         var jexl = new Jexl();
         var expr = jexl.CreateExpression("foo");
-        var result = expr.Eval(new Dictionary<string, dynamic?> { { "foo", "bar" } });
-        Assert.Equal("bar", result);
+        var result = expr.Eval(new JsonObject { { "foo", "bar" } });
+        Assert.Equal("bar", result?.ToString());
     }
 
     [Fact]
@@ -34,8 +36,8 @@ public class ExpressionUnitTest
     {
         var jexl = new Jexl();
         var expr = jexl.CreateExpression("foo");
-        var result = await expr.EvalAsync(new Dictionary<string, dynamic?> { { "foo", "bar" } });
-        Assert.Equal("bar", result);
+        var result = await expr.EvalAsync(new JsonObject { { "foo", "bar" } });
+        Assert.Equal("bar", result?.ToString());
     }
 
     public class TestExpression(string exprStr) : Expression(exprStr)
