@@ -842,7 +842,33 @@ public class Grammar
     {
         JsonNode? newFunc(JsonNode?[] args)
         {
-            return func(args[0], args.Skip(1).ToArray());
+            return func(args.FirstOrDefault(), args.Skip(1).ToArray());
+        }
+
+        // Call the existing method with the new function
+        AddFunctionCall(poolName, name, newFunc);
+    }
+    ///<summary>
+    ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+    ///</summary>
+    private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode?, JsonNode?, JsonNode?, Task<JsonNode?>> func)
+    {
+        Task<JsonNode?> newFunc(JsonNode?[] args)
+        {
+            return func(args.FirstOrDefault(), args.ElementAtOrDefault(1), args.ElementAtOrDefault(2));
+        }
+
+        // Call the existing method with the new function
+        AddFunctionCall(poolName, name, newFunc);
+    }
+    ///<summary>
+    ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+    ///</summary>
+    private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode?, JsonNode?, JsonNode?, JsonNode?> func)
+    {
+        JsonNode? newFunc(JsonNode?[] args)
+        {
+            return func(args.FirstOrDefault(), args.ElementAtOrDefault(1), args.ElementAtOrDefault(2));
         }
 
         // Call the existing method with the new function
@@ -968,6 +994,10 @@ public class Grammar
     public void AddFunction(string name, Func<JsonNode?, Task<JsonNode?>> func) => AddFunctionCall(PoolType.Functions, name, func);
     ///<summary> Add a function to the grammar with no arguments. </summary>
     public void AddFunction(string name, Func<JsonNode?, JsonNode?> func) => AddFunctionCall(PoolType.Functions, name, func);
+    public void AddFunction(string name, Func<JsonNode?, JsonNode?, Task<JsonNode?>> func) => AddFunctionCall(PoolType.Functions, name, func);
+    public void AddFunction(string name, Func<JsonNode?, JsonNode?, JsonNode?> func) => AddFunctionCall(PoolType.Functions, name, func);
+    public void AddFunction(string name, Func<JsonNode?, JsonNode?, JsonNode?, Task<JsonNode?>> func) => AddFunctionCall(PoolType.Functions, name, func);
+    public void AddFunction(string name, Func<JsonNode?, JsonNode?, JsonNode?, JsonNode?> func) => AddFunctionCall(PoolType.Functions, name, func);
     ///<summary> Add a function to the grammar with a single argument (can be an array or list). </summary>
     public void AddFunction(string name, Func<JsonNode?[], Task<JsonNode?>> func) => AddFunctionCall(PoolType.Functions, name, func);
     ///<summary> Add a function to the grammar with a single argument (can be an array or list). </summary>
@@ -999,11 +1029,8 @@ public class Grammar
     public void AddTransform(string name, Func<JsonObject?, JsonNode?> func) => AddFunctionCall(PoolType.Transforms, name, func);
     ///<summary> Add a transform with a single argument to the grammar. </summary>
     public void AddTransform(string name, Func<JsonNode?, Task<JsonNode?>> func) => AddFunctionCall(PoolType.Transforms, name, func);
-    ///<summary> Add a transform with a single argument to the grammar. </summary>
     public void AddTransform(string name, Func<JsonNode?, JsonNode?> func) => AddFunctionCall(PoolType.Transforms, name, func);
-    ///<summary> Add a transform with a single argument to the grammar. </summary>
     public void AddTransform(string name, Func<JsonNode?[], Task<JsonNode?>> func) => AddFunctionCall(PoolType.Transforms, name, func);
-    ///<summary> Add a transform with a single argument to the grammar. </summary>
     public void AddTransform(string name, Func<JsonNode?[], JsonNode?> func) => AddFunctionCall(PoolType.Transforms, name, func);
     ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
     public void AddTransform(string name, Func<JsonNode?, JsonNode?, Task<JsonNode?>> func) => AddFunctionCall(PoolType.Transforms, name, func);
@@ -1011,6 +1038,8 @@ public class Grammar
     public void AddTransform(string name, Func<JsonNode?, JsonNode?, JsonNode?> func) => AddFunctionCall(PoolType.Transforms, name, func);
     ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
     public void AddTransform(string name, Func<JsonNode?, JsonNode?[], Task<JsonNode?>> func) => AddFunctionCall(PoolType.Transforms, name, func);
+    public void AddTransform(string name, Func<JsonNode?, JsonNode?, JsonNode?, Task<JsonNode?>> func) => AddFunctionCall(PoolType.Transforms, name, func);
+    public void AddTransform(string name, Func<JsonNode?, JsonNode?, JsonNode?, JsonNode?> func) => AddFunctionCall(PoolType.Transforms, name, func);
     ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
     public void AddTransform(string name, Func<JsonNode?, JsonNode?[], JsonNode?> func) => AddFunctionCall(PoolType.Transforms, name, func);
     ///<summary> Add a dictionary of transforms with a single argument (can be an array or list) to the grammar. </summary>
