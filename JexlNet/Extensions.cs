@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace JexlNet;
@@ -25,6 +26,10 @@ public static class JsonValueExtensions
         else if (value.TryGetValue(out long valLong))
         {
             return Convert.ToDecimal(valLong);
+        }
+        else if (value.TryGetValue(out string? valString))
+        {
+            return decimal.Parse(valString, System.Globalization.CultureInfo.InvariantCulture);
         }
         else if (value.TryGetValue(out object? valObj))
         {
@@ -58,6 +63,10 @@ public static class JsonValueExtensions
         {
             return Convert.ToDouble(valLong);
         }
+        else if (value.TryGetValue(out string? valString))
+        {
+            return double.Parse(valString, System.Globalization.CultureInfo.InvariantCulture);
+        }
         else if (value.TryGetValue(out object? valObj))
         {
             return Convert.ToDouble(valObj);
@@ -84,15 +93,83 @@ public static class JsonValueExtensions
         }
         else if (value.TryGetValue(out decimal valDecimal))
         {
-            return Convert.ToInt32(valDecimal);
+            return decimal.ToInt32(valDecimal);
         }
         else if (value.TryGetValue(out long valLong))
         {
             return Convert.ToInt32(valLong);
         }
+        else if (value.TryGetValue(out string? valString))
+        {
+            return int.Parse(valString, System.Globalization.CultureInfo.InvariantCulture);
+        }
         else if (value.TryGetValue(out object? valObj))
         {
             return Convert.ToInt32(valObj);
+        }
+        else
+        {
+            throw new Exception("Unsupported type");
+        }
+    }
+
+    /// <summary>
+    /// Converts a JsonValue to a int64.
+    /// </summary>
+    /// <param name="value"></param>
+    public static long ToInt64(this JsonValue value)
+    {
+        if (value.TryGetValue(out long valLong))
+        {
+            return valLong;
+        }
+        else if (value.TryGetValue(out int valInt))
+        {
+            return Convert.ToInt64(valInt);
+        }
+        else if (value.TryGetValue(out double valDouble))
+        {
+            return Convert.ToInt64(valDouble);
+        }
+        else if (value.TryGetValue(out decimal valDecimal))
+        {
+            return decimal.ToInt64(valDecimal);
+        }
+        else if (value.TryGetValue(out string? valString))
+        {
+            return long.Parse(valString, System.Globalization.CultureInfo.InvariantCulture);
+        }
+        else if (value.TryGetValue(out object? valObj))
+        {
+            return Convert.ToInt64(valObj);
+        }
+        else
+        {
+            throw new Exception("Unsupported type");
+        }
+    }
+
+    /// <summary>
+    /// Converts a JsonValue to a boolean.
+    /// </summary>
+    /// <param name="value"></param>
+    public static bool ToBoolean(this JsonValue value)
+    {
+        if (value.TryGetValue(out bool valBool))
+        {
+            return valBool;
+        }
+        else if (value.TryGetValue(out string? valString))
+        {
+            return !string.IsNullOrEmpty(valString);
+        }
+        else if (value.GetValueKind() == JsonValueKind.Number)
+        {
+            return value.ToDecimal() != 0;
+        }
+        else if (value.TryGetValue(out object? valObj))
+        {
+            return Convert.ToBoolean(valObj);
         }
         else
         {
