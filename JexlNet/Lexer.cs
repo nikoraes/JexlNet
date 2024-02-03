@@ -48,6 +48,7 @@ public class Lexer
         GrammarType.OpenBracket,
         GrammarType.Question,
         GrammarType.Colon,
+        GrammarType.Comma,
     ];
     private Regex? _splitRegex;
 

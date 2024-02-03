@@ -16,6 +16,10 @@ public class Jexl : IJexl
     {
         Grammar = new Grammar();
     }
+    public Jexl(Grammar grammar)
+    {
+        Grammar = grammar;
+    }
     public Grammar Grammar { get; set; }
 
     ///<summary>

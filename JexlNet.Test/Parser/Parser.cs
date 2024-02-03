@@ -23,6 +23,22 @@ public class ParserUnitTest
     }
 
     [Fact]
+    public void ConstructsASTForMinusOnePlusTwo()
+    {
+        Parser _parser = new(new Grammar());
+        var tokens = _lexer.Tokenize("-1 + 2");
+        _parser.AddTokens(tokens);
+        var result = _parser.Complete();
+        Node expected = new(GrammarType.BinaryExpression)
+        {
+            Operator = "+",
+            Left = new(GrammarType.Literal, JsonValue.Create((decimal)-1)),
+            Right = new(GrammarType.Literal, JsonValue.Create((decimal)2))
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
     public void AddsHeavierOperationsToTheRight()
     {
         Parser _parser = new(new Grammar());
@@ -380,7 +396,7 @@ public class ParserUnitTest
     public void HandlesMultipleArgumentsInTransforms()
     {
         Parser _parser = new(new Grammar());
-        _parser.AddTokens(_lexer.Tokenize(@"foo|bar(""tek"", 5, true)"));
+        _parser.AddTokens(_lexer.Tokenize(@"foo|bar(""tek"", -5, true)"));
         var result = _parser.Complete();
         Node expected = new(GrammarType.FunctionCall)
         {
@@ -390,7 +406,7 @@ public class ParserUnitTest
             [
                 new(GrammarType.Identifier, "foo"),
                 new(GrammarType.Literal, "tek"),
-                new(GrammarType.Literal, (decimal)5),
+                new(GrammarType.Literal, (decimal)-5),
                 new(GrammarType.Literal, true)
             ]
         };

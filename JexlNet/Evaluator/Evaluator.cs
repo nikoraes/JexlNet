@@ -93,7 +93,7 @@ public class Evaluator
         JsonArray results = [];
         if (subj is JsonArray arr)
         {
-            foreach (var elem in arr)
+            foreach (JsonNode? elem in arr)
             {
                 Evaluator elementEvaluator = new(Grammar, Context, elem);
                 JsonNode? shouldInclude = await elementEvaluator.EvalAsync(expr);

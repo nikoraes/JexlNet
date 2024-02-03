@@ -148,6 +148,17 @@ public static class EvaluatorHandlers
         {
             if (list.First() is JsonObject dict && !string.IsNullOrEmpty(nodeValue))
             {
+                // NOTE: we could also return a mapped list, like in JSONata, but then it won't align to the JS JEXL implementation
+                /* JsonArray result = new();
+                foreach (var item in list)
+                {
+                    if (item is JsonObject obj && obj.ContainsKey(nodeValue))
+                    {
+                        result.Add(obj[nodeValue]);
+                    }
+                }
+                return result; */
+
                 return dict[nodeValue];
             }
             else if (int.TryParse(nodeValue, out int index))

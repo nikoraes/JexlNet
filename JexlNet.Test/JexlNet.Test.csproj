@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\JexlNet\JexlNet.csproj" />
+    <ProjectReference Include="..\JexlNet.ExtendedGrammar\JexlNet.ExtendedGrammar.csproj" />
   </ItemGroup>
 
 </Project>
