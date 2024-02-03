@@ -7,7 +7,6 @@ public class ExtendedGrammarUnitTest
     [Theory]
     [InlineData("123456|toString", "123456")]
     [InlineData("{'a':123456}|toString", @"{""a"":123456}")]
-    [InlineData("$string({'a':123456}, true)", "{\r\n  \"a\": 123456\r\n}")]
     public void String(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());

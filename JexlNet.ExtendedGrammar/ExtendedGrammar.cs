@@ -217,11 +217,9 @@ public class ExtendedGrammar : Grammar
         AddFunction("toMillis", DateTimeToMillis);
         AddFunction("$toMillis", DateTimeToMillis);
         AddTransform("toMillis", DateTimeToMillis);
-
-
     }
 
-    private static readonly JsonSerializerOptions _prettyPrintOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions _prettyPrintOptions = new() { WriteIndented = true, };
     private static readonly JsonSerializerOptions _defaultOptions = new();
 
     /// <summary>
