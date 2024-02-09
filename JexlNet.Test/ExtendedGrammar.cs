@@ -174,14 +174,20 @@ public class ExtendedGrammarUnitTest
 
     [Theory]
     [InlineData("1|toBoolean", true)]
-    [InlineData("'a'|toBool", true)]
-    [InlineData("''|toBool", false)]
+    [InlineData("3|toBoolean", true)]
+    [InlineData("'1'|toBoolean", true)]
+    [InlineData("'2'|toBoolean", null)]
+    [InlineData("'a'|toBool", null)]
+    [InlineData("''|toBool", null)]
     [InlineData("0|toBool", false)]
     [InlineData("0.0|toBool", false)]
-    [InlineData("'false'|toBool", true)]
-    [InlineData("'False'|toBool", true)]
-    [InlineData("'False'|toBool|not", false)]
-    public void Boolean(string expression, bool expected)
+    [InlineData("'false'|toBool", false)]
+    [InlineData("'False'|toBool", false)]
+    [InlineData("'fALSE'|toBool", false)]
+    [InlineData("'tRUE       '|toBoolean", true)]
+    [InlineData("'False'|toBool|not", true)]
+    [InlineData("'TRUE'|toBool|not", false)]
+    public void Boolean(string expression, bool? expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
         var result = jexl.Eval(expression);

@@ -159,10 +159,6 @@ public static class JsonValueExtensions
         {
             return valBool;
         }
-        else if (value.TryGetValue(out string? valString))
-        {
-            return !string.IsNullOrEmpty(valString);
-        }
         else if (value.GetValueKind() == JsonValueKind.Number)
         {
             return value.ToDecimal() != 0;

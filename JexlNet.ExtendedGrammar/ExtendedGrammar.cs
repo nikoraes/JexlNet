@@ -793,7 +793,8 @@ public class ExtendedGrammar : Grammar
     }
 
     /// <summary>
-    /// Casts the arg parameter to a boolean.
+    /// Casts the arg parameter to a boolean. 
+    /// In addition to the standard JSON boolean values, the following string values are also recognized: "true", "false", "1", and "0".
     /// </summary>
     /// <example><code>boolean(arg)</code><code>$boolean(arg)</code><code>arg|boolean</code></example>
     /// <returns>The boolean JsonValue that represents the input</returns>
@@ -801,21 +802,44 @@ public class ExtendedGrammar : Grammar
     {
         if (input is JsonValue value)
         {
-            return value.ToBoolean();
+            if (value.GetValueKind() == JsonValueKind.String && value.TryGetValue(out string? sValue))
+            {
+                if (sValue.Equals("true", StringComparison.CurrentCultureIgnoreCase) || sValue.Equals("1", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return true;
+                }
+                else if (sValue.Equals("false", StringComparison.CurrentCultureIgnoreCase) || sValue.Equals("0", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return false;
+                }
+            }
+            try
+            {
+                return value.ToBoolean();
+            }
+            catch (FormatException)
+            {
+                return null;
+            }
         }
         return null;
     }
 
     /// <summary>
-    /// Returns the logical negation of the input.
+    /// Returns the logical negation of the input (first casts the input to a boolean if it is not already a boolean value)
     /// </summary>
     /// <example><code>not(arg)</code><code>$not(arg)</code><code>arg|not</code></example>
     /// <returns>The logical negation of the input</returns>
     public static JsonNode? Not(JsonNode? input)
     {
-        if (input is JsonValue value)
+        JsonNode? booleanValue = ToBoolean(input);
+        if (booleanValue?.GetValueKind() == JsonValueKind.True)
         {
-            return !value.ToBoolean();
+            return false;
+        }
+        else if (booleanValue?.GetValueKind() == JsonValueKind.False)
+        {
+            return true;
         }
         return null;
     }

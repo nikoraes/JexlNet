@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace JexlNet.Test;
@@ -403,6 +405,68 @@ public class JexlUnitTest
         Assert.Equal("Figgis", res?.ToString());
     }
 
+    [Fact]
+    public async void SupportJsonContext2()
+    {
+        string contextJson =
+        @"{
+            ""name"": {
+                ""first"": ""Sterling"",
+                ""last"": ""Archer""
+            },
+            ""assoc"": [
+                {
+                    ""first"": ""Lana"",
+                    ""last"": ""Kane""
+                },
+                {
+                    ""first"": ""Cyril"",
+                    ""last"": ""Figgis""
+                },
+                {
+                    ""first"": ""Pam"",
+                    ""last"": ""Poovey""
+                }
+            ],
+            ""age"": 36
+        }";
+        JsonObject? contextJsonDocument = JsonSerializer.Deserialize<JsonObject>(contextJson);
+        var jexl = new Jexl();
+        var res = await jexl.EvalAsync(@"assoc[.first == 'Cyril'].last", contextJsonDocument);
+        Assert.Equal("Figgis", res?.ToString());
+    }
+
+    [Fact]
+    public async void SupportJsonContext3()
+    {
+        string contextJson =
+        @"{
+            ""name"": {
+                ""first"": ""Sterling"",
+                ""last"": ""Archer""
+            },
+            ""assoc"": [
+                {
+                    ""first"": ""Lana"",
+                    ""last"": ""Kane""
+                },
+                {
+                    ""first"": ""Cyril"",
+                    ""last"": ""Figgis""
+                },
+                {
+                    ""first"": ""Pam"",
+                    ""last"": ""Poovey""
+                }
+            ],
+            ""age"": 36
+        }";
+        Stream contextJsonStream = new MemoryStream(Encoding.UTF8.GetBytes(contextJson));
+        JsonObject? contextJsonDocument = await JsonSerializer.DeserializeAsync<JsonObject>(contextJsonStream);
+        var jexl = new Jexl();
+        var res = await jexl.EvalAsync(@"assoc[.first == 'Cyril'].last", contextJsonDocument);
+        Assert.Equal("Figgis", res?.ToString());
+    }
 
     [Fact]
     public async void SupportStringContext()
