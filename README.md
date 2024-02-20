@@ -154,7 +154,7 @@ var result = jexl.Eval("1 + 1");
 
 ## Async vs Sync: Which to use
 
-There is little performance difference between `EvalAsync` and `Eval`. Both support async functions and transforms. The only difference is that `EvalAsync` returns a `Task<dynamic>` and `Eval` returns a `dynamic`.
+There is little performance difference between `EvalAsync` and `Eval`. Both support async functions and transforms. The only difference is that `EvalAsync` returns a `Task<JsonNode?>` and `Eval` returns a `JsonNode?`.
 
 ## All the details
 
