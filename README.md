@@ -6,11 +6,10 @@ NOTE: This library handles the JEXL from [TomFrost's JEXL library](https://githu
 
 ## Quick start
 
-Expressions can be evaluated synchronously or asynchronously by using the `Eval` and `EvalAsync` methods respectively. 
+Expressions can be evaluated synchronously or asynchronously by using the `Eval` and `EvalAsync` methods respectively.
 Context should be a JsonObject (or a string which will internally be converted to a JsonObject). The output is always a JsonNode (can be JsonObject, JsonArray or JsonValue).
 
-The Grammar can be expanded by adding new operators, functions and transforms. 
-
+The Grammar can be expanded by adding new operators, functions and transforms.
 
 ```csharp
 // Define context as a JsonObject (System.Text.Json)
@@ -136,11 +135,15 @@ await danger.EvalAsync(new JsonObject { { "place", "ZONE!!!" } }); // Danger ZON
 
 Install from NuGet:
 
+```powershell
     Install-Package JexlNet
+```
 
 Add using statement:
 
+```csharp
     using JexlNet;
+```
 
 And use it:
 
@@ -284,7 +287,6 @@ var context = new JsonObject
 };
 ```
 
-
 | Expression                                    | Result                                                                                |
 | --------------------------------------------- | ------------------------------------------------------------------------------------- |
 | employees[.first == 'Sterling']               | [{first: 'Sterling', last: 'Archer', age: 36}]                                        |
@@ -301,9 +303,9 @@ The first argument is the value to be transformed, and the rest are any other
 arguments passed to the transform in the expression. They must return either
 the transformed value, or a Promise that resolves with the transformed
 value. Add them with `jexl.AddTransform(name, function)`.
-Arguments can be `JsonNode?` or `JsonNode?[]`. In case of 
-enumerables the first element is the value to be transformed and the rest 
-are the arguments. It is also possible to use a first `JsonNode?` argument as 
+Arguments can be `JsonNode?` or `JsonNode?[]`. In case of
+enumerables the first element is the value to be transformed and the rest
+are the arguments. It is also possible to use a first `JsonNode?` argument as
 the value to be transformed and the rest as the arguments.
 
 ```csharp
@@ -314,9 +316,8 @@ jexl.Grammar.AddTransform("split", (JsonNode? arg0, JsonNode?[] args) => new Jso
 
 | Expression                                 | Result                |
 | ------------------------------------------ | --------------------- |
-| "Pam Poovey"&#124;lower&#124;split(' ')[1] | poovey                |
+| "Pam Poovey"&#124;lower&#124;split[' '](1) | poovey                |
 | "password==guest"&#124;split('=' + '=')    | ['password', 'guest'] |
-
 
 ### Functions
 
@@ -326,7 +327,7 @@ provide access to functions that either don't require an input, or require
 multiple equally-important inputs. They can be added with
 `jexl.AddFunction(name, function)`. Like transforms, functions can return a
 value, or a Promise that resolves to the resulting value.
-For functions, arguments are not required, but if they are defined, 
+For functions, arguments are not required, but if they are defined,
 they must be `JsonNode?` or `JsonNode?[]`.
 
 ```csharp
@@ -341,12 +342,35 @@ jexl.Grammar.AddFunction("expensiveQuery", Db.RunExpensiveQuery);
 | min(4, 2, 19)                                 | 2                         |
 | counts.missions &#124;&#124; expensiveQuery() | Query only runs if needed |
 
+## Extended Grammar
+
+By installing the `JexlNet.ExtendedGrammar` package, you get access to a large number of additional builtin functions and transforms.
+
+Install from NuGet:
+
+```powershell
+    Install-Package JexlNet.ExtendedGrammar
+```
+
+Add using statement and use extended grammar instead of default grammar:
+
+```csharp
+    using JexlNet;
+    using JexlNet.ExtendedGrammar;
+```
+
+```csharp
+    // Initialize Jexl with extended grammar
+    var jexl = new Jexl(new ExtendedGrammar());
+```
+
+See the [Extended Grammar code](/JexlNet.ExtendedGrammar/ExtendedGrammar.cs) for a list of all the builtin functions and transforms and the [Extended Grammar tests](/JexlNet.Test/ExtendedGrammar.cs) for examples of how to use the extended grammar.
 
 ## Other implementations
 
-[Jexl](https://github.com/TomFrost/Jexl) - The original JavaScript implementation of JEXL.
-[jexl-rs](https://github.com/mozilla/jexl-rs) - A Rust-based JEXL parser and evaluator.
-[PyJEXL](https://github.com/mozilla/pyjexl) - A Python-based JEXL parser and evaluator.
+- [Jexl](https://github.com/TomFrost/Jexl) - The original JavaScript implementation of JEXL.
+- [jexl-rs](https://github.com/mozilla/jexl-rs) - A Rust-based JEXL parser and evaluator.
+- [PyJEXL](https://github.com/mozilla/pyjexl) - A Python-based JEXL parser and evaluator.
 
 ## License
 
