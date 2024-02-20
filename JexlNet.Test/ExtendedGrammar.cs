@@ -129,6 +129,7 @@ public class ExtendedGrammarUnitTest
     [InlineData("$number('10.6')|ceil", 11)]
     [InlineData("10.123456|round(2)", 10.12)]
     [InlineData("3|power(2)", 9)]
+    [InlineData("3|power", 9)]
     [InlineData("9|sqrt", 3)]
     public void Number(string expression, decimal expected)
     {
@@ -150,6 +151,7 @@ public class ExtendedGrammarUnitTest
 
     [Theory]
     [InlineData("'16325'|toInt", 16325)]
+    [InlineData("9/2|toInt", 4)]
     public void Integers(string expression, int expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
@@ -163,6 +165,7 @@ public class ExtendedGrammarUnitTest
     [InlineData("[1,3]|sum(1,2,3,4,5)", 19)]
     [InlineData("[1,3]|sum([1,2,3,4,5])", 19)]
     [InlineData("[1,3]|max([1,2,3,4,5])", 5)]
+    [InlineData("[2,3]|min([1,2,3,4,5])", 1)]
     [InlineData("[4,5,6]|avg", 5)]
     public void NumericAggregations(string expression, decimal expected)
     {

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace JexlNet;
@@ -243,6 +244,11 @@ public class ExtendedGrammar : Grammar
         AddFunction("eval", Eval);
         AddFunction("$eval", Eval);
         AddTransform("eval", Eval);
+        // Uuid
+        AddFunction("uuid", Uuid);
+        AddFunction("$uuid", Uuid);
+        AddFunction("uid", Uuid);
+        AddFunction("$uid", Uuid);
     }
 
     private static readonly JsonSerializerOptions _prettyPrintOptions = new() { WriteIndented = true, };
@@ -636,6 +642,10 @@ public class ExtendedGrammar : Grammar
         {
             return Math.Pow(value.ToDouble(), exponentValue.ToDouble());
         }
+        if (input is JsonValue inputValue && exponent == null)
+        {
+            return Math.Pow(inputValue.ToDouble(), 2);
+        }
         return null;
     }
 
@@ -722,7 +732,7 @@ public class ExtendedGrammar : Grammar
         if (input is JsonValue value)
         {
             string str = value.ToString();
-            return int.Parse(str);
+            return int.Parse(str, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.InvariantInfo);
         }
         return null;
     }
@@ -1188,5 +1198,14 @@ public class ExtendedGrammar : Grammar
             return jexl.Eval(exprVal.ToString(), inputObject.DeepClone().AsObject());
         }
         return null;
+    }
+
+    /// <summary>
+    /// Generate a new UUID (Universally Unique Identifier).
+    /// <example><code>uid()</code><code>$uuid()</code></example>
+    /// </summary>
+    public static JsonNode? Uuid()
+    {
+        return Guid.NewGuid().ToString();
     }
 }
