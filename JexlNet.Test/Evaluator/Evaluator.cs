@@ -1,6 +1,4 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
-using Newtonsoft.Json.Linq;
 
 namespace JexlNet.Test;
 
@@ -9,7 +7,7 @@ public class EvaluatorUnitTest
     private readonly Lexer _lexer = new(new Grammar());
     private readonly Evaluator _evaluator = new(new Grammar());
 
-    private Node? ToTree(string input)
+    private Node ToTree(string input)
     {
         Parser _parser = new(new Grammar());
         var tokens = _lexer.Tokenize(input);
@@ -84,7 +82,7 @@ public class EvaluatorUnitTest
             { "foo", 10 }
         };
         var grammar = new Grammar();
-        grammar.AddTransform("half", (JsonValue? val) => JsonValue.Create(Convert.ToDecimal(val?.ToString()) / 2));
+        grammar.AddTransform("half", (JsonValue val) => JsonValue.Create(Convert.ToDecimal(val?.ToString()) / 2));
         Evaluator _evaluator = new(grammar, context);
         var ast = ToTree("foo|half + 3");
         var result = await _evaluator.EvalAsync(ast);
@@ -99,7 +97,7 @@ public class EvaluatorUnitTest
             { "foo", 10 }
         };
         var grammar = new Grammar();
-        grammar.AddFunction("half", (JsonValue? val) => val?.ToDecimal() / 2);
+        grammar.AddFunction("half", (JsonValue val) => val?.ToDecimal() / 2);
         Evaluator _evaluator = new(grammar, context);
         var ast = ToTree("half(foo) + 3");
         var result = await _evaluator.EvalAsync(ast);
@@ -114,7 +112,7 @@ public class EvaluatorUnitTest
             { "foo", 10 }
         };
         var grammar = new Grammar();
-        grammar.AddFunction("half", async (JsonValue? val) =>
+        grammar.AddFunction("half", async (JsonValue val) =>
         {
             await Task.Delay(100);
             return val?.ToDecimal() / 2;
@@ -274,7 +272,7 @@ public class EvaluatorUnitTest
     public async void EvaluateExpression_AppliesTransformsWithMultipleArgs()
     {
         var grammar = new Grammar();
-        grammar.AddTransform("concat", (JsonNode?[] args) => args[0] + ": " + args[1] + args[2] + args[3]);
+        grammar.AddTransform("concat", (JsonNode[] args) => args[0] + ": " + args[1] + args[2] + args[3]);
         Evaluator _evaluator = new(grammar);
         var ast = ToTree(@"""foo""|concat(""baz"", ""bar"", ""tek"")");
         var result = await _evaluator.EvalAsync(ast);
@@ -285,10 +283,10 @@ public class EvaluatorUnitTest
     public async void EvaluateExpression_AllowAddMultipleTransforms()
     {
         var grammar = new Grammar();
-        grammar.AddTransforms(new Dictionary<string, Func<JsonNode?[], JsonNode?>>
+        grammar.AddTransforms(new Dictionary<string, Func<JsonNode[], JsonNode>>
         {
-            { "concat", (JsonNode?[] args) => args[0] + ": " + args[1] + args[2] + args[3] },
-            { "concat2", (JsonNode?[] args) => args[0] + ": " + args[1] + args[2] + args[3] }
+            { "concat", (JsonNode[] args) => args[0] + ": " + args[1] + args[2] + args[3] },
+            { "concat2", (JsonNode[] args) => args[0] + ": " + args[1] + args[2] + args[3] }
         });
         Evaluator _evaluator = new(grammar);
         var ast = ToTree(@"""foo""|concat(""baz"", ""bar"", ""tek"")|concat2(""baz"", ""bar"", ""tek"")");
@@ -378,7 +376,7 @@ public class EvaluatorUnitTest
     {
         var grammar = new Grammar();
         bool toTrueEvaluated = false;
-        grammar.AddTransform("toTrue", (JsonNode?[] args) =>
+        grammar.AddTransform("toTrue", (JsonNode[] args) =>
         {
             toTrueEvaluated = true;
             return true;
@@ -395,7 +393,7 @@ public class EvaluatorUnitTest
     {
         var grammar = new Grammar();
         bool toTrueEvaluated = false;
-        grammar.AddTransform("toTrue", (JsonNode?[] args) =>
+        grammar.AddTransform("toTrue", (JsonNode[] args) =>
         {
             toTrueEvaluated = true;
             return true;
