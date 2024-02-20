@@ -934,8 +934,8 @@ public class ExtendedGrammar : Grammar
 
     /// <summary>
     /// Returns a new array with the elements of the input array transformed by the specified map function.
-    /// </summary>
     /// <example><code>mapField(array, field)</code><code>$mapField(array, field)</code><code>array|mapField(field)</code></example>
+    /// </summary>
     /// <returns>A new array with the elements of the input array transformed by the specified map function</returns>
     public static JsonNode? MapField(JsonNode? input, JsonNode? field)
     {
@@ -950,8 +950,12 @@ public class ExtendedGrammar : Grammar
     /// Returns an array containing the results of applying the expression parameter to each value in the array parameter.
     /// The expression must be a valid JEXL expression string, which is applied to each element of the array.
     /// The relative context provided to the expression is an object with the properties value, index and array (the original array).
+    /// <example>
+    /// For example (with context <c>{assoc: [{age: 20}, {age: 30}, {age: 40}]}</c>)
+    /// <c>assoc|map('value.age')</c> returns an array containing the results of applying the expression 'value.age' 
+    /// to each value in the assoc array: <c>[20, 30, 40]</c>
+    /// </example>
     /// </summary>
-    /// <example><code>mapField(array, field)</code><code>$mapField(array, field)</code><code>array|mapField(field)</code></example>
     /// <returns>A new array with the elements of the input array transformed by the specified map function</returns>
     public static JsonNode? Map(JsonNode? input, JsonNode? expression)
     {
@@ -978,8 +982,11 @@ public class ExtendedGrammar : Grammar
     /// in array in combination with the result of the previous application of the function.
     /// The expression must be a valid JEXL expression string, and behaves like an infix operator between each value within the array.
     /// The relative context provided to the expression is an object with the properties accumulator, value, index and array (the original array).
+    /// <example>
+    /// For example (with context <c>{assoc: [{age: 20}, {age: 30}, {age: 40}]}</c>)
+    /// <c>assoc|reduce('accumulator + value.age',0)</c> returns the sum of all age values: <c>90</c>
+    /// </example>
     /// </summary>
-    /// <example><code>mapField(array, field)</code><code>$mapField(array, field)</code><code>array|mapField(field)</code></example>
     /// <returns>A new array with the elements of the input array transformed by the specified map function</returns>
     public static JsonNode? Reduce(JsonNode? input, JsonNode? expression, JsonNode? initialValue = null)
     {
