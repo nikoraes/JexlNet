@@ -290,10 +290,16 @@ var context = new JsonObject
 | Expression                                    | Result                                                                                |
 | --------------------------------------------- | ------------------------------------------------------------------------------------- |
 | employees[.first == 'Sterling']               | [{first: 'Sterling', last: 'Archer', age: 36}]                                        |
-| employees[.last == 'Tu' + 'nt'].first         | Cheryl                                                                                |
 | employees[.age >= 30 && .age < 40]            | [{first: 'Sterling', last: 'Archer', age: 36},{first: 'Lana', last: 'Kane', age: 33}] |
 | employees[.age >= 30 && .age < 40][.age < 35] | [{first: 'Lana', last: 'Kane', age: 33}]                                              |
+| employees[.last == 'Tu' + 'nt'][0].first      | Cheryl                                                                                |
+| employees[.last == 'Tu' + 'nt'].first         | Cheryl                                                                                |
+| employees[.age >= retireAge][0].first         | Malory                                                                                |
 | employees[.age >= retireAge].first            | Malory                                                                                |
+
+#### Note about collection filters
+
+The collection filter returns a filtered collection, but if you add a dot and identifier after the filter, it will return the first matching object's property. If you want to return a collection of properties, use the `map` transform in the [Extended Grammar](#extended-grammar).
 
 ### Transforms
 
@@ -319,6 +325,8 @@ jexl.Grammar.AddTransform("split", (JsonNode? arg0, JsonNode?[] args) => new Jso
 | "Pam Poovey"&#124;lower&#124;split[' '](1) | poovey                |
 | "password==guest"&#124;split('=' + '=')    | ['password', 'guest'] |
 
+Many examples can be found in the [Extended Grammar](#extended-grammar) [code](/JexlNet.ExtendedGrammar/ExtendedGrammar.cs) and [tests](/JexlNet.Test/ExtendedGrammar.cs).
+
 ### Functions
 
 While Transforms are the preferred way to change one value into another value,
@@ -341,6 +349,8 @@ jexl.Grammar.AddFunction("expensiveQuery", Db.RunExpensiveQuery);
 | false || getTrue()                            | true                      |
 | min(4, 2, 19)                                 | 2                         |
 | counts.missions &#124;&#124; expensiveQuery() | Query only runs if needed |
+
+Many examples can be found in the [Extended Grammar](#extended-grammar) [code](/JexlNet.ExtendedGrammar/ExtendedGrammar.cs) and [tests](/JexlNet.Test/ExtendedGrammar.cs).
 
 ## Extended Grammar
 
