@@ -181,6 +181,13 @@ public class ExtendedGrammar : Grammar
         AddFunction("distinct", ArrayDistinct);
         AddFunction("$distinct", ArrayDistinct);
         AddTransform("distinct", ArrayDistinct);
+        // ArrayToObject
+        AddFunction("toObject", ArrayToObject);
+        AddFunction("$toObject", ArrayToObject);
+        AddTransform("toObject", ArrayToObject);
+        AddFunction("fromEntries", ArrayToObject);
+        AddFunction("$fromEntries", ArrayToObject);
+        AddTransform("fromEntries", ArrayToObject);
         // MapField
         AddFunction("mapField", MapField);
         AddFunction("$mapField", MapField);
@@ -201,6 +208,10 @@ public class ExtendedGrammar : Grammar
         AddFunction("values", ObjectValues);
         AddFunction("$values", ObjectValues);
         AddTransform("values", ObjectValues);
+        // ObjectEntries
+        AddFunction("entries", ObjectEntries);
+        AddFunction("$entries", ObjectEntries);
+        AddTransform("entries", ObjectEntries);
         // ObjectMerge
         AddFunction("merge", ObjectMerge);
         AddFunction("$merge", ObjectMerge);
@@ -933,6 +944,31 @@ public class ExtendedGrammar : Grammar
     }
 
     /// <summary>
+    /// Create a new object based on an array of key-value pairs.
+    /// <example><code>toObject(array)</code><code>$fromEntries(array)</code><code>array|fromEntries</code><code>array|toObject</code></example>
+    /// </summary>
+    /// <returns>A new object based on an array of key-value pairs</returns>
+    public static JsonNode? ArrayToObject(JsonNode? input)
+    {
+        if (input is JsonArray array)
+        {
+            JsonObject result = new();
+            foreach (JsonNode? item in array)
+            {
+                if (item is JsonArray pair && pair.Count == 2)
+                {
+                    if (pair[0] is JsonValue key && pair[1] is JsonNode value)
+                    {
+                        result[key.ToString()] = value.DeepClone();
+                    }
+                }
+            }
+            return result;
+        }
+        return null;
+    }
+
+    /// <summary>
     /// Returns a new array with the elements of the input array transformed by the specified map function.
     /// <example><code>mapField(array, field)</code><code>$mapField(array, field)</code><code>array|mapField(field)</code></example>
     /// </summary>
@@ -1035,6 +1071,20 @@ public class ExtendedGrammar : Grammar
         if (input is JsonObject obj)
         {
             return new JsonArray(obj.Select(x => x.Value?.DeepClone()).ToArray());
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Returns an array of key-value pairs from the input object.
+    /// <example><code>entries(object)</code><code>$entries(object)</code><code>object|entries</code></example>
+    /// </summary>
+    /// <returns>The values of the input object</returns>
+    public static JsonNode? ObjectEntries(JsonNode? input)
+    {
+        if (input is JsonObject obj)
+        {
+            return new JsonArray(obj.Select(x => new JsonArray(new[] { JsonValue.Create(x.Key), x.Value?.DeepClone() })).ToArray());
         }
         return null;
     }
