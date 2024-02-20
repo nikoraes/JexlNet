@@ -277,6 +277,27 @@ public class ExtendedGrammarUnitTest
         Assert.Equal(expected, result?.GetValue<bool>());
     }
 
+    [Theory]
+    [InlineData("eval(1+2)", "1+2")]
+    [InlineData("assoc[0]|eval('age')", "32")]
+    [InlineData("assoc[2]|eval(expression)", "45")]
+    public void Eval(string expression, string expected)
+    {
+        var context = new JsonObject {
+            { "assoc", new JsonArray {
+                new JsonObject {{ "lastName", "Archer" }, {"age", 32 }},
+                new JsonObject {{ "lastName", "Poovey" }, {"age", 34 }},
+                new JsonObject {{ "lastName", "Figgis" }, {"age", 45 }},
+                }
+            },
+            { "expression", "age" }
+        };
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression, context);
+        var expectedResult = jexl.Eval(expected);
+        Assert.True(JsonNode.DeepEquals(expectedResult, result));
+    }
+
     [Fact]
     public void AllowsFunctionsToBeAdded()
     {

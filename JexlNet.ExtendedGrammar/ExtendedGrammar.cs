@@ -239,6 +239,10 @@ public class ExtendedGrammar : Grammar
         AddFunction("toMillis", DateTimeToMillis);
         AddFunction("$toMillis", DateTimeToMillis);
         AddTransform("toMillis", DateTimeToMillis);
+        // Eval
+        AddFunction("eval", Eval);
+        AddFunction("$eval", Eval);
+        AddTransform("eval", Eval);
     }
 
     private static readonly JsonSerializerOptions _prettyPrintOptions = new() { WriteIndented = true, };
@@ -1157,6 +1161,31 @@ public class ExtendedGrammar : Grammar
         {
             string datetime = value.ToString();
             return DateTimeOffset.Parse(datetime).ToUnixTimeMilliseconds();
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Evaluate provided and return the result.
+    /// If only one argument is provided, it is expected that the first argument is a JEXL expression.
+    /// If two arguments are provided, the first argument is the context (must be an object) and the second argument is the JEXL expression.
+    /// The expression uses the default JEXL extended grammar and can't use any custom defined functions or transforms.
+    /// <example><code>eval(expression)</code><code>object|eval(expression)</code></example>
+    /// </summary>
+    /// <returns>The result of the evaluation</returns>
+    public static JsonNode? Eval(JsonNode? input, JsonNode? expression)
+    {
+        // If no second argument is provided, it is expected that the first argument is a JEXL expression
+        if (input is JsonValue inputValue && expression == null)
+        {
+            Jexl jexl = new Jexl(new ExtendedGrammar());
+            return jexl.Eval(inputValue.ToString());
+        }
+        // If two arguments are provided, the first argument is the context (must be an object) and the second argument is the JEXL expression
+        else if (input is JsonObject inputObject && expression is JsonValue exprVal)
+        {
+            Jexl jexl = new Jexl(new ExtendedGrammar());
+            return jexl.Eval(exprVal.ToString(), inputObject.DeepClone().AsObject());
         }
         return null;
     }
