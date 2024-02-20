@@ -100,12 +100,12 @@ await jexl.EvalAsync(@"age > 62 ? ""retired"" : ""working""", context);
 // "working"
 
 // Transform
-jexl.Grammar.AddTransform("upper", (JsonValue? val) => val?.ToString().ToUpper());
+jexl.Grammar.AddTransform("upper", (JsonValue val) => val?.ToString().ToUpper());
 await jexl.EvalAsync(@"""duchess""|upper + "" "" + name.last|upper", context);
 // "DUCHESS ARCHER"
 
 // Transform asynchronously, with arguments
-jexl.Grammar.AddTransform("getStat", async (JsonNode?[] args) => await DbSelectByLastName(args[0], args[1]));
+jexl.Grammar.AddTransform("getStat", async (JsonNode[] args) => await DbSelectByLastName(args[0], args[1]));
 await jexl.EvalAsync(@"name.last|getStat(""weight"")", context);
 // Output: 184
 
@@ -116,7 +116,7 @@ await jexl.EvalAsync(@"age == getOldestAgent().age", context);
 
 // Add your own (a)synchronous operators
 // Here's a case-insensitive string equality
-jexl.Grammar.AddBinaryOperator("_=", 20, (JsonNode?[] args) => args[0]?.ToString().ToLower() == args[1]?.ToString().ToLower());
+jexl.Grammar.AddBinaryOperator("_=", 20, (JsonNode[] args) => args[0]?.ToString().ToLower() == args[1]?.ToString().ToLower());
 await jexl.EvalAsync(@"""Guest"" _= ""gUeSt""");
 // true
 
@@ -154,7 +154,7 @@ var result = jexl.Eval("1 + 1");
 
 ## Async vs Sync: Which to use
 
-There is little performance difference between `EvalAsync` and `Eval`. Both support async functions and transforms. The only difference is that `EvalAsync` returns a `Task<JsonNode?>` and `Eval` returns a `JsonNode?`.
+There is little performance difference between `EvalAsync` and `Eval`. Both support async functions and transforms. The only difference is that `EvalAsync` returns a `Task<JsonNode>` and `Eval` returns a `JsonNode`.
 
 ## All the details
 
@@ -309,15 +309,15 @@ The first argument is the value to be transformed, and the rest are any other
 arguments passed to the transform in the expression. They must return either
 the transformed value, or a Promise that resolves with the transformed
 value. Add them with `jexl.AddTransform(name, function)`.
-Arguments can be `JsonNode?` or `JsonNode?[]`. In case of
+Arguments can be `JsonNode` or `JsonNode[]`. In case of
 enumerables the first element is the value to be transformed and the rest
-are the arguments. It is also possible to use a first `JsonNode?` argument as
+are the arguments. It is also possible to use a first `JsonNode` argument as
 the value to be transformed and the rest as the arguments.
 
 ```csharp
-jexl.Grammar.AddTransform("lower", (JsonNode? val) => val?.ToString().ToLower());
-jexl.Grammar.AddTransform("split", (JsonNode?[] args) => new JsonArray((args[0]?.ToString().Split(args[1]?.ToString()) ?? []).Select(x => (JsonNode?)x).ToArray()));
-jexl.Grammar.AddTransform("split", (JsonNode? arg0, JsonNode?[] args) => new JsonArray((arg0?.ToString().Split(args[0]?.ToString()) ?? []).Select(x => (JsonNode?)x).ToArray()));
+jexl.Grammar.AddTransform("lower", (JsonNode val) => val?.ToString().ToLower());
+jexl.Grammar.AddTransform("split", (JsonNode[] args) => new JsonArray((args[0]?.ToString().Split(args[1]?.ToString()) ?? []).Select(x => (JsonNode)x).ToArray()));
+jexl.Grammar.AddTransform("split", (JsonNode arg0, JsonNode[] args) => new JsonArray((arg0?.ToString().Split(args[0]?.ToString()) ?? []).Select(x => (JsonNode)x).ToArray()));
 ```
 
 | Expression                                 | Result                |
@@ -336,11 +336,11 @@ multiple equally-important inputs. They can be added with
 `jexl.AddFunction(name, function)`. Like transforms, functions can return a
 value, or a Promise that resolves to the resulting value.
 For functions, arguments are not required, but if they are defined,
-they must be `JsonNode?` or `JsonNode?[]`.
+they must be `JsonNode` or `JsonNode[]`.
 
 ```csharp
 jexl.Grammar.AddFunction("getTrue", () => true);
-jexl.Grammar.AddFunction("min", (JsonNode?[] args) => args.Select(x => x?.AsValue().ToDecimal()).Min());
+jexl.Grammar.AddFunction("min", (JsonNode[] args) => args.Select(x => x?.AsValue().ToDecimal()).Min());
 jexl.Grammar.AddFunction("expensiveQuery", Db.RunExpensiveQuery);
 ```
 

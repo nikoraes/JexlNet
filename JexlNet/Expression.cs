@@ -1,74 +1,76 @@
 using System.Text.Json.Nodes;
+using System.Threading.Tasks;
 
-namespace JexlNet;
-
-public interface IExpression
+namespace JexlNet
 {
-    public Expression? Compile();
-    public Task<JsonNode?> EvalAsync(JsonObject? context = null);
-    public JsonNode? Eval(JsonObject? context = null);
-}
-
-public class Expression : IExpression
-{
-    public Expression(string exprStr)
+    public interface IExpression
     {
-        Grammar = new Grammar();
-        ExprStr = exprStr;
-    }
-    public Expression(Grammar grammar, string exprStr)
-    {
-        Grammar = grammar;
-        ExprStr = exprStr;
-    }
-    private readonly Grammar Grammar;
-    private readonly string ExprStr;
-    private Node? _ast = null;
-
-    /// <summary>
-    /// Forces a compilation of the expression string that this Expression object
-    /// was constructed with.This function can be called multiple times; useful
-    /// if the language elements of the associated Jexl instance change.
-    /// </summary>
-    /// <returns>this Expression instance, for convenience</returns>
-    public virtual Expression? Compile()
-    {
-        var lexer = new Lexer(Grammar);
-        var parser = new Parser(Grammar);
-        var tokens = lexer.Tokenize(ExprStr);
-        parser.AddTokens(tokens);
-        _ast = parser.Complete();
-        return this;
+        Expression Compile();
+        Task<JsonNode> EvalAsync(JsonObject context = null);
+        JsonNode Eval(JsonObject context = null);
     }
 
-    /// <summary>
-    /// Asynchronously evaluates the expression within an optional context.
-    /// </summary>
-    /// <param name="context">A mapping of variables to values, which will be
-    /// made accessible to the Jexl expression when evaluating it.</param>
-    /// <returns>Resolves with the resulting value of the expression.</returns>
-    public async Task<JsonNode?> EvalAsync(JsonObject? context = null)
+    public class Expression : IExpression
     {
-        Evaluator evaluator = new(Grammar, context);
-        return await evaluator.EvalAsync(GetAst());
-    }
+        public Expression(string exprStr)
+        {
+            Grammar = new Grammar();
+            ExprStr = exprStr;
+        }
+        public Expression(Grammar grammar, string exprStr)
+        {
+            Grammar = grammar;
+            ExprStr = exprStr;
+        }
+        private readonly Grammar Grammar;
+        private readonly string ExprStr;
+        private Node _ast = null;
 
-    /// <summary>
-    /// Asynchronously evaluates the expression within an optional context.
-    /// </summary>
-    /// <param name="context">A mapping of variables to values, which will be
-    /// made accessible to the Jexl expression when evaluating it.</param>
-    /// <returns>Resolves with the resulting value of the expression.</returns>
-    public JsonNode? Eval(JsonObject? context = null)
-    {
-        Evaluator evaluator = new(Grammar, context);
-        Task<JsonNode?>? task = evaluator.EvalAsync(GetAst());
-        return task?.GetAwaiter().GetResult();
-    }
+        /// <summary>
+        /// Forces a compilation of the expression string that this Expression object
+        /// was constructed with.This function can be called multiple times; useful
+        /// if the language elements of the associated Jexl instance change.
+        /// </summary>
+        /// <returns>this Expression instance, for convenience</returns>
+        public virtual Expression Compile()
+        {
+            var lexer = new Lexer(Grammar);
+            var parser = new Parser(Grammar);
+            var tokens = lexer.Tokenize(ExprStr);
+            parser.AddTokens(tokens);
+            _ast = parser.Complete();
+            return this;
+        }
 
-    private Node? GetAst()
-    {
-        if (_ast == null) Compile();
-        return _ast;
+        /// <summary>
+        /// Asynchronously evaluates the expression within an optional context.
+        /// </summary>
+        /// <param name="context">A mapping of variables to values, which will be
+        /// made accessible to the Jexl expression when evaluating it.</param>
+        /// <returns>Resolves with the resulting value of the expression.</returns>
+        public async Task<JsonNode> EvalAsync(JsonObject context = null)
+        {
+            Evaluator evaluator = new Evaluator(Grammar, context);
+            return await evaluator.EvalAsync(GetAst());
+        }
+
+        /// <summary>
+        /// Asynchronously evaluates the expression within an optional context.
+        /// </summary>
+        /// <param name="context">A mapping of variables to values, which will be
+        /// made accessible to the Jexl expression when evaluating it.</param>
+        /// <returns>Resolves with the resulting value of the expression.</returns>
+        public JsonNode Eval(JsonObject context = null)
+        {
+            Evaluator evaluator = new Evaluator(Grammar, context);
+            Task<JsonNode> task = evaluator.EvalAsync(GetAst());
+            return task?.GetAwaiter().GetResult();
+        }
+
+        private Node GetAst()
+        {
+            if (_ast == null) Compile();
+            return _ast;
+        }
     }
 }

@@ -43,7 +43,7 @@ public class ExpressionUnitTest
     public class TestExpression(string exprStr) : Expression(exprStr)
     {
         public int CompileCallCount { get; private set; }
-        public override Expression? Compile()
+        public override Expression Compile()
         {
             CompileCallCount++;
             return base.Compile();
