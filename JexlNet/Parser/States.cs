@@ -84,6 +84,7 @@ internal static class ParserStates
                     { GrammarType.Dot, new ParserStateTokenType(GrammarType.Traverse) },
                     { GrammarType.OpenBracket, new ParserStateTokenType(GrammarType.Filter) },
                     { GrammarType.Pipe, new ParserStateTokenType(GrammarType.ExpectTransform) },
+                    { GrammarType.Question, new ParserStateTokenType(GrammarType.TernaryMid, ParserHandlers.TernaryStart) }
                 },
                 Completable = true
             }
@@ -96,6 +97,7 @@ internal static class ParserStates
                     { GrammarType.Dot, new ParserStateTokenType(GrammarType.Traverse) },
                     { GrammarType.OpenBracket, new ParserStateTokenType(GrammarType.Filter) },
                     { GrammarType.Pipe, new ParserStateTokenType(GrammarType.ExpectTransform) },
+                    { GrammarType.Question, new ParserStateTokenType(GrammarType.TernaryMid, ParserHandlers.TernaryStart) }
                 },
                 Completable = true
             }

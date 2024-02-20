@@ -213,6 +213,49 @@ public class ExtendedGrammarUnitTest
     }
 
     [Theory]
+    [InlineData("[{name:'foo'}, {name:'bar'}, {name:'baz'}, {name:'tek'}]|map('value.name')", "['foo', 'bar', 'baz', 'tek']")]
+    [InlineData("assoc|map('value.age')", "[32,34,45]")]
+    [InlineData("assoc|map('value.lastName')", "['Archer','Poovey','Figgis']")]
+    [InlineData("assoc|map('value.age + index')", "[32,35,47]")]
+    [InlineData("assoc|map('value.age + array[.age <= value.age][0].age + index')", "[64,67,79]")]
+    [InlineData("assoc|map('value.age')|avg", "37")]
+    public void Map(string expression, string expected)
+    {
+        var context = new JsonObject {
+            { "assoc", new JsonArray {
+                new JsonObject {{ "lastName", "Archer" }, {"age", 32 }},
+                new JsonObject {{ "lastName", "Poovey" }, {"age", 34 }},
+                new JsonObject {{ "lastName", "Figgis" }, {"age", 45 }},
+                }
+            }
+        };
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression, context);
+        var expectedResult = jexl.Eval(expected);
+        Assert.True(JsonNode.DeepEquals(expectedResult, result));
+    }
+
+    [Theory]
+    [InlineData("assoc|reduce('accumulator + value.age', 0)", "111")]
+    [InlineData("assoc|reduce('value.age > array|map(\\'value.age\\')|avg ? accumulator|append(value.age) : accumulator', [])", "[45]")]
+    [InlineData("assoc|reduce('value.age < array|map(\\'value.age\\')|avg ? accumulator|append(value.age) : accumulator', [])[1]", "34")]
+    public void Reduce(string expression, string expected)
+    {
+        var context = new JsonObject {
+            { "assoc", new JsonArray {
+                new JsonObject {{ "lastName", "Archer" }, {"age", 32 }},
+                new JsonObject {{ "lastName", "Poovey" }, {"age", 34 }},
+                new JsonObject {{ "lastName", "Figgis" }, {"age", 45 }},
+                }
+            }
+        };
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression, context);
+        var expectedResult = jexl.Eval(expected);
+        Assert.True(JsonNode.DeepEquals(expectedResult, result));
+    }
+
+    [Theory]
     [InlineData("$merge({'foo':'bar'},{baz:'tek'})")]
     [InlineData("{'foo':'bar'}|merge({baz:'tek'})")]
     public void Objects(string expression)

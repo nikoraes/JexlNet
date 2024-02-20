@@ -413,6 +413,7 @@ public class ParserUnitTest
         Assert.Equal(expected, result);
     }
 
+
     [Fact]
     public void AppliesFiltersToIdentifiers()
     {
@@ -642,6 +643,123 @@ public class ParserUnitTest
                 }
             },
             Alternate = new(GrammarType.Literal, "baz")
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesTransformsInTernary()
+    {
+        Parser _parser = new(new Grammar());
+        _parser.AddTokens(_lexer.Tokenize(@"foo|avg > 5 ? {bar: ""tek""} : ""baz"""));
+        var result = _parser.Complete();
+
+        Node expected = new(GrammarType.ConditionalExpression)
+        {
+            Test = new(GrammarType.BinaryExpression)
+            {
+                Operator = ">",
+                Left = new(GrammarType.FunctionCall)
+                {
+                    Name = "avg",
+                    Pool = Grammar.PoolType.Transforms,
+                    Args =
+                    [
+                        new(GrammarType.Identifier, "foo")
+                    ]
+                },
+                Right = new(GrammarType.Literal, (decimal)5)
+            },
+            Consequent = new(GrammarType.ObjectLiteral)
+            {
+                Object = new Dictionary<string, Node>
+                {
+                    { "bar", new(GrammarType.Literal, "tek") }
+                }
+            },
+            Alternate = new(GrammarType.Literal, "baz")
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesTransformsInTernary2()
+    {
+        Parser _parser = new(new Grammar());
+        _parser.AddTokens(_lexer.Tokenize(@"value.age > array|avg ? accumulator|append(value) : accumulator"));
+        var result = _parser.Complete();
+
+        Node expected = new(GrammarType.ConditionalExpression)
+        {
+            Test = new(GrammarType.BinaryExpression)
+            {
+                Operator = ">",
+                Left = new(GrammarType.Identifier, "age")
+                {
+                    From = new(GrammarType.Identifier, "value")
+                },
+                Right = new(GrammarType.FunctionCall)
+                {
+                    Name = "avg",
+                    Pool = Grammar.PoolType.Transforms,
+                    Args =
+                    [
+                        new(GrammarType.Identifier, "array")
+                    ]
+                },
+            },
+            Consequent = new(GrammarType.FunctionCall)
+            {
+                Name = "append",
+                Pool = Grammar.PoolType.Transforms,
+                Args =
+                    [
+                        new(GrammarType.Identifier, "accumulator"),
+                        new(GrammarType.Identifier, "value")
+                    ]
+            },
+            Alternate = new(GrammarType.Identifier, "accumulator")
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesFunctionsInTernary()
+    {
+        Parser _parser = new(new Grammar());
+        _parser.AddTokens(_lexer.Tokenize(@"value.age > avg(array) ? accumulator|append(value) : accumulator"));
+        var result = _parser.Complete();
+
+        Node expected = new(GrammarType.ConditionalExpression)
+        {
+            Test = new(GrammarType.BinaryExpression)
+            {
+                Operator = ">",
+                Left = new(GrammarType.Identifier, "age")
+                {
+                    From = new(GrammarType.Identifier, "value")
+                },
+                Right = new(GrammarType.FunctionCall)
+                {
+                    Name = "avg",
+                    Pool = Grammar.PoolType.Functions,
+                    Args =
+                    [
+                        new(GrammarType.Identifier, "array")
+                    ]
+                },
+            },
+            Consequent = new(GrammarType.FunctionCall)
+            {
+                Name = "append",
+                Pool = Grammar.PoolType.Transforms,
+                Args =
+                    [
+                        new(GrammarType.Identifier, "accumulator"),
+                        new(GrammarType.Identifier, "value")
+                    ]
+            },
+            Alternate = new(GrammarType.Identifier, "accumulator")
         };
         Assert.Equal(expected, result);
     }

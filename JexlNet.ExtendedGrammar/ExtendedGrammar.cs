@@ -166,6 +166,9 @@ public class ExtendedGrammar : Grammar
         AddFunction("append", ArrayAppend);
         AddFunction("$append", ArrayAppend);
         AddTransform("append", ArrayAppend);
+        AddFunction("concat", ArrayAppend);
+        AddFunction("$concat", ArrayAppend);
+        AddTransform("concat", ArrayAppend);
         // ArrayReverse
         AddFunction("reverse", ArrayReverse);
         AddFunction("$reverse", ArrayReverse);
@@ -178,10 +181,18 @@ public class ExtendedGrammar : Grammar
         AddFunction("distinct", ArrayDistinct);
         AddFunction("$distinct", ArrayDistinct);
         AddTransform("distinct", ArrayDistinct);
-        // Map
+        // MapField
         AddFunction("mapField", MapField);
         AddFunction("$mapField", MapField);
         AddTransform("mapField", MapField);
+        // Map
+        AddFunction("map", Map);
+        AddFunction("$map", Map);
+        AddTransform("map", Map);
+        // Reduce
+        AddFunction("reduce", Reduce);
+        AddFunction("$reduce", Reduce);
+        AddTransform("reduce", Reduce);
         // ObjectKeys
         AddFunction("keys", ObjectKeys);
         AddFunction("$keys", ObjectKeys);
@@ -931,6 +942,64 @@ public class ExtendedGrammar : Grammar
         if (input is JsonArray array && field is JsonValue fieldVal)
         {
             return new JsonArray(array.Select(x => x?[fieldVal.ToString()]?.DeepClone()).ToArray());
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Returns an array containing the results of applying the expression parameter to each value in the array parameter.
+    /// The expression must be a valid JEXL expression string, which is applied to each element of the array.
+    /// The relative context provided to the expression is an object with the properties value, index and array (the original array).
+    /// </summary>
+    /// <example><code>mapField(array, field)</code><code>$mapField(array, field)</code><code>array|mapField(field)</code></example>
+    /// <returns>A new array with the elements of the input array transformed by the specified map function</returns>
+    public static JsonNode? Map(JsonNode? input, JsonNode? expression)
+    {
+        if (input is JsonArray array && expression is JsonValue exprVal)
+        {
+            Jexl jexl = new Jexl(new ExtendedGrammar());
+            Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+            return new JsonArray(array.Select((x, i) =>
+            {
+                var context = new JsonObject()
+                {
+                    ["value"] = x?.DeepClone(),
+                    ["index"] = i,
+                    ["array"] = array.DeepClone(),
+                };
+                return jExpression.Eval(context)?.DeepClone();
+            }).ToArray());
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Returns an aggregated value derived from applying the function parameter successively to each value 
+    /// in array in combination with the result of the previous application of the function.
+    /// The expression must be a valid JEXL expression string, and behaves like an infix operator between each value within the array.
+    /// The relative context provided to the expression is an object with the properties accumulator, value, index and array (the original array).
+    /// </summary>
+    /// <example><code>mapField(array, field)</code><code>$mapField(array, field)</code><code>array|mapField(field)</code></example>
+    /// <returns>A new array with the elements of the input array transformed by the specified map function</returns>
+    public static JsonNode? Reduce(JsonNode? input, JsonNode? expression, JsonNode? initialValue = null)
+    {
+        if (input is JsonArray array && expression is JsonValue exprVal)
+        {
+            Jexl jexl = new Jexl(new ExtendedGrammar());
+            Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+            JsonNode? accumulator = initialValue?.DeepClone();
+            for (int i = 0; i < array.Count; i++)
+            {
+                var context = new JsonObject()
+                {
+                    ["accumulator"] = accumulator?.DeepClone(),
+                    ["value"] = array[i]?.DeepClone(),
+                    ["index"] = i,
+                    ["array"] = array.DeepClone(),
+                };
+                accumulator = jExpression.Eval(context)?.DeepClone();
+            }
+            return accumulator;
         }
         return null;
     }
