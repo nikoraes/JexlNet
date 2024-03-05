@@ -239,6 +239,28 @@ public class ExtendedGrammarUnitTest
     }
 
     [Theory]
+    [InlineData("[{name:'foo'}, {name:'bar'}, {name:'baz'}, {name:'tek'}]|any('value.name==\\'foo\\'')", true)]
+    [InlineData("assoc|every('value.age>30')", true)]
+    [InlineData("assoc|every('value.age>40')", false)]
+    [InlineData("assoc|some('value.age>40')", true)]
+    [InlineData("assoc|some('value.lastName==\\'Figgis\\'')", true)]
+    [InlineData("assoc|map('value.age')|some('value>30')", true)]
+    public void AnyAll(string expression, bool expected)
+    {
+        var context = new JsonObject {
+            { "assoc", new JsonArray {
+                new JsonObject {{ "lastName", "Archer" }, {"age", 32 }},
+                new JsonObject {{ "lastName", "Poovey" }, {"age", 34 }},
+                new JsonObject {{ "lastName", "Figgis" }, {"age", 45 }},
+                }
+            }
+        };
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression, context);
+        Assert.Equal(expected, result?.GetValue<bool>());
+    }
+
+    [Theory]
     [InlineData("assoc|reduce('accumulator + value.age', 0)", "111")]
     [InlineData("assoc|reduce('value.age > array|map(\\'value.age\\')|avg ? accumulator|append(value.age) : accumulator', [])", "[45]")]
     [InlineData("assoc|reduce('value.age < array|map(\\'value.age\\')|avg ? accumulator|append(value.age) : accumulator', [])[1]", "34")]
