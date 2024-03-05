@@ -199,6 +199,20 @@ namespace JexlNet
             AddFunction("map", Map);
             AddFunction("$map", Map);
             AddTransform("map", Map);
+            // Any
+            AddFunction("any", Any);
+            AddFunction("$any", Any);
+            AddTransform("any", Any);
+            AddFunction("some", Any);
+            AddFunction("$some", Any);
+            AddTransform("some", Any);
+            // All
+            AddFunction("all", All);
+            AddFunction("$all", All);
+            AddTransform("all", All);
+            AddFunction("every", All);
+            AddFunction("$every", All);
+            AddTransform("every", All);
             // Reduce
             AddFunction("reduce", Reduce);
             AddFunction("$reduce", Reduce);
@@ -1030,6 +1044,67 @@ namespace JexlNet
             }
             return null;
         }
+
+        /// <summary>
+        /// Checks whether the provided array has any elements that match the specified expression.
+        /// The expression must be a valid JEXL expression string, and is applied to each element of the array.
+        /// The relative context provided to the expression is an object with the properties value and array (the original array).
+        /// <example>
+        /// For example (with context <c>{assoc: [{age: 20}, {age: 30}, {age: 40}]}</c>)
+        /// <c>assoc|some('value.age > 30')</c> returns true because at least one element
+        /// in the assoc array has an age greater than 30.
+        /// </example>
+        /// </summary>
+        /// <returns>true if the array has any elements that match the specified expression, otherwise it returns false</returns>
+        public static JsonNode Any(JsonNode input, JsonNode expression)
+        {
+            if (input is JsonArray array && expression is JsonValue exprVal)
+            {
+                Jexl jexl = new Jexl(new ExtendedGrammar());
+                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                return array.Any((x) =>
+                {
+                    var context = new JsonObject()
+                    {
+                        ["value"] = x?.DeepClone(),
+                        ["array"] = array.DeepClone(),
+                    };
+                    return jExpression.Eval(context)?.DeepClone()?.AsValue().ToBoolean() ?? false;
+                });
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Checks whether the provided array has all elements that match the specified expression.
+        /// The expression must be a valid JEXL expression string, and is applied to each element of the array.
+        /// The relative context provided to the expression is an object with the properties value and array (the original array).
+        /// <example>
+        /// For example (with context <c>{assoc: [{age: 20}, {age: 30}, {age: 40}]}</c>)
+        /// <c>assoc|every('value.age > 30')</c> returns false because not all elements
+        /// in the assoc array have an age greater than 30.
+        /// </example>
+        /// </summary>
+        /// <returns>true if the array has all elements that match the specified expression, otherwise it returns false</returns>
+        public static JsonNode All(JsonNode input, JsonNode expression)
+        {
+            if (input is JsonArray array && expression is JsonValue exprVal)
+            {
+                Jexl jexl = new Jexl(new ExtendedGrammar());
+                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                return array.All((x) =>
+                {
+                    var context = new JsonObject()
+                    {
+                        ["value"] = x?.DeepClone(),
+                        ["array"] = array.DeepClone(),
+                    };
+                    return jExpression.Eval(context)?.DeepClone()?.AsValue().ToBoolean() ?? false;
+                });
+            }
+            return false;
+        }
+
 
         /// <summary>
         /// Returns an aggregated value derived from applying the function parameter successively to each value 
