@@ -139,7 +139,7 @@ namespace JexlNet
                     return evaluator.Context?[nodeValue];
                 }
                 // Return the whole context if the identifier is "$"
-                // This functionality doesn't exist in basic JS JEXL, but allows to dynamically access the root context
+                // This functionality doesn't exist in basic javascript JEXL, but allows to dynamically access the root context
                 else if (string.Equals(nodeValue, "$") && evaluator.Context != null)
                 {
                     return evaluator.Context;
