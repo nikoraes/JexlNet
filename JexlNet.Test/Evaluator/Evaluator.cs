@@ -53,8 +53,12 @@ public class EvaluatorUnitTest
         Assert.Equal(expected, result?.GetValue<bool>());
     }
 
-    [Fact]
-    public async void EvaluateExpression_WithContext()
+    [Theory]
+    [InlineData("foo.baz.bar", "tek")]
+    [InlineData("$['foo'].baz.bar", "tek")]
+    [InlineData("$[{bar:'foo'}.bar].baz.bar", "tek")]
+    [InlineData("$[{$:'foo'}.$].baz.bar", "tek")]
+    public async void EvaluateExpression_WithContext(string input, string expected)
     {
         JsonObject context = new()
         {
@@ -69,9 +73,9 @@ public class EvaluatorUnitTest
             }
         };
         Evaluator _evaluator = new(new Grammar(), context);
-        var ast = ToTree("foo.baz.bar");
+        var ast = ToTree(input);
         var result = await _evaluator.EvalAsync(ast);
-        Assert.Equal("tek", result?.ToString());
+        Assert.Equal(expected, result?.ToString());
     }
 
     [Fact]
