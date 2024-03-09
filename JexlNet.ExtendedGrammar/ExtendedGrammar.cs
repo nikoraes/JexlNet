@@ -180,6 +180,13 @@ namespace JexlNet
             AddFunction("shuffle", ArrayShuffle);
             AddFunction("$shuffle", ArrayShuffle);
             AddTransform("shuffle", ArrayShuffle);
+            // ArraySort
+            AddFunction("sort", ArraySort);
+            AddFunction("$sort", ArraySort);
+            AddTransform("sort", ArraySort);
+            AddFunction("order", ArraySort);
+            AddFunction("$order", ArraySort);
+            AddTransform("order", ArraySort);
             // ArrayDistinct
             AddFunction("distinct", ArrayDistinct);
             AddFunction("$distinct", ArrayDistinct);
@@ -947,6 +954,67 @@ namespace JexlNet
             if (input is JsonArray array)
             {
                 return new JsonArray(array.Select(x => x?.DeepClone()).OrderBy(x => Guid.NewGuid()).ToArray());
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Returns a new array with the elements of the input array sorted in ascending order.
+        /// </summary>
+        /// <example><code><code>array|sort</code></example>
+        public static JsonNode ArraySort(JsonNode input, JsonNode expression = null, JsonNode descending = null)
+        {
+            if (input is JsonArray array && expression is JsonValue exprVal)
+            {
+                Jexl jexl = new Jexl(new ExtendedGrammar());
+                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                if (descending is JsonValue descVal && descVal.GetValueKind() == JsonValueKind.True)
+                {
+                    return new JsonArray(array.OrderByDescending(x =>
+                    {
+                        if (x is JsonObject obj)
+                        {
+                            return jExpression.Eval(obj)?.DeepClone();
+                        }
+                        else
+                        {
+                            var context = new JsonObject()
+                            {
+                                ["value"] = x?.DeepClone()
+                            };
+                            return jExpression.Eval(context)?.DeepClone();
+                        }
+                    }).ToArray());
+                }
+                else
+                {
+                    return new JsonArray(array.OrderBy(x =>
+                    {
+                        if (x is JsonObject obj)
+                        {
+                            return jExpression.Eval(obj)?.DeepClone();
+                        }
+                        else
+                        {
+                            var context = new JsonObject()
+                            {
+                                ["value"] = x?.DeepClone()
+                            };
+                            return jExpression.Eval(context)?.DeepClone();
+                        }
+                    }).ToArray());
+                }
+            }
+            else if (input is JsonArray array2)
+            {
+                if (descending is JsonValue descVal && descVal.GetValueKind() == JsonValueKind.True)
+                {
+                    return new JsonArray(array2.OrderByDescending(x => x?.DeepClone()).ToArray());
+                }
+                else
+                {
+                    return new JsonArray(array2.OrderBy(x => x?.DeepClone()).ToArray());
+                }
             }
             return null;
         }
