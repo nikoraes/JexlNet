@@ -992,6 +992,12 @@ namespace JexlNet
             if (input is JsonArray array)
             {
                 bool isDescending = descending is JsonValue descVal && descVal.GetValueKind() == JsonValueKind.True;
+                Expression jExpression = null;
+                if (expression != null)
+                {
+                    Jexl jexl = new Jexl(new ExtendedGrammar());
+                    jExpression = jexl.CreateExpression(expression.ToString());
+                }
                 JsonValue getValue(JsonNode x)
                 {
                     if (expression == null)
@@ -1000,8 +1006,6 @@ namespace JexlNet
                     }
                     else if (x is JsonObject obj)
                     {
-                        Jexl jexl = new Jexl(new ExtendedGrammar());
-                        Expression jExpression = jexl.CreateExpression(expression.ToString());
                         return jExpression.Eval(obj)?.AsValue();
                     }
                     else
@@ -1010,8 +1014,6 @@ namespace JexlNet
                         {
                             ["value"] = x?.DeepClone()
                         };
-                        Jexl jexl = new Jexl(new ExtendedGrammar());
-                        Expression jExpression = jexl.CreateExpression(expression.ToString());
                         return jExpression.Eval(context)?.AsValue();
                     }
                 }
