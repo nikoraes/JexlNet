@@ -122,8 +122,8 @@ public class JexlUnitTest
     {
         var jexl = new Jexl();
         static JsonNode split(JsonNode[] args) => new JsonArray((args[0]?.ToString().Split(args[1]?.ToString()) ?? []).Select(x => (JsonNode)x).ToArray());
-        static JsonNode lower(JsonNode[] args) => args[0]?.ToString().ToLower();
-        jexl.Grammar.AddTransforms(new Dictionary<string, Func<JsonNode[], JsonNode>> {
+        static JsonNode? lower(JsonNode[] args) => args[0]?.ToString()?.ToLower();
+        jexl.Grammar.AddTransforms(new Dictionary<string, Func<JsonNode[], JsonNode?>> {
             { "split", split },
             { "lower", lower }
         });
@@ -136,8 +136,8 @@ public class JexlUnitTest
     {
         var jexl = new Jexl();
         static JsonNode split(JsonNode arg0, JsonNode[] args) => new JsonArray((arg0?.ToString().Split(args[0]?.ToString()) ?? []).Select(x => (JsonNode)x).ToArray());
-        static JsonNode lower(JsonNode arg0, JsonNode[] args) => arg0?.ToString().ToLower();
-        jexl.Grammar.AddTransforms(new Dictionary<string, Func<JsonNode, JsonNode[], JsonNode>> {
+        static JsonNode? lower(JsonNode arg0, JsonNode[] args) => arg0?.ToString().ToLower();
+        jexl.Grammar.AddTransforms(new Dictionary<string, Func<JsonNode, JsonNode[], JsonNode?>> {
             { "split", split },
             { "lower", lower }
         });
@@ -150,8 +150,8 @@ public class JexlUnitTest
     {
         var jexl = new Jexl();
         static JsonNode split(JsonNode arg0, JsonNode arg) => new JsonArray((arg0?.ToString().Split(arg?.ToString()) ?? []).Select(x => (JsonNode)x).ToArray());
-        static JsonNode lower(JsonNode arg0, JsonNode arg) => arg0?.ToString().ToLower();
-        jexl.Grammar.AddTransforms(new Dictionary<string, Func<JsonNode, JsonNode, JsonNode>> {
+        static JsonNode? lower(JsonNode arg0, JsonNode? arg) => arg0?.ToString().ToLower();
+        jexl.Grammar.AddTransforms(new Dictionary<string, Func<JsonNode, JsonNode, JsonNode?>> {
             { "split", split },
             { "lower", lower }
         });
@@ -233,7 +233,7 @@ public class JexlUnitTest
         var jexl = new Jexl();
         JsonNode lastName = await jexl.EvalAsync(@"name.last", context);
         Assert.Equal("Archer", lastName?.ToString());
-        var DbSelectByLastName = new Func<JsonNode, JsonNode, Task<JsonNode>>(async (lastName, stat) =>
+        var DbSelectByLastName = new Func<JsonNode, JsonNode, Task<JsonNode?>>(async (lastName, stat) =>
         {
             await Task.Delay(100);
             var dict = new JsonObject {
@@ -272,7 +272,7 @@ public class JexlUnitTest
         Assert.True(JsonNode.DeepEquals(res10, new JsonObject {
             { "Figgis", 45 }
         }));
-        var GetOldestAgent2 = new Func<Task<JsonNode>>(async () =>
+        var GetOldestAgent2 = new Func<Task<JsonNode?>>(async () =>
         {
             await Task.Delay(100);
             var list = new JsonArray {
@@ -280,7 +280,7 @@ public class JexlUnitTest
                 new JsonObject {{ "lastName", "Poovey" }, {"age", 34 }},
                 new JsonObject {{ "lastName", "Figgis" }, {"age", 45 }},
             };
-            return list.OrderByDescending(x => x?["age"]?.AsValue().ToDecimal()).First();
+            return list.OrderByDescending(x => x?["age"]?.AsValue()?.ToDecimal()).FirstOrDefault();
         });
         jexl.Grammar.AddFunction("getOldestAgent2", GetOldestAgent2);
         JsonNode res11 = await jexl.EvalAsync(@"getOldestAgent2().age", context);
@@ -399,7 +399,7 @@ public class JexlUnitTest
             ],
             ""age"": 36
         }";
-        JsonObject contextJsonDocument = (JsonObject)JsonNode.Parse(contextJson);
+        JsonObject? contextJsonDocument = (JsonObject?)JsonNode.Parse(contextJson);
         var jexl = new Jexl();
         var res = await jexl.EvalAsync(@"assoc[.first == 'Cyril'].last", contextJsonDocument);
         Assert.Equal("Figgis", res?.ToString());
@@ -430,7 +430,7 @@ public class JexlUnitTest
             ],
             ""age"": 36
         }";
-        JsonObject contextJsonDocument = JsonSerializer.Deserialize<JsonObject>(contextJson);
+        JsonObject? contextJsonDocument = JsonSerializer.Deserialize<JsonObject>(contextJson);
         var jexl = new Jexl();
         var res = await jexl.EvalAsync(@"assoc[.first == 'Cyril'].last", contextJsonDocument);
         Assert.Equal("Figgis", res?.ToString());
@@ -462,7 +462,7 @@ public class JexlUnitTest
             ""age"": 36
         }";
         Stream contextJsonStream = new MemoryStream(Encoding.UTF8.GetBytes(contextJson));
-        JsonObject contextJsonDocument = await JsonSerializer.DeserializeAsync<JsonObject>(contextJsonStream);
+        JsonObject? contextJsonDocument = await JsonSerializer.DeserializeAsync<JsonObject>(contextJsonStream);
         var jexl = new Jexl();
         var res = await jexl.EvalAsync(@"assoc[.first == 'Cyril'].last", contextJsonDocument);
         Assert.Equal("Figgis", res?.ToString());

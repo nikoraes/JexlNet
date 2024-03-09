@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.Json;
@@ -958,63 +959,68 @@ namespace JexlNet
             return null;
         }
 
+        private class JsonValueComparer : IComparer<JsonValue>
+        {
+            public int Compare(JsonValue x, JsonValue y)
+            {
+                if (x == null && y == null)
+                {
+                    return 0;
+                }
+                if (x == null)
+                {
+                    return -1;
+                }
+                if (y == null)
+                {
+                    return 1;
+                }
+                if (x.GetValueKind() == JsonValueKind.Number && y.GetValueKind() == JsonValueKind.Number)
+                {
+                    return x.ToDecimal().CompareTo(y.ToDecimal());
+                }
+                return string.Compare(x.ToString(), y.ToString(), StringComparison.Ordinal);
+            }
+        }
+
         /// <summary>
         /// Returns a new array with the elements of the input array sorted in ascending order.
         /// </summary>
         /// <example><code><code>array|sort</code></example>
         public static JsonNode ArraySort(JsonNode input, JsonNode expression = null, JsonNode descending = null)
         {
-            if (input is JsonArray array && expression is JsonValue exprVal)
+            if (input is JsonArray array)
             {
-                Jexl jexl = new Jexl(new ExtendedGrammar());
-                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
-                if (descending is JsonValue descVal && descVal.GetValueKind() == JsonValueKind.True)
+                bool isDescending = descending is JsonValue descVal && descVal.GetValueKind() == JsonValueKind.True;
+                JsonValue getValue(JsonNode x)
                 {
-                    return new JsonArray(array.OrderByDescending(x =>
+                    if (expression == null)
                     {
-                        if (x is JsonObject obj)
-                        {
-                            return jExpression.Eval(obj)?.DeepClone();
-                        }
-                        else
-                        {
-                            var context = new JsonObject()
-                            {
-                                ["value"] = x?.DeepClone()
-                            };
-                            return jExpression.Eval(context)?.DeepClone();
-                        }
-                    }).ToArray());
-                }
-                else
-                {
-                    return new JsonArray(array.OrderBy(x =>
+                        return x?.AsValue();
+                    }
+                    else if (x is JsonObject obj)
                     {
-                        if (x is JsonObject obj)
+                        Jexl jexl = new Jexl(new ExtendedGrammar());
+                        Expression jExpression = jexl.CreateExpression(expression.ToString());
+                        return jExpression.Eval(obj)?.AsValue();
+                    }
+                    else
+                    {
+                        var context = new JsonObject()
                         {
-                            return jExpression.Eval(obj)?.DeepClone();
-                        }
-                        else
-                        {
-                            var context = new JsonObject()
-                            {
-                                ["value"] = x?.DeepClone()
-                            };
-                            return jExpression.Eval(context)?.DeepClone();
-                        }
-                    }).ToArray());
+                            ["value"] = x?.DeepClone()
+                        };
+                        Jexl jexl = new Jexl(new ExtendedGrammar());
+                        Expression jExpression = jexl.CreateExpression(expression.ToString());
+                        return jExpression.Eval(context)?.AsValue();
+                    }
                 }
-            }
-            else if (input is JsonArray array2)
-            {
-                if (descending is JsonValue descVal && descVal.GetValueKind() == JsonValueKind.True)
-                {
-                    return new JsonArray(array2.OrderByDescending(x => x?.DeepClone()).ToArray());
-                }
-                else
-                {
-                    return new JsonArray(array2.OrderBy(x => x?.DeepClone()).ToArray());
-                }
+
+                var sortedArray = isDescending
+                    ? array.Select(x => x.DeepClone()).OrderByDescending(getValue, new JsonValueComparer()).ToArray()
+                    : array.Select(x => x.DeepClone()).OrderBy(getValue, new JsonValueComparer()).ToArray();
+
+                return new JsonArray(sortedArray);
             }
             return null;
         }
