@@ -343,4 +343,15 @@ public class ExtendedGrammarUnitTest
         var result = jexl.Eval("'FOObar'|lower");
         Assert.Equal("foobar", result?.ToString());
     }
+
+    [Fact]
+    public void ComplexMapExample()
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        string context = """{"timestamp":{"low":1710760508,"high":0,"unsigned":true},"data":{"id":"176971594","tripUpdate":{"trip":{"tripId":"176971594","startTime":"15:18:00","startDate":"20240318","scheduleRelationship":"SCHEDULED","routeId":"90296","directionId":0},"stopTimeUpdate":[{"scheduleRelationship":"SCHEDULED","stopId":"2511612","departure":{"time":"1710771480","delay":0}},{"scheduleRelationship":"SCHEDULED","stopId":"2628927","departure":{"time":"1710771660","delay":0},"arrival":{"time":"1710771660","delay":0}},{"scheduleRelationship":"SCHEDULED","stopId":"2628499","departure":{"time":"1710772080","delay":0},"arrival":{"time":"1710772080","delay":0}},{"scheduleRelationship":"SCHEDULED","stopId":"2510883","departure":{"time":"1710772380","delay":0},"arrival":{"time":"1710772320","delay":0}},{"scheduleRelationship":"SCHEDULED","stopId":"2510417","departure":{"time":"1710772980","delay":0},"arrival":{"time":"1710772920","delay":0}},{"scheduleRelationship":"SCHEDULED","stopId":"2511520","arrival":{"time":"1710773400","delay":0}}]}},"gtfsRealtimeVersion":"1.0","incrementality":0}""";
+        string expression = """data.tripUpdate.stopTimeUpdate|map(data.tripUpdate.trip.tripId + '+ \'-\' + value.stopId')""";
+        var result = jexl.Eval(expression, context);
+        var expected = new JsonArray { "176971594-2511612", "176971594-2628927", "176971594-2628499", "176971594-2510883", "176971594-2510417", "176971594-2511520" };
+        Assert.True(JsonNode.DeepEquals(expected, result));
+    }
 }
