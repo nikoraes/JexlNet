@@ -248,15 +248,15 @@ namespace JexlNet
             AddFunction("millis", Millis);
             AddFunction("$millis", Millis);
             // MillisToDateTime
-            AddFunction("millisToDateTime", MillisToDateTime);
-            AddFunction("$millisToDateTime", MillisToDateTime);
-            AddTransform("millisToDateTime", MillisToDateTime);
-            AddFunction("fromMillis", MillisToDateTime);
-            AddFunction("$fromMillis", MillisToDateTime);
-            AddTransform("fromMillis", MillisToDateTime);
-            AddFunction("toDateTime", MillisToDateTime);
-            AddFunction("$toDateTime", MillisToDateTime);
-            AddTransform("toDateTime", MillisToDateTime);
+            AddFunction("millisToDateTime", ToDateTime);
+            AddFunction("$millisToDateTime", ToDateTime);
+            AddTransform("millisToDateTime", ToDateTime);
+            AddFunction("fromMillis", ToDateTime);
+            AddFunction("$fromMillis", ToDateTime);
+            AddTransform("fromMillis", ToDateTime);
+            AddFunction("toDateTime", ToDateTime);
+            AddFunction("$toDateTime", ToDateTime);
+            AddTransform("toDateTime", ToDateTime);
             // DateTimeToMillis
             AddFunction("dateTimeToMillis", DateTimeToMillis);
             AddFunction("$dateTimeToMillis", DateTimeToMillis);
@@ -1304,12 +1304,19 @@ namespace JexlNet
         /// </summary>
         /// <example><code>millisToDateTime(millis)</code><code>$millisToDateTime(millis)</code><code>millis|millisToDateTime</code></example>
         /// <returns>The date and time in the ISO 8601 format</returns>
-        public static JsonNode MillisToDateTime(JsonNode input)
+        public static JsonNode ToDateTime(JsonNode input)
         {
             if (input is JsonValue value)
             {
-                long millis = value.ToInt64();
-                return DateTimeOffset.FromUnixTimeMilliseconds(millis).ToString("o");
+                if (value.GetValueKind() == JsonValueKind.Number)
+                {
+                    long millis = value.ToInt64();
+                    return DateTimeOffset.FromUnixTimeMilliseconds(millis).ToString("o");
+                }
+                else if (value.GetValueKind() == JsonValueKind.String)
+                {
+                    return DateTimeOffset.Parse(value.ToString(), null, DateTimeStyles.AssumeUniversal).ToString("o");
+                }
             }
             return null;
 
@@ -1325,7 +1332,7 @@ namespace JexlNet
             if (input is JsonValue value)
             {
                 string datetime = value.ToString();
-                return DateTimeOffset.Parse(datetime).ToUnixTimeMilliseconds();
+                return DateTimeOffset.Parse(datetime, null, DateTimeStyles.AssumeUniversal).ToUnixTimeMilliseconds();
             }
             return null;
         }

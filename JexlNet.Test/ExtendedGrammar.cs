@@ -297,11 +297,21 @@ public class ExtendedGrammarUnitTest
     [Theory]
     [InlineData("(now()|toMillis / 1000)|ceil == (millis() / 1000)|ceil", true)]
     [InlineData("(((millis() / 1000) | ceil) * 1000) | toDateTime == ((now()|toMillis / 1000) | ceil * 1000) | toDateTime", true)]
+    [InlineData("'22-Feb-24 00:00:00'|toDateTime == '2024-02-22T00:00:00Z'|toDateTime", true)]
     public void TimeFunctions(string expression, bool expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
         var result = jexl.Eval(expression);
         Assert.Equal(expected, result?.GetValue<bool>());
+    }
+
+    [Theory]
+    [InlineData("'22-Feb-24 00:00:00'|toDateTime", "2024-02-22T00:00:00.0000000+00:00")]
+    public void TimeFunctions2(string expression, string expected)
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression);
+        Assert.Equal(expected, result?.ToString());
     }
 
     [Theory]
