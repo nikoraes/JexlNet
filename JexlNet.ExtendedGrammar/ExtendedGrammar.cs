@@ -1344,6 +1344,8 @@ namespace JexlNet
         /// The expression uses the default JEXL extended grammar and can't use any custom defined functions or transforms.
         /// <example><code>eval(expression)</code><code>object|eval(expression)</code></example>
         /// </summary>
+        /// <param name="input">The input object (context) or JEXL expression (if second argument isn't defined)</param>
+        /// <param name="expression">The JEXL expression</param>
         /// <returns>The result of the evaluation</returns>
         public static JsonNode Eval(JsonNode input, JsonNode expression)
         {
