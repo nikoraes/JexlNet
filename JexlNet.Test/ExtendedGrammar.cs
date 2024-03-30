@@ -209,6 +209,7 @@ public class ExtendedGrammarUnitTest
     [InlineData("[{name:'foo'}, {name:'bar'}, {name:'baz'}, {name:'tek'}]|mapField('name')")]
     [InlineData("[{name:'tek',age:32}, {name:'bar',age:34}, {name:'baz',age:33}, {name:'foo',age:35}]|sort('age',true)|mapField('name')")]
     [InlineData("['foo']|append(['tek','baz','bar']|sort)")]
+    [InlineData("['foo']|append(['tek', 'baz', 'bar', 'foo', 'foo']|filter('value != \\'foo\\'')|sort)")]
     public void Arrays(string expression)
     {
         var jexl = new Jexl(new ExtendedGrammar());

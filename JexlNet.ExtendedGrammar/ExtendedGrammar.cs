@@ -64,6 +64,9 @@ namespace JexlNet
             AddFunction("contains", Contains);
             AddFunction("$contains", Contains);
             AddTransform("contains", Contains);
+            AddFunction("includes", Contains);
+            AddFunction("$includes", Contains);
+            AddTransform("includes", Contains);
             // Split
             AddFunction("split", Split);
             AddFunction("$split", Split);
@@ -221,6 +224,10 @@ namespace JexlNet
             AddFunction("every", All);
             AddFunction("$every", All);
             AddTransform("every", All);
+            // Filter
+            AddFunction("filter", Filter);
+            AddFunction("$filter", Filter);
+            AddTransform("filter", Filter);
             // Reduce
             AddFunction("reduce", Reduce);
             AddFunction("$reduce", Reduce);
@@ -1179,6 +1186,42 @@ namespace JexlNet
                 });
             }
             return false;
+        }
+
+        /// <summary>
+        /// Returns a new array with the elements of the input array that match the specified expression.
+        /// The expression must be a valid JEXL expression string, and is applied to each element of the array.
+        /// The relative context provided to the expression is an object with the properties value and array (the original array).
+        /// <example>
+        /// For example (with context <c>{assoc: [{age: 20}, {age: 30}, {age: 40}]}</c>)
+        /// <c>assoc|filter('value.age > 30')</c> returns a new array containing only the element
+        /// in the assoc array with an age greater than 30: <c>[{age: 40}]</c>
+        /// </example>
+        /// </summary>
+        /// <returns>A new array with the elements of the input array that match the specified expression</returns>
+        public static JsonNode Filter(JsonNode input, JsonNode expression)
+        {
+            if (input is JsonArray array && expression is JsonValue exprVal)
+            {
+                Jexl jexl = new Jexl(new ExtendedGrammar());
+                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                JsonArray filteredArray = new JsonArray();
+                for (int i = 0; i < array.Count; i++)
+                {
+                    var context = new JsonObject()
+                    {
+                        ["value"] = array[i]?.DeepClone(),
+                        ["index"] = i,
+                        ["array"] = array.DeepClone(),
+                    };
+                    if (jExpression.Eval(context)?.AsValue().ToBoolean() ?? false)
+                    {
+                        filteredArray.Add(array[i]?.DeepClone());
+                    }
+                }
+                return filteredArray;
+            }
+            return null;
         }
 
 
