@@ -271,6 +271,10 @@ namespace JexlNet
             AddFunction("toMillis", DateTimeToMillis);
             AddFunction("$toMillis", DateTimeToMillis);
             AddTransform("toMillis", DateTimeToMillis);
+            // DateTimeAdd
+            AddFunction("dateTimeAdd", DateTimeAdd);
+            AddFunction("$dateTimeAdd", DateTimeAdd);
+            AddTransform("dateTimeAdd", DateTimeAdd);
             // Eval
             AddFunction("eval", Eval);
             AddFunction("$eval", Eval);
@@ -1376,6 +1380,52 @@ namespace JexlNet
             {
                 string datetime = value.ToString();
                 return DateTimeOffset.Parse(datetime, null, DateTimeStyles.AssumeUniversal).ToUnixTimeMilliseconds();
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Adds a time range to a date and time in the ISO 8601 format.
+        /// </summary>
+        /// <example><code>datetime|dateAdd('week',1)</code></example>
+        /// <returns>The number of milliseconds since the Unix epoch</returns>
+        public static JsonNode DateTimeAdd(JsonNode input, JsonNode unit, JsonNode value)
+        {
+            if (input is JsonValue inputVal && unit is JsonValue unitVal && value is JsonValue valueVal)
+            {
+                string datetime = inputVal.ToString();
+                DateTimeOffset dt = DateTimeOffset.Parse(datetime, null, DateTimeStyles.AssumeUniversal);
+                switch (unitVal.ToString())
+                {
+                    case "year":
+                        dt = dt.AddYears(valueVal.ToInt32());
+                        break;
+                    case "quarter":
+                        dt = dt.AddMonths(valueVal.ToInt32() * 3);
+                        break;
+                    case "month":
+                        dt = dt.AddMonths(valueVal.ToInt32());
+                        break;
+                    case "week":
+                        dt = dt.AddDays(valueVal.ToInt32() * 7);
+                        break;
+                    case "day":
+                        dt = dt.AddDays(valueVal.ToInt32());
+                        break;
+                    case "hour":
+                        dt = dt.AddHours(valueVal.ToInt32());
+                        break;
+                    case "minute":
+                        dt = dt.AddMinutes(valueVal.ToInt32());
+                        break;
+                    case "second":
+                        dt = dt.AddSeconds(valueVal.ToInt32());
+                        break;
+                    case "millisecond":
+                        dt = dt.AddMilliseconds(valueVal.ToInt32());
+                        break;
+                }
+                return dt.ToString("o");
             }
             return null;
         }
