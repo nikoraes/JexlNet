@@ -197,6 +197,32 @@ public class EvaluatorUnitTest
         result = await _evaluator.EvalAsync(ast);
         Assert.Equal("baz", result?.ToString());
     }
+
+    [Fact]
+    public async void EvaluateExpression_FiltersArrays3()
+    {
+        JsonObject context = new()
+        {
+            { "foo", new JsonObject
+                {
+                    { "bar", new JsonArray
+                        {
+                            new JsonObject { { "tek", "hello" }, { "tok", "olleh" } },
+                            new JsonObject { { "tek", "baz" }, { "tok", "olleh" } },
+                            new JsonObject { { "tok", "baz" }, { "tak", "olleh" } }
+                        }
+                    }
+                }
+            }
+        };
+        Evaluator _evaluator;
+
+        _evaluator = new(new Grammar(), context);
+        var ast = ToTree("foo.bar[.tek == \"baz\" && .tok == 'olleh'].tek");
+        var result = await _evaluator.EvalAsync(ast);
+        Assert.Equal("baz", result?.ToString());
+    }
+
     [Fact]
     public async void EvaluateExpression_AllowFiltersToSelectObjectProperties()
     {
