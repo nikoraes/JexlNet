@@ -52,6 +52,16 @@ namespace JexlNet
             AddFunction("lower", Lowercase);
             AddFunction("$lower", Lowercase);
             AddTransform("lower", Lowercase);
+            // Camelcase
+            AddFunction("camelCase", CamelCase);
+            AddFunction("$camelCase", CamelCase);
+            AddTransform("camelCase", CamelCase);
+            AddTransform("toCamelCase", CamelCase);
+            // PascalCase
+            AddFunction("pascalCase", CamelCase);
+            AddFunction("$pascalCase", CamelCase);
+            AddTransform("pascalCase", CamelCase);
+            AddTransform("toPascalCase", CamelCase);
             // Trim
             AddFunction("trim", Trim);
             AddFunction("$trim", Trim);
@@ -424,6 +434,48 @@ namespace JexlNet
             if (input is JsonValue value)
             {
                 return value.ToString().ToLower();
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Returns a string in camelcase
+        /// </summary>
+        /// <example><code>camelCase(str)</code><code>$camelCase(str)</code><code>str|toCamelCase</code></example>
+        /// <returns>A string in camelcase</returns>
+        public static JsonNode CamelCase(JsonNode input)
+        {
+            if (input is JsonValue value)
+            {
+                string str = value.ToString();
+                string[] words = str.Split(new char[] { ' ', '\t', '\n', '\r', '_' }, StringSplitOptions.RemoveEmptyEntries);
+                string camelCase = words[0].ToLower();
+                for (int i = 1; i < words.Length; i++)
+                {
+                    camelCase += words[i].Substring(0, 1).ToUpper() + words[i].Substring(1).ToLower();
+                }
+                return camelCase;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Returns a string in PascalCase
+        /// </summary>
+        /// <example><code>pascalCase(str)</code><code>$pascalCase(str)</code><code>str|toPascalCase</code></example>
+        /// <returns>A string in PascalCase</returns>
+        public static JsonNode PascalCase(JsonNode input)
+        {
+            if (input is JsonValue value)
+            {
+                string str = value.ToString();
+                string[] words = str.Split(new char[] { ' ', '\t', '\n', '\r', '_' }, StringSplitOptions.RemoveEmptyEntries);
+                string pascalCase = "";
+                for (int i = 0; i < words.Length; i++)
+                {
+                    pascalCase += words[i].Substring(0, 1).ToUpper() + words[i].Substring(1).ToLower();
+                }
+                return pascalCase;
             }
             return null;
         }
