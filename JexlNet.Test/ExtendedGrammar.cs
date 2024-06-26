@@ -68,6 +68,18 @@ public class ExtendedGrammarUnitTest
     }
 
     [Theory]
+    [InlineData("'foo bar'|camelCase", "fooBar")]
+    [InlineData("$camelCase('FOO_bar')", "fooBar")]
+    [InlineData("'FooBar'|toCamelCase", "fooBar")]
+    [InlineData("'foo bar'|toPascalCase", "FooBar")]
+    public void CamelPascalCase(string expression, string expected)
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression)?.ToString();
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
     [InlineData("'baz  '|trim", "baz")]
     [InlineData("'  baz  '|trim", "baz")]
     [InlineData("'foo'|pad(5)", "foo  ")]

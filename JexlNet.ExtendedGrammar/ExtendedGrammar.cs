@@ -55,11 +55,13 @@ namespace JexlNet
             // Camelcase
             AddFunction("camelCase", CamelCase);
             AddFunction("$camelCase", CamelCase);
+            AddTransform("camelcase", CamelCase);
             AddTransform("camelCase", CamelCase);
             AddTransform("toCamelCase", CamelCase);
             // PascalCase
             AddFunction("pascalCase", CamelCase);
             AddFunction("$pascalCase", CamelCase);
+            AddTransform("pascalcase", CamelCase);
             AddTransform("pascalCase", CamelCase);
             AddTransform("toPascalCase", CamelCase);
             // Trim
