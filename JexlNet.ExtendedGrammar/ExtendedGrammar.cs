@@ -4,10 +4,11 @@ using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace JexlNet
 {
-    public class ExtendedGrammar : Grammar
+    public partial class ExtendedGrammar : Grammar
     {
         public ExtendedGrammar()
         {
@@ -59,11 +60,11 @@ namespace JexlNet
             AddTransform("camelCase", CamelCase);
             AddTransform("toCamelCase", CamelCase);
             // PascalCase
-            AddFunction("pascalCase", CamelCase);
-            AddFunction("$pascalCase", CamelCase);
-            AddTransform("pascalcase", CamelCase);
-            AddTransform("pascalCase", CamelCase);
-            AddTransform("toPascalCase", CamelCase);
+            AddFunction("pascalCase", PascalCase);
+            AddFunction("$pascalCase", PascalCase);
+            AddTransform("pascalcase", PascalCase);
+            AddTransform("pascalCase", PascalCase);
+            AddTransform("toPascalCase", PascalCase);
             // Trim
             AddFunction("trim", Trim);
             AddFunction("$trim", Trim);
@@ -450,7 +451,7 @@ namespace JexlNet
             if (input is JsonValue value)
             {
                 string str = value.ToString();
-                string[] words = str.Split(new char[] { ' ', '\t', '\n', '\r', '_' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] words = SplitRegex().Split(str);
                 string camelCase = words[0].ToLower();
                 for (int i = 1; i < words.Length; i++)
                 {
@@ -471,7 +472,7 @@ namespace JexlNet
             if (input is JsonValue value)
             {
                 string str = value.ToString();
-                string[] words = str.Split(new char[] { ' ', '\t', '\n', '\r', '_' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] words = SplitRegex().Split(str);
                 string pascalCase = "";
                 for (int i = 0; i < words.Length; i++)
                 {
@@ -1519,5 +1520,8 @@ namespace JexlNet
         {
             return Guid.NewGuid().ToString();
         }
+
+        [GeneratedRegex(@"(?<!^)(?=[A-Z])|[\s_]+")]
+        private static partial Regex SplitRegex();
     }
 }

@@ -69,9 +69,11 @@ public class ExtendedGrammarUnitTest
 
     [Theory]
     [InlineData("'foo bar'|camelCase", "fooBar")]
-    [InlineData("$camelCase('FOO_bar')", "fooBar")]
+    [InlineData("$camelCase('Foo_bar')", "fooBar")]
     [InlineData("'FooBar'|toCamelCase", "fooBar")]
     [InlineData("'foo bar'|toPascalCase", "FooBar")]
+    [InlineData("'fooBar'|toPascalCase", "FooBar")]
+    [InlineData("'Foo_bar'|toPascalCase", "FooBar")]
     public void CamelPascalCase(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
