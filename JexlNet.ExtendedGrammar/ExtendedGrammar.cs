@@ -441,6 +441,8 @@ namespace JexlNet
             return null;
         }
 
+        public static Regex SplitRegex = new Regex(@"(?<!^)(?=[A-Z])|[\s_]+", RegexOptions.Compiled);
+
         /// <summary>
         /// Returns a string in camelcase
         /// </summary>
@@ -451,7 +453,7 @@ namespace JexlNet
             if (input is JsonValue value)
             {
                 string str = value.ToString();
-                string[] words = SplitRegex().Split(str);
+                string[] words = SplitRegex.Split(str);
                 string camelCase = words[0].ToLower();
                 for (int i = 1; i < words.Length; i++)
                 {
@@ -472,7 +474,7 @@ namespace JexlNet
             if (input is JsonValue value)
             {
                 string str = value.ToString();
-                string[] words = SplitRegex().Split(str);
+                string[] words = SplitRegex.Split(str);
                 string pascalCase = "";
                 for (int i = 0; i < words.Length; i++)
                 {
@@ -1520,8 +1522,5 @@ namespace JexlNet
         {
             return Guid.NewGuid().ToString();
         }
-
-        [GeneratedRegex(@"(?<!^)(?=[A-Z])|[\s_]+")]
-        private static partial Regex SplitRegex();
     }
 }
