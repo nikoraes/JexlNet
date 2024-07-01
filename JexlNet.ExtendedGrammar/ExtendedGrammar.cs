@@ -1460,27 +1460,35 @@ namespace JexlNet
                 switch (unitVal.ToString())
                 {
                     case "years":
+                    case "year":
                         dt = dt.AddYears(valueVal.ToInt32());
                         break;
                     case "months":
+                    case "month":
                         dt = dt.AddMonths(valueVal.ToInt32());
                         break;
                     case "weeks":
+                    case "week":
                         dt = dt.AddDays(valueVal.ToInt32() * 7);
                         break;
                     case "days":
+                    case "day":
                         dt = dt.AddDays(valueVal.ToInt32());
                         break;
                     case "hours":
+                    case "hour":
                         dt = dt.AddHours(valueVal.ToInt32());
                         break;
                     case "minutes":
+                    case "minute":
                         dt = dt.AddMinutes(valueVal.ToInt32());
                         break;
                     case "seconds":
+                    case "second":
                         dt = dt.AddSeconds(valueVal.ToInt32());
                         break;
                     case "milliseconds":
+                    case "millisecond":
                         dt = dt.AddMilliseconds(valueVal.ToInt32());
                         break;
                 }

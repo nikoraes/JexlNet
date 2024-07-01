@@ -165,7 +165,7 @@ public class ExtendedGrammarUnitTest
 
     [Theory]
     [InlineData("'16325'|toInt", 16325)]
-    [InlineData("9/2|toInt", 4)]
+    [InlineData("(9/2)|toInt", 4)]
     public void Integers(string expression, int expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
@@ -218,7 +218,8 @@ public class ExtendedGrammarUnitTest
     [InlineData("'foo' | append('bar', 'baz','tek')")]
     [InlineData("['tek', 'baz', 'bar', 'foo']|reverse")]
     [InlineData("['tek', 'baz', 'bar', 'foo', 'foo']|reverse|distinct")]
-    [InlineData("{'foo':0, bar:1, 'baz':2, tek:3}|keys")]
+    [InlineData("{'foo':0, bar:1, 'baz':2, tek:3}|keys")] // doesn't work in TS
+    [InlineData("{foo:0, bar:1, baz:2, tek:3}|keys")] // doesn't work in TS
     [InlineData("{a:'foo', b:'bar', c:'baz', d:'tek'}|values")]
     [InlineData("[{name:'foo'}, {name:'bar'}, {name:'baz'}, {name:'tek'}]|mapField('name')")]
     [InlineData("[{name:'tek',age:32}, {name:'bar',age:34}, {name:'baz',age:33}, {name:'foo',age:35}]|sort('age',true)|mapField('name')")]
@@ -314,8 +315,8 @@ public class ExtendedGrammarUnitTest
     [InlineData("(now()|toMillis / 1000)|ceil == (millis() / 1000)|ceil", true)]
     [InlineData("(((millis() / 1000) | ceil) * 1000) | toDateTime == ((now()|toMillis / 1000) | ceil * 1000) | toDateTime", true)]
     [InlineData("(((millis() / 1000) | ceil) * 1000) | toDateTime | dateTimeAdd('second',5) == (((now()|toMillis / 1000) + 5) | ceil * 1000) | toDateTime", true)]
-    [InlineData("'22-Feb-24 00:00:00'|toDateTime == '2024-02-22T00:00:00Z'|toDateTime", true)]
-    [InlineData("'02-22-24 00:00:00'|toDateTime('MM-DD-YY HH:mm:ss') == '2024-02-22T00:00:00Z'|toDateTime", true)]
+    [InlineData("'22-Feb-24 00:00:00'|toDateTime == '2024-02-22T00:00:00Z'|toDateTime", true)] // this is just a coincidence that this works, it won't in JS
+    [InlineData("'02-22-24 00:00:00'|toDateTime('MM-dd-yy HH:mm:ss') == '2024-02-22T00:00:00Z'|toDateTime", true)]
     public void TimeFunctions(string expression, bool expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
@@ -325,7 +326,7 @@ public class ExtendedGrammarUnitTest
 
     [Theory]
     [InlineData("'22-Feb-24 00:00:00'|toDateTime", "2024-02-22T00:00:00.0000000+00:00")]
-    [InlineData("'02-22-24 00:00:00'|toDateTime('MM-DD-YY HH:mm:ss')", "2024-02-22T00:00:00.0000000+00:00")]
+    [InlineData("'02-22-24 00:00:00'|toDateTime('MM-dd-yy HH:mm:ss')", "2024-02-22T00:00:00.0000000+00:00")]
     public void TimeFunctions2(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
