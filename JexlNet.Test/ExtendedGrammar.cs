@@ -28,8 +28,8 @@ public class ExtendedGrammarUnitTest
     [Theory]
     [InlineData("substring(123456,2,2)", "34")]
     [InlineData("$substring('test',(-2))", "st")]
-    [InlineData("$substring('test',-2)", "st")]
-    [InlineData("$substring($string({'a':123456}, true),0,1)", "{")]
+    [InlineData("$substring('test',-2)", "st")] // Doesn't work in JS
+    [InlineData("$substring($string({'a':123456}, true),0,1)", "{")] // Doesn't work in JS
     public void Substring(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
@@ -315,6 +315,7 @@ public class ExtendedGrammarUnitTest
     [InlineData("(((millis() / 1000) | ceil) * 1000) | toDateTime == ((now()|toMillis / 1000) | ceil * 1000) | toDateTime", true)]
     [InlineData("(((millis() / 1000) | ceil) * 1000) | toDateTime | dateTimeAdd('second',5) == (((now()|toMillis / 1000) + 5) | ceil * 1000) | toDateTime", true)]
     [InlineData("'22-Feb-24 00:00:00'|toDateTime == '2024-02-22T00:00:00Z'|toDateTime", true)]
+    [InlineData("'02-22-24 00:00:00'|toDateTime('MM-DD-YY HH:mm:ss') == '2024-02-22T00:00:00Z'|toDateTime", true)]
     public void TimeFunctions(string expression, bool expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
@@ -324,6 +325,7 @@ public class ExtendedGrammarUnitTest
 
     [Theory]
     [InlineData("'22-Feb-24 00:00:00'|toDateTime", "2024-02-22T00:00:00.0000000+00:00")]
+    [InlineData("'02-22-24 00:00:00'|toDateTime('MM-DD-YY HH:mm:ss')", "2024-02-22T00:00:00.0000000+00:00")]
     public void TimeFunctions2(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());

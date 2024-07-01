@@ -277,6 +277,8 @@ namespace JexlNet
             AddFunction("toDateTime", ToDateTime);
             AddFunction("$toDateTime", ToDateTime);
             AddTransform("toDateTime", ToDateTime);
+            AddFunction("parseDateTime", ToDateTime);
+            AddFunction("$parseDateTime", ToDateTime);
             // DateTimeToMillis
             AddFunction("dateTimeToMillis", DateTimeToMillis);
             AddFunction("$dateTimeToMillis", DateTimeToMillis);
@@ -1404,11 +1406,11 @@ namespace JexlNet
         }
 
         /// <summary>
-        /// Parses the number of milliseconds since the Unix epoch and returns the date and time in the ISO 8601 format.
+        /// Parses the number of milliseconds since the Unix epoch or parses a string (with or without specified format) and returns the date and time in the ISO 8601 format
         /// </summary>
         /// <example><code>millisToDateTime(millis)</code><code>$millisToDateTime(millis)</code><code>millis|millisToDateTime</code></example>
         /// <returns>The date and time in the ISO 8601 format</returns>
-        public static JsonNode ToDateTime(JsonNode input)
+        public static JsonNode ToDateTime(JsonNode input, JsonNode format = null)
         {
             if (input is JsonValue value)
             {
@@ -1417,13 +1419,16 @@ namespace JexlNet
                     long millis = value.ToInt64();
                     return DateTimeOffset.FromUnixTimeMilliseconds(millis).ToString("o");
                 }
-                else if (value.GetValueKind() == JsonValueKind.String)
+                else if (value.GetValueKind() == JsonValueKind.String && (format == null || format.GetValueKind() != JsonValueKind.String))
                 {
                     return DateTimeOffset.Parse(value.ToString(), null, DateTimeStyles.AssumeUniversal).ToString("o");
                 }
+                else if (value.GetValueKind() == JsonValueKind.String && format.GetValueKind() == JsonValueKind.String)
+                {
+                    return DateTimeOffset.ParseExact(value.ToString(), format.ToString(), null, DateTimeStyles.AssumeUniversal).ToString("o");
+                }
             }
             return null;
-
         }
 
         /// <summary>
@@ -1454,31 +1459,28 @@ namespace JexlNet
                 DateTimeOffset dt = DateTimeOffset.Parse(datetime, null, DateTimeStyles.AssumeUniversal);
                 switch (unitVal.ToString())
                 {
-                    case "year":
+                    case "years":
                         dt = dt.AddYears(valueVal.ToInt32());
                         break;
-                    case "quarter":
-                        dt = dt.AddMonths(valueVal.ToInt32() * 3);
-                        break;
-                    case "month":
+                    case "months":
                         dt = dt.AddMonths(valueVal.ToInt32());
                         break;
-                    case "week":
+                    case "weeks":
                         dt = dt.AddDays(valueVal.ToInt32() * 7);
                         break;
-                    case "day":
+                    case "days":
                         dt = dt.AddDays(valueVal.ToInt32());
                         break;
-                    case "hour":
+                    case "hours":
                         dt = dt.AddHours(valueVal.ToInt32());
                         break;
-                    case "minute":
+                    case "minutes":
                         dt = dt.AddMinutes(valueVal.ToInt32());
                         break;
-                    case "second":
+                    case "seconds":
                         dt = dt.AddSeconds(valueVal.ToInt32());
                         break;
-                    case "millisecond":
+                    case "milliseconds":
                         dt = dt.AddMilliseconds(valueVal.ToInt32());
                         break;
                 }
