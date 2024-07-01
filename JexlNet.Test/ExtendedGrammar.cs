@@ -85,7 +85,7 @@ public class ExtendedGrammarUnitTest
     [InlineData("'baz  '|trim", "baz")]
     [InlineData("'  baz  '|trim", "baz")]
     [InlineData("'foo'|pad(5)", "foo  ")]
-    [InlineData("'foo'|pad(-5,0)", "00foo")]
+    [InlineData("'foo'|pad(-5,0)", "00foo")] // Needs to be "pad("foo",(-5),0)" in TS
     public void TrimPad(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
