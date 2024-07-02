@@ -279,6 +279,7 @@ namespace JexlNet
             AddTransform("toDateTime", ToDateTime);
             AddFunction("parseDateTime", ToDateTime);
             AddFunction("$parseDateTime", ToDateTime);
+            AddFunction("dateTimeString", ToDateTime);
             // DateTimeToMillis
             AddFunction("dateTimeToMillis", DateTimeToMillis);
             AddFunction("$dateTimeToMillis", DateTimeToMillis);
@@ -1432,6 +1433,14 @@ namespace JexlNet
                 {
                     return DateTimeOffset.ParseExact(value.ToString(), format.ToString(), null, DateTimeStyles.AssumeUniversal).ToString("o");
                 }
+            }
+            else if (input is null && format is JsonValue formatValue)
+            {
+                return DateTimeOffset.UtcNow.ToString(formatValue.ToString());
+            }
+            else if (input is null && format is null)
+            {
+                return DateTimeOffset.UtcNow.ToString("o");
             }
             return null;
         }
