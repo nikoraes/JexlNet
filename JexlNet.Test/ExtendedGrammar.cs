@@ -126,12 +126,15 @@ public class ExtendedGrammarUnitTest
         Assert.True(JsonNode.DeepEquals(expected, result));
     }
 
-    [Fact]
-    public void Join()
+    [Theory]
+    [InlineData("['foo','bar']|join('-')", "foo-bar")]
+    [InlineData("'f,b,a,d,e,c'|split(',')|sort|join", "a,b,c,d,e,f")]
+    [InlineData("'f,b,a,d,e,c'|split(',')|sort|join('')", "abcdef")]
+    public void Join(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
-        var result = jexl.Eval("['foo','bar']|join('-')");
-        Assert.Equal("foo-bar", result?.ToString());
+        var result = jexl.Eval(expression);
+        Assert.Equal(expected, result?.ToString());
     }
 
     [Theory]
