@@ -579,9 +579,9 @@ namespace JexlNet
         /// <returns>A string that consists of the elements of the array separated by the separator</returns>
         public static JsonNode Join(JsonNode input, JsonNode separator)
         {
-            if (input is JsonArray array && separator is JsonValue separatorValue)
+            if (input is JsonArray array)
             {
-                string separatorStr = separatorValue.ToString();
+                string separatorStr = separator is JsonValue separatorValue ? separatorValue.ToString() : ",";
                 return string.Join(separatorStr, array.Select(x => x?.ToString()));
             }
             return null;
@@ -1132,7 +1132,7 @@ namespace JexlNet
         /// <example><code>toObject(array)</code><code>$fromEntries(array)</code><code>array|fromEntries</code><code>array|toObject</code></example>
         /// </summary>
         /// <returns>A new object based on an array of key-value pairs</returns>
-        public static JsonNode ArrayToObject(JsonNode input)
+        public static JsonNode ArrayToObject(JsonNode input, JsonNode val)
         {
             if (input is JsonArray array)
             {
@@ -1146,8 +1146,16 @@ namespace JexlNet
                             result[key.ToString()] = value.DeepClone();
                         }
                     }
+                    else if (item is JsonValue itemValue && itemValue.GetValueKind() == JsonValueKind.String)
+                    {
+                        result[itemValue.ToString()] = val?.DeepClone();
+                    }
                 }
                 return result;
+            }
+            if (input is JsonValue inputValue && inputValue.GetValueKind() == JsonValueKind.String)
+            {
+                return new JsonObject() { [inputValue.ToString()] = val?.DeepClone() };
             }
             return null;
         }

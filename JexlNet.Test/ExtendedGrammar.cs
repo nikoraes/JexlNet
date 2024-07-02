@@ -324,6 +324,15 @@ public class ExtendedGrammarUnitTest
         Assert.True(JsonNode.DeepEquals(expected, result));
     }
 
+    [Theory]
+    [InlineData("['foo','bar']|toObject(true)")]
+    public void ObjectsWithSingleValue(string expression)
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression);
+        var expected = new JsonObject { { "foo", true }, { "bar", true } };
+        Assert.True(JsonNode.DeepEquals(expected, result));
+    }
 
     [Theory]
     [InlineData("(now()|toMillis / 1000)|ceil == (millis() / 1000)|ceil", true)]
