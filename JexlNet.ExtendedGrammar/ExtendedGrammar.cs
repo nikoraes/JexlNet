@@ -594,11 +594,11 @@ namespace JexlNet
         /// <returns>A string with all occurrences of old replaced by new</returns>
         public static JsonNode Replace(JsonNode input, JsonNode old, JsonNode newStr)
         {
-            if (input is JsonValue value && old is JsonValue oldValue && newStr is JsonValue newValue)
+            if (input is JsonValue value && old is JsonValue oldValue)
             {
                 string str = value.ToString();
                 string oldStr = oldValue.ToString();
-                string newStrStr = newValue.ToString();
+                string newStrStr = newStr is JsonValue newValue ? newValue.ToString() : "";
                 return str.Replace(oldStr, newStrStr);
             }
             return null;

@@ -106,6 +106,17 @@ public class ExtendedGrammarUnitTest
         Assert.Equal(expected, result);
     }
 
+    [Theory]
+    [InlineData("replace('foo-bar', '-', '_')", "foo_bar")]
+    [InlineData("replace('foo-bar----', '-', '')", "foobar")]
+    [InlineData("'123ab123ab123ab'|replace('123')", "ababab")]
+    public void Replace(string expression, string expected)
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression);
+        Assert.Equal(expected, result?.ToString());
+    }
+
     [Fact]
     public void Split()
     {
