@@ -443,7 +443,7 @@ namespace JexlNet
             return null;
         }
 
-        public static Regex SplitRegex = new Regex(@"(?<!^)(?=[A-Z])|[\s_]+", RegexOptions.Compiled);
+        public static Regex SplitRegex = new Regex(@"(?<!^)(?=[A-Z])|[`~!@#%^&*()|+\\\-=?;:'.,\s_']+", RegexOptions.Compiled);
 
         /// <summary>
         /// Returns a string in camelcase
@@ -818,6 +818,9 @@ namespace JexlNet
             return null;
         }
 
+        private static readonly Regex FindIntegerRegex = new Regex(@"^\d+", RegexOptions.Compiled);
+
+
         /// <summary>
         /// Parses the string argument as a signed decimal integer.
         /// </summary>
@@ -827,8 +830,10 @@ namespace JexlNet
         {
             if (input is JsonValue value)
             {
-                string str = value.ToString();
-                return int.Parse(str, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.InvariantInfo);
+                foreach (Match match in FindIntegerRegex.Matches(value.ToString()))
+                {
+                    return int.Parse(match.Value);
+                }
             }
             return null;
         }
