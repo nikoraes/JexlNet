@@ -241,6 +241,10 @@ namespace JexlNet
             AddFunction("filter", Filter);
             AddFunction("$filter", Filter);
             AddTransform("filter", Filter);
+            // Find
+            AddFunction("find", ArrayFind);
+            AddFunction("$find", ArrayFind);
+            AddTransform("find", ArrayFind);
             // Reduce
             AddFunction("reduce", Reduce);
             AddFunction("$reduce", Reduce);
@@ -1297,6 +1301,42 @@ namespace JexlNet
                     }
                 }
                 return filteredArray;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the first element in an array that matches the specified expression.
+        /// The expression must be a valid JEXL expression string, and is applied to each element of the array.
+        /// The relative context provided to the expression is an object with the properties value and array (the original array).
+        /// <example>
+        /// For example (with context <c>{assoc: [{age: 20}, {age: 30}, {age: 40}]}</c>)
+        /// <c>assoc|find('value.age > 29')</c> returns the first element
+        /// in the assoc array with an age greater than 29: <c>{age: 30}</c>
+        /// This example is equivalent to <c>assoc[.age > 29][0]</c>.
+        /// </example>
+        /// </summary>
+        /// <returns>The first matching element in the array</returns>
+        public static JsonNode ArrayFind(JsonNode input, JsonNode expression)
+        {
+            if (input is JsonArray array && expression is JsonValue exprVal)
+            {
+                Jexl jexl = new Jexl(new ExtendedGrammar());
+                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                for (int i = 0; i < array.Count; i++)
+                {
+                    var context = new JsonObject()
+                    {
+                        ["value"] = array[i]?.DeepClone(),
+                        ["index"] = i,
+                        ["array"] = array.DeepClone(),
+                    };
+                    if (jExpression.Eval(context)?.AsValue().ToBoolean() ?? false)
+                    {
+                        return array[i]?.DeepClone();
+                    }
+                }
+                return null;
             }
             return null;
         }
