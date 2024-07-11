@@ -159,6 +159,7 @@ public class ExtendedGrammarUnitTest
     [InlineData("3|power(2)", 9)]
     [InlineData("3|power", 9)]
     [InlineData("9|sqrt", 3)]
+    [InlineData("random() < 1 ? 1 : 0", 1)]
     public void Number(string expression, decimal expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
@@ -233,7 +234,8 @@ public class ExtendedGrammarUnitTest
     [InlineData("['tek', 'baz', 'bar', 'foo']|reverse")]
     [InlineData("['tek', 'baz', 'bar', 'foo', 'foo']|reverse|distinct")]
     [InlineData("{'foo':0, bar:1, 'baz':2, tek:3}|keys")] // doesn't work in TS
-    [InlineData("{foo:0, bar:1, baz:2, tek:3}|keys")] // doesn't work in TS
+    // [InlineData("{['foo']:0, bar:1, ['baz']:2, tek:3}|keys")] // doesn't work
+    [InlineData("{foo:0, bar:1, baz:2, tek:3}|keys")]
     [InlineData("{a:'foo', b:'bar', c:'baz', d:'tek'}|values")]
     [InlineData("[{name:'foo'}, {name:'bar'}, {name:'baz'}, {name:'tek'}]|mapField('name')")]
     [InlineData("[{name:'tek',age:32}, {name:'bar',age:34}, {name:'baz',age:33}, {name:'foo',age:35}]|sort('age',true)|mapField('name')")]

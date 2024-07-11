@@ -105,6 +105,10 @@ namespace JexlNet
             AddFunction("$number", ToNumber);
             AddTransform("number", ToNumber);
             AddTransform("toNumber", ToNumber);
+            AddFunction("parseFloat", ToNumber);
+            AddFunction("$parseFloat", ToNumber);
+            AddTransform("float", ToNumber);
+            AddTransform("toFloat", ToNumber);
             // AbsoluteValue
             AddFunction("abs", AbsoluteValue);
             AddFunction("$abs", AbsoluteValue);
@@ -151,6 +155,7 @@ namespace JexlNet
             AddTransform("parseInteger", ParseInteger);
             AddTransform("parseInt", ParseInteger);
             AddTransform("toInt", ParseInteger);
+            AddTransform("integer", ParseInteger);
             // Sum
             AddFunction("sum", Sum);
             AddFunction("$sum", Sum);
