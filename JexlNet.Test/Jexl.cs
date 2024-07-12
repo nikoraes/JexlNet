@@ -75,6 +75,58 @@ public class JexlUnitTest
     }
 
     [Fact]
+    public async void AllowsAsyncFunctionsWithCancellationTokenToBeAdded()
+    {
+        CancellationToken cancellationToken = default;
+        var jexl = new Jexl();
+        var sayHello = new Func<CancellationToken, Task<JsonNode>>(async (ct) =>
+        {
+            await Task.Delay(100, ct);
+            return "hello";
+        });
+        jexl.Grammar.AddFunction("sayHello", sayHello);
+        var result2 = await jexl.EvalAsync("sayHello()", cancellationToken: cancellationToken);
+        Assert.Equal("hello", result2?.ToString());
+
+        var result = jexl.Eval("sayHello()", cancellationToken: cancellationToken);
+        Assert.Equal("hello", result?.ToString());
+
+        jexl.Grammar.AddFunction("concat", async (JsonNode[] args, CancellationToken ct) =>
+        {
+            await Task.Delay(100, ct);
+            return string.Concat(args.Select(x => x?.ToString()));
+        });
+        var result3 = jexl.Eval("concat('a', 'b', 'c')", cancellationToken: cancellationToken);
+        Assert.Equal("abc", result3?.ToString());
+
+        jexl.Grammar.AddFunction("concat2", async (JsonNode[] args, CancellationToken ct) =>
+        {
+            await Task.Delay(100, ct);
+            return string.Concat(args.Select(x => x?.ToString()));
+        });
+        var result4 = jexl.Eval("concat2('a', 'b', 'c')", cancellationToken: cancellationToken);
+        Assert.Equal("abc", result4?.ToString());
+
+        jexl.Grammar.AddFunction("print", async (JsonNode arg, CancellationToken ct) =>
+        {
+            await Task.Delay(100, ct);
+            return arg;
+        });
+        var result5 = jexl.Eval("print('a')", cancellationToken: cancellationToken);
+        Assert.Equal("a", result5?.ToString());
+
+        // Test whether cancellation works
+        jexl.Grammar.AddFunction("verylongwait", async (JsonNode[] args, CancellationToken ct) =>
+        {
+            await Task.Delay(15000, ct);
+            return "done";
+        });
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+        await Assert.ThrowsAsync<TaskCanceledException>(async () => await jexl.EvalAsync("verylongwait('a', 'b', 'c')", cancellationToken: cts.Token));
+
+    }
+
+    [Fact]
     public void AllowsFunctionsToBeAddedInBatch()
     {
         var jexl = new Jexl();
