@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace JexlNet
@@ -6,8 +7,8 @@ namespace JexlNet
     public interface IExpression
     {
         Expression Compile();
-        Task<JsonNode> EvalAsync(JsonObject context = null);
-        JsonNode Eval(JsonObject context = null);
+        Task<JsonNode> EvalAsync(JsonObject context = null, CancellationToken cancellationToken = default);
+        JsonNode Eval(JsonObject context = null, CancellationToken cancellationToken = default);
     }
 
     public class Expression : IExpression
@@ -48,10 +49,10 @@ namespace JexlNet
         /// <param name="context">A mapping of variables to values, which will be
         /// made accessible to the Jexl expression when evaluating it.</param>
         /// <returns>Resolves with the resulting value of the expression.</returns>
-        public async Task<JsonNode> EvalAsync(JsonObject context = null)
+        public async Task<JsonNode> EvalAsync(JsonObject context = null, CancellationToken cancellationToken = default)
         {
             Evaluator evaluator = new Evaluator(Grammar, context);
-            return await evaluator.EvalAsync(GetAst());
+            return await evaluator.EvalAsync(GetAst(), cancellationToken);
         }
 
         /// <summary>
@@ -60,10 +61,10 @@ namespace JexlNet
         /// <param name="context">A mapping of variables to values, which will be
         /// made accessible to the Jexl expression when evaluating it.</param>
         /// <returns>Resolves with the resulting value of the expression.</returns>
-        public JsonNode Eval(JsonObject context = null)
+        public JsonNode Eval(JsonObject context = null, CancellationToken cancellationToken = default)
         {
             Evaluator evaluator = new Evaluator(Grammar, context);
-            Task<JsonNode> task = evaluator.EvalAsync(GetAst());
+            Task<JsonNode> task = evaluator.EvalAsync(GetAst(), cancellationToken);
             return task?.GetAwaiter().GetResult();
         }
 

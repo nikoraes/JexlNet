@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace JexlNet
@@ -655,7 +656,7 @@ namespace JexlNet
         ///appropriate when the function would normally return a value, but
         ///cannot due to some other failure.
         ///</summary>
-        public readonly Dictionary<string, Func<JsonNode[], Task<JsonNode>>> Functions = new Dictionary<string, Func<JsonNode[], Task<JsonNode>>>();
+        public readonly Dictionary<string, Func<JsonNode[], CancellationToken, Task<JsonNode>>> Functions = new Dictionary<string, Func<JsonNode[], CancellationToken, Task<JsonNode>>>();
 
         ///<summary>
         ///A map of transform names to transform functions. A transform function
@@ -674,9 +675,9 @@ namespace JexlNet
         ///appropriate when the transform would normally return a value, but
         ///cannot due to some other failure.
         ///</summary>
-        public readonly Dictionary<string, Func<JsonNode[], Task<JsonNode>>> Transforms = new Dictionary<string, Func<JsonNode[], Task<JsonNode>>>();
+        public readonly Dictionary<string, Func<JsonNode[], CancellationToken, Task<JsonNode>>> Transforms = new Dictionary<string, Func<JsonNode[], CancellationToken, Task<JsonNode>>>();
 
-        private Dictionary<string, Func<JsonNode[], Task<JsonNode>>> GetPool(PoolType pool)
+        private Dictionary<string, Func<JsonNode[], CancellationToken, Task<JsonNode>>> GetPool(PoolType pool)
         {
             switch (pool)
             {
@@ -695,7 +696,7 @@ namespace JexlNet
         private void AddFunctionCall(PoolType poolName, string name, Func<Task<JsonNode>> func)
         {
             var pool = GetPool(poolName);
-            pool.Add(name, async args => await func());
+            pool.Add(name, async (args, ct) => await func());
         }
         ///<summary>
         ///Add a single function call with no arguments to the grammar (only for functions).
@@ -703,7 +704,7 @@ namespace JexlNet
         private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode> func)
         {
             var pool = GetPool(poolName);
-            pool.Add(name, args => Task.FromResult(func()));
+            pool.Add(name, (args, ct) => Task.FromResult(func()));
         }
         ///<summary>
         ///Add a single function call with a single argument (can be an array or list) to the grammar.
@@ -711,7 +712,7 @@ namespace JexlNet
         private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode[], Task<JsonNode>> func)
         {
             var pool = GetPool(poolName);
-            pool.Add(name, func);
+            pool.Add(name, async (args, ct) => await func(args));
         }
         ///<summary>
         ///Add a single function call with a single argument (can be an array or list) to the grammar.
@@ -719,7 +720,7 @@ namespace JexlNet
         private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode[], JsonNode> func)
         {
             var pool = GetPool(poolName);
-            pool.Add(name, args => Task.FromResult(func(args)));
+            pool.Add(name, (args, ct) => Task.FromResult(func(args)));
         }
         ///<summary>
         ///Add a single function call with a single argument (can be an array or list) to the grammar.
@@ -878,6 +879,189 @@ namespace JexlNet
         }
 
         ///<summary>
+        ///Add a single function call with no arguments to the grammar (only for functions).
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<CancellationToken, Task<JsonNode>> func)
+        {
+            var pool = GetPool(poolName);
+            pool.Add(name, async (args, ct) => await func(ct));
+        }
+
+        ///<summary>
+        ///Add a single function call with no arguments to the grammar (only for functions).
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<CancellationToken, JsonNode> func)
+        {
+            var pool = GetPool(poolName);
+            pool.Add(name, (args, ct) => Task.FromResult(func(ct)));
+        }
+
+        ///<summary>
+        ///Add a single function call with a single argument (can be an array or list) to the grammar.
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode[], CancellationToken, Task<JsonNode>> func)
+        {
+            var pool = GetPool(poolName);
+            pool.Add(name, func);
+        }
+
+        ///<summary>
+        ///Add a single function call with a single argument (can be an array or list) to the grammar.
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode[], CancellationToken, JsonNode> func)
+        {
+            var pool = GetPool(poolName);
+            pool.Add(name, (args, ct) => Task.FromResult(func(args, ct)));
+        }
+
+        ///<summary>
+        ///Add a single function call with a single argument (can be an array or list) to the grammar.
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonValue, CancellationToken, Task<JsonNode>> func)
+        {
+            Task<JsonNode> newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault() as JsonValue, ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+        ///<summary>
+        ///Add a single function call with a single argument (can be an array or list) to the grammar.
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonValue, CancellationToken, JsonNode> func)
+        {
+            JsonNode newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault() as JsonValue, ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+        ///<summary>
+        ///Add a single function call with a single argument (can be an array or list) to the grammar.
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonObject, CancellationToken, Task<JsonNode>> func)
+        {
+            Task<JsonNode> newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault() as JsonObject, ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+        ///<summary>
+        ///Add a single function call with a single argument (can be an array or list) to the grammar.
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonObject, CancellationToken, JsonNode> func)
+        {
+            JsonNode newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault() as JsonObject, ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+        ///<summary>
+        ///Add a single function call with a single argument (can be an array or list) to the grammar.
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode, CancellationToken, Task<JsonNode>> func)
+        {
+            Task<JsonNode> newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault(), ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+        ///<summary>
+        ///Add a single function call with a single argument (can be an array or list) to the grammar.
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode, CancellationToken, JsonNode> func)
+        {
+            JsonNode newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault(), ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+        ///<summary>
+        ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode, JsonNode, CancellationToken, Task<JsonNode>> func)
+        {
+            Task<JsonNode> newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault(), args.Skip(1).FirstOrDefault(), ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+        ///<summary>
+        ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode, JsonNode, CancellationToken, JsonNode> func)
+        {
+            JsonNode newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault(), args.Skip(1).FirstOrDefault(), ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+        ///<summary>
+        ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode, JsonNode[], CancellationToken, Task<JsonNode>> func)
+        {
+            Task<JsonNode> newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault(), args.Skip(1).ToArray(), ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+        ///<summary>
+        ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode, JsonNode[], CancellationToken, JsonNode> func)
+        {
+            JsonNode newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault(), args.Skip(1).ToArray(), ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+        ///<summary>
+        ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode, JsonNode, JsonNode, CancellationToken, Task<JsonNode>> func)
+        {
+            Task<JsonNode> newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault(), args.ElementAtOrDefault(1), args.ElementAtOrDefault(2), ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+        ///<summary>
+        ///Add a single function call with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+        ///</summary>
+        private void AddFunctionCall(PoolType poolName, string name, Func<JsonNode, JsonNode, JsonNode, CancellationToken, JsonNode> func)
+        {
+            JsonNode newFunc(JsonNode[] args, CancellationToken ct)
+            {
+                return func(args.FirstOrDefault(), args.ElementAtOrDefault(1), args.ElementAtOrDefault(2), ct);
+            }
+            AddFunctionCall(poolName, name, newFunc);
+        }
+
+
+
+
+        ///<summary>
         ///Add a dictionary of function calls with no arguments to the grammar (only for functions).
         ///</summary>
         private void AddFunctionCalls(PoolType poolName, Dictionary<string, Func<Task<JsonNode>>> funcsDict)
@@ -979,6 +1163,117 @@ namespace JexlNet
             }
         }
 
+        ///<summary>
+        ///Add a dictionary of function calls with no arguments to the grammar (only for functions).
+        ///</summary>
+        private void AddFunctionCalls(PoolType poolName, Dictionary<string, Func<CancellationToken, Task<JsonNode>>> funcsDict)
+        {
+            foreach (var kv in funcsDict)
+            {
+                AddFunctionCall(poolName, kv.Key, kv.Value);
+            }
+        }
+
+        ///<summary>
+        ///Add a dictionary of function calls with no arguments to the grammar (only for functions).
+        ///</summary>
+        private void AddFunctionCalls(PoolType poolName, Dictionary<string, Func<CancellationToken, JsonNode>> funcsDict)
+        {
+            foreach (var kv in funcsDict)
+            {
+                AddFunctionCall(poolName, kv.Key, kv.Value);
+            }
+        }
+
+        ///<summary>
+        ///Add a dictionary of function calls with no arguments to the grammar (only for functions).
+        ///</summary>
+        private void AddFunctionCalls(PoolType poolName, Dictionary<string, Func<JsonNode, CancellationToken, Task<JsonNode>>> funcsDict)
+        {
+            foreach (var kv in funcsDict)
+            {
+                AddFunctionCall(poolName, kv.Key, kv.Value);
+            }
+        }
+
+        ///<summary>
+        ///Add a dictionary of function calls with no arguments to the grammar (only for functions).
+        ///</summary>
+        private void AddFunctionCalls(PoolType poolName, Dictionary<string, Func<JsonNode, CancellationToken, JsonNode>> funcsDict)
+        {
+            foreach (var kv in funcsDict)
+            {
+                AddFunctionCall(poolName, kv.Key, kv.Value);
+            }
+        }
+
+        ///<summary>
+        ///Add a dictionary of function calls with a single argument (can be an array or list) to the grammar.
+        ///</summary>
+        private void AddFunctionCalls(PoolType poolName, Dictionary<string, Func<JsonNode[], CancellationToken, Task<JsonNode>>> funcsDict)
+        {
+            foreach (var kv in funcsDict)
+            {
+                AddFunctionCall(poolName, kv.Key, kv.Value);
+            }
+        }
+
+        ///<summary>
+        ///Add a dictionary of function calls with a single argument (can be an array or list) to the grammar.
+        ///</summary>
+        private void AddFunctionCalls(PoolType poolName, Dictionary<string, Func<JsonNode[], CancellationToken, JsonNode>> funcsDict)
+        {
+            foreach (var kv in funcsDict)
+            {
+                AddFunctionCall(poolName, kv.Key, kv.Value);
+            }
+        }
+
+        ///<summary>
+        ///Add a dictionary of function calls with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+        ///</summary>
+        private void AddFunctionCalls(PoolType poolName, Dictionary<string, Func<JsonNode, JsonNode, CancellationToken, Task<JsonNode>>> funcsDict)
+        {
+            foreach (var kv in funcsDict)
+            {
+                AddFunctionCall(poolName, kv.Key, kv.Value);
+            }
+        }
+
+        ///<summary>
+        ///Add a dictionary of function calls with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+        ///</summary>
+        private void AddFunctionCalls(PoolType poolName, Dictionary<string, Func<JsonNode, JsonNode, CancellationToken, JsonNode>> funcsDict)
+        {
+            foreach (var kv in funcsDict)
+            {
+                AddFunctionCall(poolName, kv.Key, kv.Value);
+            }
+        }
+
+        ///<summary>
+        ///Add a dictionary of function calls with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+        ///</summary>
+        private void AddFunctionCalls(PoolType poolName, Dictionary<string, Func<JsonNode, JsonNode[], CancellationToken, Task<JsonNode>>> funcsDict)
+        {
+            foreach (var kv in funcsDict)
+            {
+                AddFunctionCall(poolName, kv.Key, kv.Value);
+            }
+        }
+
+        ///<summary>
+        ///Add a dictionary of function calls with a a first argument and a second argument (can be an array or list) to the grammar (only for transforms).
+        ///</summary>
+        private void AddFunctionCalls(PoolType poolName, Dictionary<string, Func<JsonNode, JsonNode[], CancellationToken, JsonNode>> funcsDict)
+        {
+            foreach (var kv in funcsDict)
+            {
+                AddFunctionCall(poolName, kv.Key, kv.Value);
+            }
+        }
+
+
         ///<summary> Add a function to the grammar with no arguments. </summary>
         public void AddFunction(string name, Func<Task<JsonNode>> func) => AddFunctionCall(PoolType.Functions, name, func);
         ///<summary> Add a function to the grammar with no arguments. </summary>
@@ -1021,6 +1316,48 @@ namespace JexlNet
         ///<summary> Add a dictionary of functions with a single argument (can be an array or list) to the grammar. </summary>
         public void AddFunctions(Dictionary<string, Func<JsonNode[], JsonNode>> funcsDict) => AddFunctionCalls(PoolType.Functions, funcsDict);
 
+        ///<summary> Add a function to the grammar with no arguments. </summary>
+        public void AddFunction(string name, Func<CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Functions, name, func);
+        ///<summary> Add a function to the grammar with no arguments. </summary>
+        public void AddFunction(string name, Func<CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Functions, name, func);
+        ///<summary> Add a function to the grammar with a single argument (can be an array or list). </summary>
+        public void AddFunction(string name, Func<JsonValue, CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Functions, name, func);
+        ///<summary> Add a function to the grammar with no arguments. </summary>
+        public void AddFunction(string name, Func<JsonValue, CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Functions, name, func);
+        ///<summary> Add a function to the grammar with no arguments. </summary>
+        public void AddFunction(string name, Func<JsonObject, CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Functions, name, func);
+        ///<summary> Add a function to the grammar with no arguments. </summary>
+        public void AddFunction(string name, Func<JsonObject, CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Functions, name, func);
+        ///<summary> Add a function to the grammar with no arguments. </summary>
+        public void AddFunction(string name, Func<JsonNode, CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Functions, name, func);
+        ///<summary> Add a function to the grammar with no arguments. </summary>
+        public void AddFunction(string name, Func<JsonNode, CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Functions, name, func);
+        public void AddFunction(string name, Func<JsonNode, JsonNode, CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Functions, name, func);
+        public void AddFunction(string name, Func<JsonNode, JsonNode, CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Functions, name, func);
+        public void AddFunction(string name, Func<JsonNode, JsonNode, JsonNode, CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Functions, name, func);
+        public void AddFunction(string name, Func<JsonNode, JsonNode, JsonNode, CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Functions, name, func);
+        ///<summary> Add a function to the grammar with a single argument (can be an array or list). </summary>
+        public void AddFunction(string name, Func<JsonNode[], CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Functions, name, func);
+        ///<summary> Add a function to the grammar with a single argument (can be an array or list). </summary>
+        public void AddFunction(string name, Func<JsonNode[], CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Functions, name, func);
+        ///<summary> Add a dictionary of functions with no arguments to the grammar. </summary>
+        public void AddFunctions(Dictionary<string, Func<CancellationToken, Task<JsonNode>>> funcsDict) => AddFunctionCalls(PoolType.Functions, funcsDict);
+        ///<summary> Add a dictionary of functions with no arguments to the grammar. </summary>
+        public void AddFunctions(Dictionary<string, Func<CancellationToken, JsonNode>> funcsDict) => AddFunctionCalls(PoolType.Functions, funcsDict);
+        ///<summary> Add a dictionary of functions with a single argument (can be an array or list) to the grammar. </summary>
+        public void AddFunctions(Dictionary<string, Func<JsonNode, CancellationToken, Task<JsonNode>>> funcsDict) => AddFunctionCalls(PoolType.Functions, funcsDict);
+        ///<summary> Add a dictionary of functions with a single argument (can be an array or list) to the grammar. </summary>
+        public void AddFunctions(Dictionary<string, Func<JsonNode, CancellationToken, JsonNode>> funcsDict) => AddFunctionCalls(PoolType.Functions, funcsDict);
+        ///<summary> Add a dictionary of functions with a single argument (can be an array or list) to the grammar. </summary>
+        public void AddFunctions(Dictionary<string, Func<JsonNode, JsonNode, CancellationToken, Task<JsonNode>>> funcsDict) => AddFunctionCalls(PoolType.Functions, funcsDict);
+        ///<summary> Add a dictionary of functions with a single argument (can be an array or list) to the grammar. </summary>
+        public void AddFunctions(Dictionary<string, Func<JsonNode, JsonNode, CancellationToken, JsonNode>> funcsDict) => AddFunctionCalls(PoolType.Functions, funcsDict);
+        ///<summary> Add a dictionary of functions with a single argument (can be an array or list) to the grammar. </summary>
+        public void AddFunctions(Dictionary<string, Func<JsonNode[], CancellationToken, Task<JsonNode>>> funcsDict) => AddFunctionCalls(PoolType.Functions, funcsDict);
+        ///<summary> Add a dictionary of functions with a single argument (can be an array or list) to the grammar. </summary>
+        public void AddFunctions(Dictionary<string, Func<JsonNode[], CancellationToken, JsonNode>> funcsDict) => AddFunctionCalls(PoolType.Functions, funcsDict);
+
+
         ///<summary> Add a transform with a single argument to the grammar. </summary>
         public void AddTransform(string name, Func<JsonValue, Task<JsonNode>> func) => AddFunctionCall(PoolType.Transforms, name, func);
         ///<summary> Add a transform with a single argument to the grammar. </summary>
@@ -1060,5 +1397,47 @@ namespace JexlNet
         public void AddTransforms(Dictionary<string, Func<JsonNode, JsonNode[], Task<JsonNode>>> funcsDict) => AddFunctionCalls(PoolType.Transforms, funcsDict);
         ///<summary> Add a dictionary of transforms with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
         public void AddTransforms(Dictionary<string, Func<JsonNode, JsonNode[], JsonNode>> funcsDict) => AddFunctionCalls(PoolType.Transforms, funcsDict);
+
+
+        ///<summary> Add a transform with a single argument to the grammar. </summary>
+        public void AddTransform(string name, Func<JsonValue, CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        ///<summary> Add a transform with a single argument to the grammar. </summary>
+        public void AddTransform(string name, Func<JsonValue, CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        ///<summary> Add a transform with a single argument to the grammar. </summary>
+        public void AddTransform(string name, Func<JsonObject, CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        ///<summary> Add a transform with a single argument to the grammar. </summary>
+        public void AddTransform(string name, Func<JsonObject, CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        ///<summary> Add a transform with a single argument to the grammar. </summary>
+        public void AddTransform(string name, Func<JsonNode, CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        public void AddTransform(string name, Func<JsonNode, CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        public void AddTransform(string name, Func<JsonNode[], CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        public void AddTransform(string name, Func<JsonNode[], CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+        public void AddTransform(string name, Func<JsonNode, JsonNode, CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+        public void AddTransform(string name, Func<JsonNode, JsonNode, CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+        public void AddTransform(string name, Func<JsonNode, JsonNode[], CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        public void AddTransform(string name, Func<JsonNode, JsonNode, JsonNode, CancellationToken, Task<JsonNode>> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        public void AddTransform(string name, Func<JsonNode, JsonNode, JsonNode, CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        ///<summary> Add a transform with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+        public void AddTransform(string name, Func<JsonNode, JsonNode[], CancellationToken, JsonNode> func) => AddFunctionCall(PoolType.Transforms, name, func);
+        ///<summary> Add a dictionary of transforms with a single argument (can be an array or list) to the grammar. </summary>
+        public void AddTransforms(Dictionary<string, Func<JsonNode, CancellationToken, Task<JsonNode>>> funcsDict) => AddFunctionCalls(PoolType.Transforms, funcsDict);
+        ///<summary> Add a dictionary of transforms with a single argument (can be an array or list) to the grammar. </summary>
+        public void AddTransforms(Dictionary<string, Func<JsonNode, CancellationToken, JsonNode>> funcsDict) => AddFunctionCalls(PoolType.Transforms, funcsDict);
+        ///<summary> Add a dictionary of transforms with a single argument (can be an array or list) to the grammar. </summary>
+        public void AddTransforms(Dictionary<string, Func<JsonNode[], CancellationToken, Task<JsonNode>>> funcsDict) => AddFunctionCalls(PoolType.Transforms, funcsDict);
+        ///<summary> Add a dictionary of transforms with a single argument (can be an array or list) to the grammar. </summary>
+        public void AddTransforms(Dictionary<string, Func<JsonNode[], CancellationToken, JsonNode>> funcsDict) => AddFunctionCalls(PoolType.Transforms, funcsDict);
+        ///<summary> Add a dictionary of transforms with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+        public void AddTransforms(Dictionary<string, Func<JsonNode, JsonNode, CancellationToken, Task<JsonNode>>> funcsDict) => AddFunctionCalls(PoolType.Transforms, funcsDict);
+        ///<summary> Add a dictionary of transforms with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+        public void AddTransforms(Dictionary<string, Func<JsonNode, JsonNode, CancellationToken, JsonNode>> funcsDict) => AddFunctionCalls(PoolType.Transforms, funcsDict);
+        ///<summary> Add a dictionary of transforms with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+        public void AddTransforms(Dictionary<string, Func<JsonNode, JsonNode[], CancellationToken, Task<JsonNode>>> funcsDict) => AddFunctionCalls(PoolType.Transforms, funcsDict);
+        ///<summary> Add a dictionary of transforms with a a first argument and a second argument (can be an array or list) to the grammar. </summary>
+        public void AddTransforms(Dictionary<string, Func<JsonNode, JsonNode[], CancellationToken, JsonNode>> funcsDict) => AddFunctionCalls(PoolType.Transforms, funcsDict);
+
     }
 }
