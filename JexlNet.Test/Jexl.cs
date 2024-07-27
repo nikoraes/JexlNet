@@ -319,6 +319,36 @@ public class JexlUnitTest
     }
 
     [Fact]
+    public async void AllowSpecifyNewObject()
+    {
+        JsonObject context = new()
+        {
+            {
+                "data", new JsonObject
+                {
+                    {
+                        "ip_location", new JsonObject
+                        {
+                            {"country", "The Netherlands"},
+                            {"state", "North Holland"},
+                            {"city", "Amsterdam"},
+                            {"latitude", 52.3759},
+                            {"longitude", 4.8975}
+                        }
+                    }
+                }
+            }
+        };
+        var jexl = new Jexl();
+        var res = await jexl.EvalAsync(@"{latitude:data.ip_location.latitude,longitude:data.ip_location.longitude,name:data.ip_location.name,$dtId:data.ip_location.name}", context);
+        Assert.True(JsonNode.DeepEquals(new JsonObject {
+            { "latitude", 52.3759 },
+            { "longitude", 4.8975 },
+            { "name", null },
+            { "$dtId", null } }, res));
+    }
+
+    [Fact]
     public async void AllowAddBinaryOp()
     {
         var jexl = new Jexl();

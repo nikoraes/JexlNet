@@ -49,15 +49,6 @@ namespace JexlNet
         public async Task<JsonNode> EvalAsync(string expression, string context) =>
             await EvalAsync(expression, (JsonObject)JsonNode.Parse(context));
 
-        /* public async Task<JsonElement> EvalAsync(string expression, JsonDocument context)
-        {
-            if (context.RootElement.ValueKind != JsonValueKind.Object)
-                throw new ArgumentException("Context must be an object", nameof(context));
-            var expressionObj = new Expression(Grammar, expression);
-            var result = await expressionObj.EvalAsync(JsonObject.Create(context.RootElement));
-            return JsonElement.ParseValue(result);
-        } */
-
         ///<summary>
         ///Synchronously evaluates a Jexl string within an optional context.
         ///</summary>

@@ -43,13 +43,10 @@ namespace JexlNet
             JsonArray result = new JsonArray();
             foreach (var val in arr)
             {
-                JsonNode elemResult = await EvalAsync(val);
-                // Not possible for JsonNode to be a Task
-                // if (elemResult is Task) await elemResult;
+                JsonNode elemResult = await EvalAsync(val, cancellationToken);
                 result.Add(elemResult?.DeepClone());
             }
             return result;
-            // return await Task.WhenAll(arr.Select(async (item) => await Eval(item)));
         }
 
         ///<summary>
@@ -64,7 +61,8 @@ namespace JexlNet
             JsonObject result = new JsonObject();
             foreach (var kv in map)
             {
-                result[kv.Key] = await EvalAsync(kv.Value);
+                JsonNode elemResult = await EvalAsync(kv.Value, cancellationToken);
+                result[kv.Key] = elemResult?.DeepClone();
             }
             return result;
         }
