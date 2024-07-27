@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace JexlNet
@@ -23,12 +24,12 @@ namespace JexlNet
         /// </summary>
         /// <param name="ast">An expression tree object</param>
         /// <returns>Resolves with the resulting value of the expression.</returns>
-        public async Task<JsonNode> EvalAsync(Node ast)
+        public async Task<JsonNode> EvalAsync(Node ast, CancellationToken cancellationToken = default)
         {
             if (ast == null) return await Task.FromResult<JsonNode>(null);
             EvaluatorHandlers.Handlers.TryGetValue(ast.Type, out var handleFunc);
             if (handleFunc == null) return await Task.FromResult<JsonNode>(null);
-            return await handleFunc.Invoke(this, ast);
+            return await handleFunc.Invoke(this, ast, cancellationToken);
         }
 
         ///<summary>
@@ -38,7 +39,7 @@ namespace JexlNet
         ///</summary>
         ///<param name="arr">An array of expression strings to be evaluated</param>
         ///<returns>resolves with the result array</returns>
-        internal async Task<JsonArray> EvalArrayAsync(List<Node> arr)
+        internal async Task<JsonArray> EvalArrayAsync(List<Node> arr, CancellationToken cancellationToken = default)
         {
             JsonArray result = new JsonArray();
             foreach (var val in arr)
@@ -56,7 +57,7 @@ namespace JexlNet
         ///</summary>
         ///<param name="map">A map of expression names to expression trees to be evaluated</param>
         ///<returns>resolves with the result map.</returns>
-        internal async Task<JsonObject> EvalMapAsync(Dictionary<string, Node> map)
+        internal async Task<JsonObject> EvalMapAsync(Dictionary<string, Node> map, CancellationToken cancellationToken = default)
         {
             JsonObject result = new JsonObject();
             foreach (var kv in map)
@@ -85,7 +86,7 @@ namespace JexlNet
         ///the returned array otherwise, it will be eliminated.</param>
         ///<returns>resolves with an array of values that passed the
         ///expression filter.</returns>
-        public async Task<JsonArray> FilterRelativeAsync(JsonNode subj, Node expr)
+        public async Task<JsonArray> FilterRelativeAsync(JsonNode subj, Node expr, CancellationToken cancellationToken = default)
         {
             if (subj != null && !(subj is JsonArray))
             {
@@ -97,7 +98,7 @@ namespace JexlNet
                 foreach (JsonObject elem in arr.Cast<JsonObject>())
                 {
                     Evaluator elementEvaluator = new Evaluator(Grammar, Context, elem);
-                    JsonNode shouldInclude = await elementEvaluator.EvalAsync(expr);
+                    JsonNode shouldInclude = await elementEvaluator.EvalAsync(expr, cancellationToken);
                     if (shouldInclude?.GetValueKind() == JsonValueKind.True)
                     {
                         results.Add(elem?.DeepClone());
@@ -121,9 +122,9 @@ namespace JexlNet
         ///indicating a property name)</param>
         ///<param name="expr">The expression tree to run against the subject</param>
         ///<returns>resolves with the value of the drill-down.</returns>
-        public async Task<JsonNode> FilterStaticAsync(JsonNode subj, Node expr)
+        public async Task<JsonNode> FilterStaticAsync(JsonNode subj, Node expr, CancellationToken cancellationToken = default)
         {
-            JsonNode result = await EvalAsync(expr);
+            JsonNode result = await EvalAsync(expr, cancellationToken);
             if (result == null || subj == null)
             {
                 return new JsonArray();
