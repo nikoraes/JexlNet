@@ -343,7 +343,7 @@ public class ExtendedGrammarUnitTest
     [InlineData("(((millis() / 1000) | ceil) * 1000) | toDateTime | dateTimeAdd('second',5) == (((now()|toMillis / 1000) + 5) | ceil * 1000) | toDateTime", true)]
     [InlineData("'22-Feb-24 00:00:00'|toDateTime == '2024-02-22T00:00:00Z'|toDateTime", true)] // this is just a coincidence that this works, it won't in JS
     [InlineData("'02-22-24 00:00:00'|toDateTime('MM-dd-yy HH:mm:ss') == '2024-02-22T00:00:00Z'|toDateTime", true)]
-    [InlineData("now()|toMillis - 24*60*1000 > millis() - 3*24*60*1000", true)]
+    [InlineData("(now()|toMillis - 1000) > (millis() - 2000)", true)]
     public void TimeFunctions(string expression, bool expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
