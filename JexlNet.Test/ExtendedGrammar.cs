@@ -417,7 +417,7 @@ public class ExtendedGrammarUnitTest
     {
         var jexl = new Jexl(new ExtendedGrammar());
         string context = """{"data": [{"id": 18833,"name": "NL-238409_RAW_3296_08","variableId": 167147,"variableName": "3296_08_X", "data": {   "2024-09-05 13:25:00": 1992.5402 } }, {  "id": 18833, "name": "NL-238409_RAW_3296_08", "variableId": 167148, "variableName": "3296_08_Y", "data": {         "2024-09-05 13:25:00": 5090.9231  }  }]}""";
-        string expression = """data|find('!value.variableName|startsWith(\\'d\\') && value.variableName|endsWith(\\'X\\')').data|values[0]""";
+        string expression = """data|find('!value.variableName|startsWith(\'d\') && value.variableName|endsWith(\'X\')').data|values[0]""";
         var result = jexl.Eval(expression, context);
         var expected = 1992.5402;
         Assert.Equal(expected, result.AsValue().ToDouble());
