@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -80,6 +80,14 @@ namespace JexlNet
             AddFunction("includes", Contains);
             AddFunction("$includes", Contains);
             AddTransform("includes", Contains);
+            // StartsWith
+            AddFunction("startsWith", StartsWith);
+            AddFunction("$startsWith", StartsWith);
+            AddTransform("startsWith", StartsWith);
+            // EndsWith
+            AddFunction("endsWith", EndsWith);
+            AddFunction("$endsWith", EndsWith);
+            AddTransform("endsWith", EndsWith);
             // Split
             AddFunction("split", Split);
             AddFunction("$split", Split);
@@ -560,6 +568,38 @@ namespace JexlNet
             else if (input is JsonArray array)
             {
                 return array.Any(elem => elem is JsonValue elementValue && pattern is JsonValue && elementValue.ToString().Equals(pattern.ToString()));
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if the string str starts with the character sequence chars.
+        /// </summary>
+        /// <example><code>startsWith(str, chars)</code><code>$startsWith(str, chars)</code><code>str|startsWith(chars)</code></example>
+        /// <returns>true if the string str starts with the character sequence chars</returns>
+        public static JsonNode StartsWith(JsonNode input, JsonNode chars)
+        {
+            if (input is JsonValue value && chars is JsonValue charsValue)
+            {
+                string str = value.ToString();
+                string charsStr = charsValue.ToString();
+                return str.StartsWith(charsStr);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if the string str ends with the character sequence chars.
+        /// </summary>
+        /// <example><code>endsWith(str, chars)</code><code>$endsWith(str, chars)</code><code>str|endsWith(chars)</code></example>
+        /// <returns>true if the string str ends with the character sequence chars</returns>
+        public static JsonNode EndsWith(JsonNode input, JsonNode chars)
+        {
+            if (input is JsonValue value && chars is JsonValue charsValue)
+            {
+                string str = value.ToString();
+                string charsStr = charsValue.ToString();
+                return str.EndsWith(charsStr);
             }
             return false;
         }
