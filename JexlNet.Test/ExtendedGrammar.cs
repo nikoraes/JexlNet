@@ -130,7 +130,7 @@ public class ExtendedGrammarUnitTest
     [InlineData("['foo','bar']|join('-')", "foo-bar")]
     [InlineData("'f,b,a,d,e,c'|split(',')|sort|join", "a,b,c,d,e,f")]
     [InlineData("'f,b,a,d,e,c'|split(',')|sort|join('')", "abcdef")]
-    [InlineData("'2024-07-08 23:50:00'|split(' ')|join('T') + '.00000+02:00", "2024-07-08T23:50:00.00000+02:00")]
+    [InlineData("'2024-07-08 23:50:00'|split(' ')|join('T') + '.00000+02:00'", "2024-07-08T23:50:00.00000+02:00")]
     public void Join(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
