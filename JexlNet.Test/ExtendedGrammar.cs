@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace JexlNet.Test;
 
@@ -148,6 +149,31 @@ public class ExtendedGrammarUnitTest
         Assert.Equal(expected, result?.ToString());
     }
 
+
+    [Theory]
+    [InlineData("'foobar'|regexMatch('foo')", true)]
+    [InlineData("'foobar'|regexMatch('baz')", false)]
+    public void RegexMatch(string expression, bool expected)
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression);
+        Assert.Equal(expected, result?.GetValue<bool>());
+    }
+
+    [Theory]
+    [InlineData("'foobar'|regexMatches('foo')|mapField('0')|includes('foo')", "true")]
+    [InlineData("'foobar'|regexMatches('baz')|mapField('0')|includes('foo')", "false")]
+    [InlineData("'<table><tr><td>foo1</td><td>bar1</td></tr><tr><td>foo2</td><td>bar2</td></tr><tr><td>foo3</td><td>bar3</td></tr></table>'|regexMatches('<tr><td>(?<col1>.*?)</td><td>(?<col2>.*?)</td>')", @"[{""0"":""<tr><td>foo1</td><td>bar1</td>"",""col1"":""foo1"",""col2"":""bar1""},{""0"":""<tr><td>foo2</td><td>bar2</td>"",""col1"":""foo2"",""col2"":""bar2""},{""0"":""<tr><td>foo3</td><td>bar3</td>"",""col1"":""foo3"",""col2"":""bar3""}]")]
+    public void RegexMatches(string expression, string expected)
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression);
+        var options = new JsonSerializerOptions
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+        Assert.Equal(expected, JsonSerializer.Serialize(result, options));
+    }
 
     [Theory]
     [InlineData("$number('1')", 1)]

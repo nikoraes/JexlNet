@@ -108,6 +108,13 @@ namespace JexlNet
             AddFunction("base64Decode", Base64Decode);
             AddFunction("$base64Decode", Base64Decode);
             AddTransform("base64Decode", Base64Decode);
+            // Regex
+            AddFunction("regexMatch", RegexMatch);
+            AddFunction("$regexMatch", RegexMatch);
+            AddTransform("regexMatch", RegexMatch);
+            AddFunction("regexMatches", RegexMatches);
+            AddFunction("$regexMatches", RegexMatches);
+            AddTransform("regexMatches", RegexMatches);
             // Number
             AddFunction("number", ToNumber);
             AddFunction("$number", ToNumber);
@@ -681,6 +688,48 @@ namespace JexlNet
                 string str = value.ToString();
                 byte[] bytes = Convert.FromBase64String(str);
                 return System.Text.Encoding.UTF8.GetString(bytes);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Check whether a string matches a regex pattern
+        /// </summary>
+        /// <example><code>regexMatch(str, pattern)</code><code>$regexMatch(str, pattern)</code><code>str|regexMatch(pattern)</code></example>
+        /// <returns>true if the string str matches the pattern</returns>
+        public static JsonNode RegexMatch(JsonNode input, JsonNode pattern)
+        {
+            if (input is JsonValue value && pattern is JsonValue patternValue)
+            {
+                string str = value.ToString();
+                string patternStr = patternValue.ToString();
+                return Regex.IsMatch(str, patternStr);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Gets all regex matches in a string
+        /// </summary>
+        /// <example><code>regexMatches(str, pattern)</code><code>$regexMatches(str, pattern)</code><code>str|regexMatches(pattern)</code></example>
+        /// <returns>An array of all regex matches</returns>
+        public static JsonNode RegexMatches(JsonNode input, JsonNode pattern)
+        {
+            if (input is JsonValue value && pattern is JsonValue patternValue)
+            {
+                string str = value.ToString();
+                string patternStr = patternValue.ToString();
+                MatchCollection matches = Regex.Matches(str, patternStr);
+                var groups = matches.Select(m => m.Groups);
+                return new JsonArray(matches.Select(x =>
+                {
+                    JsonObject groups = [];
+                    foreach (Group group in x.Groups)
+                    {
+                        groups[group.Name] = group.Value;
+                    }
+                    return groups;
+                }).ToArray());
             }
             return null;
         }
