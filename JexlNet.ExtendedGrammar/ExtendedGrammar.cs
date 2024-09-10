@@ -729,6 +729,7 @@ namespace JexlNet
 #if NET8_0
                         groups[group.Name] = group.Value;
 #else
+                        // lower versions don't support group names
                         groups[$"{group.Index}"] = group.Value;
 #endif
                     }
