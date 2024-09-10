@@ -723,10 +723,14 @@ namespace JexlNet
                 List<Match> matchList = matches.Cast<Match>().ToList(); // Convert to list
                 return new JsonArray(matchList.Select(x =>
                 {
-                    JsonObject groups = [];
-                    foreach (Group group in x.Groups)
+                    JsonObject groups = new JsonObject();
+                    foreach (Group group in x.Groups.Cast<Group>())
                     {
+#if NET8_0
                         groups[group.Name] = group.Value;
+#else
+                        groups[$"{group.Index}"] = group.Value;
+#endif
                     }
                     return groups;
                 }).ToArray());
