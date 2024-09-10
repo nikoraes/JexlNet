@@ -720,8 +720,8 @@ namespace JexlNet
                 string str = value.ToString();
                 string patternStr = patternValue.ToString();
                 MatchCollection matches = Regex.Matches(str, patternStr);
-                var groups = matches.Select(m => m.Groups);
-                return new JsonArray(matches.Select(x =>
+                List<Match> matchList = matches.Cast<Match>().ToList(); // Convert to list
+                return new JsonArray(matchList.Select(x =>
                 {
                     JsonObject groups = [];
                     foreach (Group group in x.Groups)
