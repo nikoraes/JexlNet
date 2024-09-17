@@ -520,10 +520,14 @@ namespace JexlNet
         /// </summary>
         /// <example><code>trim(str)</code><code>$trim(str)</code><code>str|trim</code></example>
         /// <returns>A string with all the characters of str converted to lowercase</returns>
-        public static JsonNode Trim(JsonNode input)
+        public static JsonNode Trim(JsonNode input, JsonNode trimChar = null)
         {
             if (input is JsonValue value)
             {
+                if (trimChar is JsonValue trimCharValue)
+                {
+                    return value.ToString().Trim(trimCharValue.ToString().ToCharArray());
+                }
                 return value.ToString().Trim();
             }
             return null;

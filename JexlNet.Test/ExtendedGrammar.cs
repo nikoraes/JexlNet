@@ -85,6 +85,7 @@ public class ExtendedGrammarUnitTest
     [Theory]
     [InlineData("'baz  '|trim", "baz")]
     [InlineData("'  baz  '|trim", "baz")]
+    [InlineData("'__baz--'|trim('-')", "__baz")]
     [InlineData("'foo'|pad(5)", "foo  ")]
     [InlineData("'foo'|pad(-5,0)", "00foo")] // Needs to be "pad("foo",(-5),0)" in TS
     public void TrimPad(string expression, string expected)
@@ -163,7 +164,9 @@ public class ExtendedGrammarUnitTest
     [Theory]
     [InlineData("'foobar'|regexMatches('foo')|mapField('0')|includes('foo')", "true")]
     [InlineData("'foobar'|regexMatches('baz')|mapField('0')|includes('foo')", "false")]
-    [InlineData("'<table><tr><td>foo1</td><td>bar1</td></tr><tr><td>foo2</td><td>bar2</td></tr><tr><td>foo3</td><td>bar3</td></tr></table>'|regexMatches('<tr><td>(?<col1>.*?)</td><td>(?<col2>.*?)</td>')", @"[{""0"":""<tr><td>foo1</td><td>bar1</td>"",""col1"":""foo1"",""col2"":""bar1""},{""0"":""<tr><td>foo2</td><td>bar2</td>"",""col1"":""foo2"",""col2"":""bar2""},{""0"":""<tr><td>foo3</td><td>bar3</td>"",""col1"":""foo3"",""col2"":""bar3""}]")]
+    [InlineData("'<table><tr><td>foo1</td><td>bar1</td></tr><tr><td>foo2</td><td>bar2</td></tr><tr><td>foo3</td><td>bar3</td></tr></table>'|regexMatches('<tr><td>(?<col1>.*?)</td><td>(?<col2>.*?)</td></tr>')", @"[{""0"":""<tr><td>foo1</td><td>bar1</td></tr>"",""col1"":""foo1"",""col2"":""bar1""},{""0"":""<tr><td>foo2</td><td>bar2</td></tr>"",""col1"":""foo2"",""col2"":""bar2""},{""0"":""<tr><td>foo3</td><td>bar3</td></tr>"",""col1"":""foo3"",""col2"":""bar3""}]")]
+    [InlineData("'<table><tr><td>foo1</td><td>bar1</td></tr><tr><td>foo2</td><td>bar2</td></tr><tr><td>foo3</td><td>bar3</td></tr></table>'|regexMatches('<tr><td>(?<col1>.*?)</td>(?:<td>(?<col2>.*?)</td>)?</tr>')", @"[{""0"":""<tr><td>foo1</td><td>bar1</td></tr>"",""col1"":""foo1"",""col2"":""bar1""},{""0"":""<tr><td>foo2</td><td>bar2</td></tr>"",""col1"":""foo2"",""col2"":""bar2""},{""0"":""<tr><td>foo3</td><td>bar3</td></tr>"",""col1"":""foo3"",""col2"":""bar3""}]")]
+
     public void RegexMatches(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
@@ -447,5 +450,18 @@ public class ExtendedGrammarUnitTest
         var result = jexl.Eval(expression, context);
         var expected = 1992.5402;
         Assert.Equal(expected, result.AsValue().ToDouble());
+    }
+
+    [Fact]
+    public void ComplexExample3()
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        string context = """{"data": "204016                        52172    004   002ID  87362729       J         07162024MX                                        ID  132634661      J54G2   N   90                        07162024                                             ORINWN                                                                                                             "}""";
+        Assert.Equal("004", jexl.Eval("data|substring(39,6)|trim", context).ToString());
+
+        string expression = """data|substring(0,30)|trim + '-' + data|substring(39,6)|trim + '-' + data|substring(45,3)|trim""";
+        var result = jexl.Eval(expression, context);
+        var expected = "204016-004-002";
+        Assert.Equal(expected, result.ToString());
     }
 }
