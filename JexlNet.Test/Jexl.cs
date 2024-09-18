@@ -350,6 +350,7 @@ public class JexlUnitTest
     [InlineData("name['la' + 'st']", "Archer")]
     [InlineData("exes[2]", "Burt Reynolds")]
     [InlineData("exes[lastEx - 1]", "Len Trexler")]
+    [InlineData("exes[3] ?: exes[2]", "Burt Reynolds")]
     public async void AccessIdentifiers(string input, string expected)
     {
         var context = new JsonObject

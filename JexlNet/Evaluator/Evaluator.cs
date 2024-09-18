@@ -133,13 +133,23 @@ namespace JexlNet
             {
                 return subj;
             }
-            else if (result.GetValueKind() == JsonValueKind.Number && result is JsonValue resultValue)
+            else if (subj is JsonArray subjArray && result.GetValueKind() == JsonValueKind.Number && result is JsonValue resultValue)
             {
-                return subj[resultValue.ToInt32()];
+                int index = resultValue.ToInt32();
+                if (index < 0 || index >= subjArray.Count)
+                {
+                    return null;
+                }
+                return subj[index];
             }
-            else if (result.GetValueKind() == JsonValueKind.String)
+            else if (subj is JsonObject subjObject && result.GetValueKind() == JsonValueKind.String)
             {
-                return subj[result.GetValue<string>()];
+                string key = result.GetValue<string>();
+                if (!subjObject.ContainsKey(key))
+                {
+                    return null;
+                }
+                return subj[key];
             }
             else
             {
