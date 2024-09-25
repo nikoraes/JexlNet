@@ -8,6 +8,7 @@ public class ExtendedGrammarUnitTest
     [Theory]
     [InlineData("123456|toString", "123456")]
     [InlineData("{'a':123456}|toString", @"{""a"":123456}")]
+    [InlineData("'123456'|string", "123456")]
     public void String(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
@@ -373,6 +374,7 @@ public class ExtendedGrammarUnitTest
     [InlineData("'22-Feb-24 00:00:00'|toDateTime == '2024-02-22T00:00:00Z'|toDateTime", true)] // this is just a coincidence that this works, it won't in JS
     [InlineData("'02-22-24 00:00:00'|toDateTime('MM-dd-yy HH:mm:ss') == '2024-02-22T00:00:00Z'|toDateTime", true)]
     [InlineData("(now()|toMillis - 1000) > (millis() - 2000)", true)]
+    [InlineData("$toDateTime(1727169975224)|toMillis == 1727169975224", true)]
     public void TimeFunctions(string expression, bool expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());

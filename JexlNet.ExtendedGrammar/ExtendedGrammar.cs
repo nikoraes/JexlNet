@@ -336,6 +336,10 @@ namespace JexlNet
         /// <returns>The string JsonValue that represents the input</returns>
         public static JsonNode ToString(JsonNode input, JsonNode prettify = null)
         {
+            if (input is JsonValue inputValue && inputValue.GetValueKind() == JsonValueKind.String)
+            {
+                return input;
+            }
             JsonSerializerOptions options = prettify is JsonValue prettifyValue && prettifyValue.GetValueKind() == JsonValueKind.True
                 ? _prettyPrintOptions
                 : _defaultOptions;
