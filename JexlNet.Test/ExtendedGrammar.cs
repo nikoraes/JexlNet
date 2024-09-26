@@ -348,6 +348,9 @@ public class ExtendedGrammarUnitTest
     [Theory]
     [InlineData("$merge({'foo':'bar'},{baz:'tek'})")]
     [InlineData("{'foo':'bar'}|merge({baz:'tek'})")]
+    [InlineData("{'foo':'bar'}|merge([{baz:'tek'}])")]
+    [InlineData("[{'foo':'bar'}]|merge([{baz:'tek'}])")]
+    [InlineData("[{foo:'bar'},{baz:'tek'}]|merge")]
     [InlineData("[['foo','bar'],['baz','tek']]|toObject")]
     public void Objects(string expression)
     {

@@ -1532,7 +1532,7 @@ namespace JexlNet
         /// <returns>A new object with the properties of the input objects merged together</returns>
         public static JsonNode ObjectMerge(JsonNode[] args)
         {
-            JsonObject result = new JsonObject();
+            JsonObject result = [];
             foreach (JsonNode arg in args)
             {
                 if (arg is JsonObject obj)
@@ -1540,6 +1540,19 @@ namespace JexlNet
                     foreach (var item in obj)
                     {
                         result[item.Key] = item.Value?.DeepClone();
+                    }
+                }
+                else if (arg is JsonArray array)
+                {
+                    foreach (JsonNode item in array)
+                    {
+                        if (item is JsonObject objItem)
+                        {
+                            foreach (var subItem in objItem)
+                            {
+                                result[subItem.Key] = subItem.Value?.DeepClone();
+                            }
+                        }
                     }
                 }
             }
