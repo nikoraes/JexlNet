@@ -1532,7 +1532,7 @@ namespace JexlNet
         /// <returns>A new object with the properties of the input objects merged together</returns>
         public static JsonNode ObjectMerge(JsonNode[] args)
         {
-            JsonObject result = [];
+            JsonObject result = new JsonObject();
             foreach (JsonNode arg in args)
             {
                 if (arg is JsonObject obj)
