@@ -202,6 +202,13 @@ namespace JexlNet
             AddFunction("not", Not);
             AddFunction("$not", Not);
             AddTransform("not", Not);
+            // Case / Switch
+            AddFunction("case", Case);
+            AddFunction("$case", Case);
+            AddTransform("case", Case);
+            AddFunction("switch", Case);
+            AddFunction("$switch", Case);
+            AddTransform("switch", Case);
             // ArrayAppend
             AddFunction("append", ArrayAppend);
             AddFunction("$append", ArrayAppend);
@@ -1090,6 +1097,34 @@ namespace JexlNet
             {
                 return true;
             }
+            return null;
+        }
+
+        /// <summary>
+        /// Evaluates a list of predicates and returns the first result expression whose predicate is satisfied.
+        /// </summary>
+        /// <example><code>switch(expression, case1, result1, case2, result2, ..., default)</code><code>$switch(expression, case1, result1, case2, result2, ..., default)</code><code>expression|switch(case1, result1, case2, result2, ..., default)</code></example>
+        /// <returns>The result of the first case whose predicate is satisfied, or the default value if no case is satisfied</returns>
+        public static JsonNode Case(JsonNode[] args)
+        {
+            if (args.Length < 3) return null;
+
+            JsonNode expressionResult = args[0];
+
+            for (int i = 1; i < args.Length - 1; i += 2)
+            {
+                JsonNode caseResult = args[i];
+                if (JsonNode.DeepEquals(expressionResult, caseResult))
+                {
+                    return args[i + 1];
+                }
+            }
+            // Return default
+            if (args.Length % 2 == 1)
+            {
+                return args[args.Length - 1];
+            }
+            // Return null if no default specified
             return null;
         }
 

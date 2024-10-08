@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
+using Xunit.Sdk;
 
 namespace JexlNet.Test;
 
@@ -255,6 +256,17 @@ public class ExtendedGrammarUnitTest
         var jexl = new Jexl(new ExtendedGrammar());
         var result = jexl.Eval(expression);
         Assert.Equal(expected, result?.GetValue<bool>());
+    }
+
+    [Theory]
+    [InlineData("2|case(1,'a',2,'b',3,'c')", "b")]
+    [InlineData("$case('bar','foo','a','bar','b','baz','c')", "b")]
+    [InlineData("'notfound'|case('bar','foo','a','bar','b','baz','c','b')", "b")]
+    public void Case(string expression, string expected)
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression);
+        Assert.Equal(expected, result?.ToString());
     }
 
     [Theory]
