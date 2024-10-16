@@ -1120,7 +1120,7 @@ namespace JexlNet
                 }
             }
             // Return default
-            if (args.Length % 2 == 1)
+            if (args.Length % 2 == 0)
             {
                 return args[args.Length - 1];
             }
@@ -1464,7 +1464,7 @@ namespace JexlNet
             if (input is JsonArray array && expression is JsonValue exprVal)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
-                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                Expression jexlExpression = jexl.CreateExpression(exprVal.ToString());
                 for (int i = 0; i < array.Count; i++)
                 {
                     var context = new JsonObject()
@@ -1473,7 +1473,7 @@ namespace JexlNet
                         ["index"] = i,
                         ["array"] = array.DeepClone(),
                     };
-                    if (jExpression.Eval(context)?.AsValue().ToBoolean() ?? false)
+                    if (jexlExpression.Eval(context) is JsonValue jsonValue && jsonValue.GetValueKind() == JsonValueKind.True)
                     {
                         return array[i]?.DeepClone();
                     }
