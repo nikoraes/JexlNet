@@ -40,6 +40,15 @@ public class ExpressionUnitTest
         Assert.Equal("bar", result?.ToString());
     }
 
+    [Fact]
+    public async void AccessIndexOutOfBOunds_ReturnsBoolean()
+    {
+        var jexl = new Jexl();
+        var expr = jexl.CreateExpression("!data[2]");
+        var result = await expr.EvalAsync(new JsonObject { { "data", new JsonArray() { "foo" } } });
+        Assert.Equal(System.Text.Json.JsonValueKind.True, result.GetValueKind());
+    }
+
     public class TestExpression(string exprStr) : Expression(exprStr)
     {
         public int CompileCallCount { get; private set; }
