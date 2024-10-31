@@ -152,6 +152,14 @@ public class ExtendedGrammarUnitTest
         Assert.Equal(expected, result?.ToString());
     }
 
+    [Theory]
+    [InlineData("{foo:'bar',baz:'tek'}|formUrlEncoded", "foo=bar&baz=tek")]
+    public void ConvertFormUrlEncoded(string expression, string expected)
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression);
+        Assert.Equal(expected, result?.ToString());
+    }
 
     [Theory]
     [InlineData("'foobar'|regexMatch('foo')", true)]
@@ -261,7 +269,7 @@ public class ExtendedGrammarUnitTest
     [Theory]
     [InlineData("2|case(1,'a',2,'b',3,'c')", "b")]
     [InlineData("$case('bar','foo','a','bar','b','baz','c')", "b")]
-    [InlineData("'notfound'|case('bar','foo','a','bar','b','baz','c','b')", "b")]
+    [InlineData("'notfound'|case('bar','foo','a','bar','b','baz','c','b','b')", "b")]
     public void Case(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());

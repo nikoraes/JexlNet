@@ -108,6 +108,10 @@ namespace JexlNet
             AddFunction("base64Decode", Base64Decode);
             AddFunction("$base64Decode", Base64Decode);
             AddTransform("base64Decode", Base64Decode);
+            // URLFormEncoded
+            AddFunction("formUrlEncoded", FormUrlEncoded);
+            AddFunction("$formUrlEncoded", FormUrlEncoded);
+            AddTransform("formUrlEncoded", FormUrlEncoded);
             // Regex
             AddFunction("regexMatch", RegexMatch);
             AddFunction("$regexMatch", RegexMatch);
@@ -703,6 +707,26 @@ namespace JexlNet
                 string str = value.ToString();
                 byte[] bytes = Convert.FromBase64String(str);
                 return System.Text.Encoding.UTF8.GetString(bytes);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Converts an object to a form URL encoded string.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <example><code>formUrlEncoded(obj)</code><code>$formUrlEncoded(obj)</code><code>obj|formUrlEncoded</code></example>
+        /// <returns>A form url encoded string</returns>
+        public static JsonNode FormUrlEncoded(JsonNode input)
+        {
+            if (input is JsonValue value)
+            {
+                string str = value.ToString();
+                return Uri.EscapeDataString(str);
+            }
+            else if (input is JsonObject obj)
+            {
+                return string.Join("&", obj.Select(x => $"{Uri.EscapeDataString(x.Key)}={Uri.EscapeDataString(x.Value.ToString())}"));
             }
             return null;
         }
