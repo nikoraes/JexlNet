@@ -155,7 +155,7 @@ namespace JexlNet
             nodeValue = node.Value.GetValue<string>();
             if (fromResult is JsonArray list)
             {
-                if (list.First() is JsonObject dict && !string.IsNullOrEmpty(nodeValue))
+                if (list.Count > 0 && list.First() is JsonObject dict && !string.IsNullOrEmpty(nodeValue))
                 {
                     // NOTE: we could also return a mapped list, like in JSONata, but then it won't align to the JS JEXL implementation
                     /* JsonArray result = new();
@@ -174,6 +174,7 @@ namespace JexlNet
                 {
                     return list[index];
                 }
+                else return null;
             }
             else if (fromResult is JsonObject dict && !string.IsNullOrEmpty(nodeValue))
             {

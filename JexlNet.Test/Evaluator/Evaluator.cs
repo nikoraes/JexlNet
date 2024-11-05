@@ -363,6 +363,8 @@ public class EvaluatorUnitTest
     [Theory]
     [InlineData(@"""foo"" ?: ""bar""", "foo")]
     [InlineData(@""""" ?: ""bar""", "bar")]
+    [InlineData(@"{foo:'bar'}.baz ?: 'tek'", "tek")]
+    [InlineData(@"{foo:[]}.foo.bar ?: 'tek'", "tek")]
     public async void EvaluateExpression_AllowsMissingConsequentInTernary(string input, string expected)
     {
         Evaluator _evaluator = new(new Grammar());
