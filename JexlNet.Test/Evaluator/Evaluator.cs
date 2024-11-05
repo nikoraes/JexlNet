@@ -45,6 +45,7 @@ public class EvaluatorUnitTest
     [InlineData(@"2 > 1", true)]
     [InlineData(@"2 <= 1", false)]
     [InlineData(@"""foo"" && 6 >= 6 && 0 + 1 && true", true)]
+    [InlineData(@"!!'foo'", true)]
     public async void EvaluateExpression_ReturnBoolean(string input, bool expected)
     {
         Evaluator _evaluator = new(new Grammar());
@@ -58,6 +59,7 @@ public class EvaluatorUnitTest
     [InlineData("$['foo'].baz.bar", "tek")]
     [InlineData("$[{bar:'foo'}.bar].baz.bar", "tek")]
     [InlineData("$[{$:'foo'}.$].baz.bar", "tek")]
+    [InlineData("(foo.bar || foo.baz).bar", "tek")]
     public async void EvaluateExpression_WithContext(string input, string expected)
     {
         JsonObject context = new()

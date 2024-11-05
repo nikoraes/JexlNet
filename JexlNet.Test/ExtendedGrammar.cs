@@ -22,6 +22,8 @@ public class ExtendedGrammarUnitTest
     [InlineData("length('test123')", 7)]
     [InlineData("[\"a\",1,\"b\"]|length", 3)]
     [InlineData("$length([\"a\",1,\"b\"])", 3)]
+    [InlineData("{foo:[]}.foo|length", 0)]
+    [InlineData("{foo:'a',bar:'b'}|length", 2)]
     public void Length(string expression, int expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());

@@ -369,6 +369,10 @@ namespace JexlNet
             {
                 return JsonValue.Create(array.Count);
             }
+            else if (input is JsonObject obj)
+            {
+                return JsonValue.Create(obj.Count);
+            }
             else if (input is JsonValue value)
             {
                 return JsonValue.Create(value.ToString().Length);
