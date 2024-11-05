@@ -511,9 +511,9 @@ namespace JexlNet
                         {
                             JsonNode rightVal = await wrapperFunctions[1]();
                             if (rightVal != null &&
-                                ((rightVal.GetValueKind() == JsonValueKind.String && string.IsNullOrEmpty(rightVal.GetValue<string>())) ||
-                                (rightVal.GetValueKind() == JsonValueKind.Number && rightVal is JsonValue rightValue && rightValue.ToDecimal() == 0) ||
-                                (rightVal.GetValueKind() == JsonValueKind.False))
+                                ((rightVal.GetValueKind() == JsonValueKind.String && !string.IsNullOrEmpty(rightVal.GetValue<string>())) ||
+                                (rightVal.GetValueKind() == JsonValueKind.Number && rightVal is JsonValue rightValue && rightValue.ToDecimal() != 0) ||
+                                (rightVal.GetValueKind() == JsonValueKind.True))
                             )
                             {
                                 return rightVal;

@@ -46,6 +46,7 @@ public class EvaluatorUnitTest
     [InlineData(@"2 <= 1", false)]
     [InlineData(@"""foo"" && 6 >= 6 && 0 + 1 && true", true)]
     [InlineData(@"!!'foo'", true)]
+    [InlineData(@"!!{foo:'a'}.bar || !!{bar:'a'}.baz || !!{tek:'a'}.tek", true)]
     public async void EvaluateExpression_ReturnBoolean(string input, bool expected)
     {
         Evaluator _evaluator = new(new Grammar());
