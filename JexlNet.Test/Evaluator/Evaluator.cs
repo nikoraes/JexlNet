@@ -59,7 +59,7 @@ public class EvaluatorUnitTest
     [InlineData("$['foo'].baz.bar", "tek")]
     [InlineData("$[{bar:'foo'}.bar].baz.bar", "tek")]
     [InlineData("$[{$:'foo'}.$].baz.bar", "tek")]
-    [InlineData("(foo.bar || foo.baz).bar", "tek")]
+    [InlineData("(foo.bar ?: foo.baz).bar", "tek")]
     public async void EvaluateExpression_WithContext(string input, string expected)
     {
         JsonObject context = new()
