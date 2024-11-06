@@ -176,7 +176,7 @@ namespace JexlNet
                 }
                 else return null;
             }
-            else if (fromResult is JsonObject dict && !string.IsNullOrEmpty(nodeValue))
+            else if (fromResult is JsonObject dict && !string.IsNullOrEmpty(nodeValue) && dict.ContainsKey(nodeValue))
             {
                 return dict[nodeValue];
             }

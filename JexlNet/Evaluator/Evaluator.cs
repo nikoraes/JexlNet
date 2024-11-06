@@ -127,7 +127,7 @@ namespace JexlNet
             JsonNode result = await EvalAsync(expr, cancellationToken);
             if (result == null || subj == null)
             {
-                return new JsonArray();
+                return null;
             }
             else if (result.GetValueKind() == JsonValueKind.True)
             {

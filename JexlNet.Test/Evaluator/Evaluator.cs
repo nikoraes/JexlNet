@@ -33,6 +33,7 @@ public class EvaluatorUnitTest
     [InlineData(@"""Hello"" + (4+4) + ""Wo\""rld""", @"Hello8Wo""rld")]
     [InlineData(@"'Hello' + (4+4) + 'Wo\'rld'", @"Hello8Wo'rld")]
     [InlineData(@"""Hello"" + (4+4) + 'Wo\'rld'", @"Hello8Wo'rld")]
+    [InlineData(@"!!{foo:'a'}.bar || !!{bar:'a'}.baz || {tek:'a'}.tek", @"a")]
     public async void EvaluateExpression_ReturnString(string input, string expected)
     {
         Evaluator _evaluator = new(new Grammar());
@@ -47,12 +48,24 @@ public class EvaluatorUnitTest
     [InlineData(@"""foo"" && 6 >= 6 && 0 + 1 && true", true)]
     [InlineData(@"!!'foo'", true)]
     [InlineData(@"!!{foo:'a'}.bar || !!{bar:'a'}.baz || !!{tek:'a'}.tek", true)]
+    [InlineData(@"!!{foo:'a'}.baz || !!{bar:'a'}.baz || !!{tek:'a'}.baz", false)]
     public async void EvaluateExpression_ReturnBoolean(string input, bool expected)
     {
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(input);
         var result = await _evaluator.EvalAsync(ast);
         Assert.Equal(expected, result?.GetValue<bool>());
+    }
+
+    [Theory]
+    [InlineData(@"{foo:{}}.foo.bar[0]")]
+    [InlineData(@"{foo:{}}.foo.bar[0].bar")]
+    public async void EvaluateExpression_ReturnNull(string input)
+    {
+        Evaluator _evaluator = new(new Grammar());
+        var ast = ToTree(input);
+        var result = await _evaluator.EvalAsync(ast);
+        Assert.Null(result);
     }
 
     [Theory]
