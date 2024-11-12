@@ -563,6 +563,14 @@ namespace JexlNet
                         {
                             return JsonValue.Create(true);
                         }
+                        else if (a is JsonObject jsonObject)
+                        {
+                            return JsonValue.Create(jsonObject.Count == 0);
+                        }
+                        else if (a is JsonArray jsonArray)
+                        {
+                            return JsonValue.Create(jsonArray.Count == 0);
+                        }
                         else if (a.GetValueKind() == JsonValueKind.String)
                         {
                             return JsonValue.Create(string.IsNullOrEmpty(a.GetValue<string>()));
