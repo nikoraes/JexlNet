@@ -310,11 +310,35 @@ namespace JexlNet
                     })
                 },
                 {
+                    "===", new BinaryOperatorGrammar(20, (args) =>
+                    {
+                        if (args.Length != 2)
+                        {
+                            throw new Exception("Unsupported number of arguments for === operator");
+                        }
+                        var a = args[0];
+                        var b = args[1];
+                        return JsonNode.DeepEquals(a, b);
+                    })
+                },
+                {
                     "!=", new BinaryOperatorGrammar(20, (args) =>
                     {
                         if (args.Length != 2)
                         {
                             throw new Exception("Unsupported number of arguments for != operator");
+                        }
+                        var a = args[0];
+                        var b = args[1];
+                        return !JsonNode.DeepEquals(a, b);
+                    })
+                },
+                {
+                    "!==", new BinaryOperatorGrammar(20, (args) =>
+                    {
+                        if (args.Length != 2)
+                        {
+                            throw new Exception("Unsupported number of arguments for !== operator");
                         }
                         var a = args[0];
                         var b = args[1];
