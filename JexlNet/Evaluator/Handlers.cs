@@ -69,7 +69,7 @@ namespace JexlNet
                 return await grammarOp.EvaluateOnDemandAsync(new OnDemandBinaryFunctionWrapper[] { wrappedLeft, wrappedRight });
             }
             // We don't really need the non ondemand evaluation to be defined on the grammar, but we can use it as a fallback
-            if (grammarOp.Evaluate == null)
+            if (grammarOp.Evaluate != null)
             {
                 var leftResult = await evaluator.EvalAsync(node?.Left, cancellationToken);
                 var rightResult = await evaluator.EvalAsync(node?.Right, cancellationToken);

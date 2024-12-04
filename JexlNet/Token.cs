@@ -5,6 +5,7 @@ namespace JexlNet
 {
     public class Token : IEquatable<Token>
     {
+        public Token() { }
         public Token(GrammarType type, JsonNode value = null)
         {
             Type = type;

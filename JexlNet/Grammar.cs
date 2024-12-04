@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -632,15 +633,31 @@ namespace JexlNet
                         // wrappers[0].SubAst could either be an identifier or a SequenceLiteral
                         // wrappers[1].SubAst is the expression to be evaluated
 
-                        // TODO: Figure out how we can stringify the expression again
-                        // OR even better
-                        // Allow to pass an ast to the function and refactor the ast 
+                        // We stringify the compiled AST and pass it together with the variables as an object to the function 
 
-                        await Task.Delay(0);
-                        throw new NotImplementedException();
+                        await Task.Yield();
+
+                        JsonNode variables = wrappers[0].SubAst.Type == GrammarType.Identifier
+                            ? new JsonArray(wrappers[0].SubAst.Value)
+                            : new JsonArray(wrappers[0].SubAst.Args.Select(x => x.Value).ToArray());
+                        // Keep the expression as a string as we need to deserialize to Node again later anyway
+                        JsonNode expression = JsonSerializer.Serialize(wrappers[1].SubAst, SerializerOptions);
+
+                        return new JsonObject()
+                        {
+                            { "variables", variables },
+                            { "expression", expression }
+                        };
                     })
                 }
             };
+
+
+        public static JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
+        {
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
 
         ///<summary>
         ///Adds a binary operator to Jexl at the specified precedence. The higher the
