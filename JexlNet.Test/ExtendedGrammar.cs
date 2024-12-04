@@ -517,4 +517,14 @@ public class ExtendedGrammarUnitTest
         var expected = new JsonObject { { "LEVEL", "18.8929" }, { "TEMPERATURE", "16.142" } };
         Assert.True(JsonNode.DeepEquals(expected, result));
     }
+
+
+    [Theory]
+    [InlineData("['f','o','o']|map((v,i) => v + i)|join('')", "f0o1o2")]
+    public void ArrowOperatorString(string expression, string expected)
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression)?.ToString();
+        Assert.Equal(expected, result);
+    }
 }

@@ -54,6 +54,9 @@ namespace JexlNet
         ObjectStart,
         TernaryStart,
         Transform,
+        SequenceLiteral, // A sequence with multiple arguments like (a, b, c)
+        SequenceValue,
+        PostSequence
     }
 
     public class ElementGrammar
@@ -66,7 +69,7 @@ namespace JexlNet
             GrammarType type,
             int precedence,
             Func<JsonNode[], JsonNode> evaluate,
-            Func<Func<Task<JsonNode>>[], Task<JsonNode>> evalOnDemand = null)
+            Func<OnDemandBinaryFunctionWrapper[], Task<JsonNode>> evalOnDemand = null)
         {
             Type = type;
             Precedence = precedence;
@@ -76,7 +79,7 @@ namespace JexlNet
         public GrammarType Type { get; set; }
         public int Precedence { get; set; }
         public Func<JsonNode[], JsonNode> Evaluate { get; set; }
-        public Func<Func<Task<JsonNode>>[], Task<JsonNode>> EvaluateOnDemandAsync { get; set; }
+        public Func<OnDemandBinaryFunctionWrapper[], Task<JsonNode>> EvaluateOnDemandAsync { get; set; }
     }
 
     public class BinaryOperatorGrammar : ElementGrammar
@@ -84,7 +87,7 @@ namespace JexlNet
         public BinaryOperatorGrammar(
             int precedence,
             Func<JsonNode[], JsonNode> evaluate,
-            Func<Func<Task<JsonNode>>[], Task<JsonNode>> evalOnDemand = null
+            Func<OnDemandBinaryFunctionWrapper[], Task<JsonNode>> evalOnDemand = null
             ) : base(
                 GrammarType.BinaryOperator,
                 precedence,
@@ -99,7 +102,7 @@ namespace JexlNet
         public UnaryOperatorGrammar(
             int precedence,
             Func<JsonNode[], JsonNode> evaluate,
-            Func<Func<Task<JsonNode>>[], Task<JsonNode>> evalOnDemand = null
+            Func<OnDemandBinaryFunctionWrapper[], Task<JsonNode>> evalOnDemand = null
             ) : base(
                 GrammarType.UnaryOperator,
                 precedence,
@@ -466,9 +469,9 @@ namespace JexlNet
                             throw new Exception("Unsupported number of arguments for && operator");
                         }
 
-                    }, async (wrapperFunctions) =>
+                    }, async (wrappers) =>
                     {
-                        JsonNode leftVal = await wrapperFunctions[0]();
+                        JsonNode leftVal = await wrappers[0].EvalAsync();
                         if (leftVal == null ||
                             (leftVal.GetValueKind() == JsonValueKind.String && string.IsNullOrEmpty(leftVal.GetValue<string>())) ||
                             (leftVal.GetValueKind() == JsonValueKind.Number && leftVal is JsonValue leftValue && leftValue.ToDecimal() == 0) ||
@@ -479,7 +482,7 @@ namespace JexlNet
                         }
                         else
                         {
-                            JsonNode rightVal = await wrapperFunctions[1]();
+                            JsonNode rightVal = await wrappers[1].EvalAsync();
                             if (rightVal != null &&
                                 ((rightVal.GetValueKind() == JsonValueKind.String && !string.IsNullOrEmpty(rightVal.GetValue<string>())) ||
                                 (rightVal.GetValueKind() == JsonValueKind.Number && rightVal is JsonValue rightValue && rightValue.ToDecimal() != 0) ||
@@ -520,9 +523,9 @@ namespace JexlNet
                         {
                             throw new Exception("Unsupported number of arguments for || operator");
                         }
-                    }, async (wrapperFunctions) =>
+                    }, async (wrappers) =>
                     {
-                        JsonNode leftVal = await wrapperFunctions[0]();
+                        JsonNode leftVal = await wrappers[0].EvalAsync();
                         if (leftVal != null &&
                             ((leftVal.GetValueKind() == JsonValueKind.String && !string.IsNullOrEmpty(leftVal.GetValue<string>())) ||
                             (leftVal.GetValueKind() == JsonValueKind.Number && leftVal is JsonValue leftValue && leftValue.ToDecimal() != 0) ||
@@ -533,7 +536,7 @@ namespace JexlNet
                         }
                         else
                         {
-                            JsonNode rightVal = await wrapperFunctions[1]();
+                            JsonNode rightVal = await wrappers[1].EvalAsync();
                             if (rightVal != null &&
                                 ((rightVal.GetValueKind() == JsonValueKind.String && !string.IsNullOrEmpty(rightVal.GetValue<string>())) ||
                                 (rightVal.GetValueKind() == JsonValueKind.Number && rightVal is JsonValue rightValue && rightValue.ToDecimal() != 0) ||
@@ -615,6 +618,26 @@ namespace JexlNet
                         {
                             throw new Exception("Unsupported type for ! operator");
                         }
+                    })
+                },
+                {
+                    "=>", new BinaryOperatorGrammar(5, (args) =>
+                    {
+
+                        throw new Exception("Unsupported number of arguments for || operator");
+
+                    }, async (wrappers) =>
+                    {
+                        // Stringify the expression into a string that can be evaluated by the function where the arrow function is an argument
+                        // wrappers[0].SubAst could either be an identifier or a SequenceLiteral
+                        // wrappers[1].SubAst is the expression to be evaluated
+
+                        // TODO: Figure out how we can stringify the expression again
+                        // OR even better
+                        // Allow to pass an ast to the function and refactor the ast 
+
+                        await Task.Delay(0);
+                        throw new NotImplementedException();
                     })
                 }
             };

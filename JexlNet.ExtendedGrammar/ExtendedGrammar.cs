@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace JexlNet
 {
@@ -335,6 +336,8 @@ namespace JexlNet
             AddFunction("$uuid", Uuid);
             AddFunction("uid", Uuid);
             AddFunction("$uid", Uuid);
+            // Arrow Operator
+            // AddBinaryOperator("=>", 1, (JsonNode[] args) => throw new Exception("Only on-demand evaluation supported for => operator"), ArrowOperatorEvaluateOnDemand);
         }
 
         private static readonly JsonSerializerOptions _prettyPrintOptions = new JsonSerializerOptions() { WriteIndented = true, };
@@ -1776,6 +1779,14 @@ namespace JexlNet
         public static JsonNode Uuid()
         {
             return Guid.NewGuid().ToString();
+        }
+
+        /// Operators
+
+        public static async Task<JsonNode> ArrowOperatorEvaluateOnDemand(Func<Task<JsonNode>>[] wrapperFunctions)
+        {
+            await Task.Yield();
+            return "";
         }
     }
 }

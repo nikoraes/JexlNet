@@ -114,7 +114,9 @@ namespace JexlNet
                         { GrammarType.OpenBracket, new ParserStateTokenType(GrammarType.Filter) },
                         { GrammarType.OpenParen, new ParserStateTokenType(GrammarType.ArgumentValue, ParserHandlers.FunctionCall) },
                         { GrammarType.Pipe, new ParserStateTokenType(GrammarType.ExpectTransform) },
-                        { GrammarType.Question, new ParserStateTokenType(GrammarType.TernaryMid, ParserHandlers.TernaryStart) }
+                        { GrammarType.Question, new ParserStateTokenType(GrammarType.TernaryMid, ParserHandlers.TernaryStart) },
+                        // For sequence expression
+                        { GrammarType.Comma, new ParserStateTokenType(GrammarType.SequenceValue) }
                     },
                     Completable = true
                 }
@@ -146,12 +148,25 @@ namespace JexlNet
                 }
             },
 
+            { GrammarType.SequenceValue, new ParserState()
+                {
+                    SubHandler = ParserHandlers.SequenceValue,
+                    TokenTypes = new Dictionary<GrammarType, ParserStateTokenType>() {
+                        { GrammarType.Comma, new ParserStateTokenType(GrammarType.SequenceValue) }
+                    },
+                    /* EndStates = new Dictionary<GrammarType, GrammarType>() {
+                        { GrammarType.Comma, GrammarType.SequenceValue }
+                    }, */
+                    Completable = true
+                }
+            },
+
             { GrammarType.ArgumentValue, new ParserState()
                 {
                     SubHandler = ParserHandlers.ArgumentValue,
                     EndStates = new Dictionary<GrammarType, GrammarType>() {
-                        { GrammarType.Comma, GrammarType.ArgumentValue},
-                        { GrammarType.CloseParen, GrammarType.PostArgs}
+                        { GrammarType.Comma, GrammarType.ArgumentValue },
+                        { GrammarType.CloseParen, GrammarType.PostArgs }
                     }
                 }
             },
