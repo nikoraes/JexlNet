@@ -32,6 +32,7 @@ public class ExtendedGrammarUnitTest
 
     [Theory]
     [InlineData("substring(123456,2,2)", "34")]
+    [InlineData("substring('foo',1)", "oo")]
     [InlineData("$substring('test',(-2))", "st")]
     [InlineData("$substring('test',-2)", "st")] // Doesn't work in JS
     [InlineData("$substring($string({'a':123456}, true),0,1)", "{")] // Doesn't work in JS
@@ -490,5 +491,30 @@ public class ExtendedGrammarUnitTest
         var result = jexl.Eval(expression, context);
         var expected = "204016-004-002";
         Assert.Equal(expected, result.ToString());
+    }
+
+
+    [Fact]
+    public void ComplexExample4()
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        string context = @"{  ""fields"": {
+    ""_ch1"": ""18.8929"",
+    ""_ch2"": ""16.142"",
+    ""ch1"": {
+            ""field"": ""LEVEL"",
+      ""unit"": ""m""
+    },
+    ""ch2"": {
+            ""field"": ""TEMPERATURE"",
+      ""unit"": ""°C""
+    }
+    }
+}";
+        //"!value[0]|startsWith(\"_\") && " + 
+        string expression = """fields|entries|map('[array|find("value[0]==\""+value[0]|substring(1)+"\"")[1].field,value[1]]')|filter('!!value[0]')|toObject""";
+        var result = jexl.Eval(expression, context);
+        var expected = new JsonObject { { "LEVEL", "18.8929" }, { "TEMPERATURE", "16.142" } };
+        Assert.True(JsonNode.DeepEquals(expected, result));
     }
 }
