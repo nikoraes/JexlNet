@@ -1722,7 +1722,7 @@ namespace JexlNet
                         }
                         accumulator = jExpression.Eval(context)?.DeepClone();
                     }
-                    return null;
+                    return accumulator;
                 }
             }
             return null;

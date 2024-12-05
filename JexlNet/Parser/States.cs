@@ -115,8 +115,8 @@ namespace JexlNet
                         { GrammarType.OpenParen, new ParserStateTokenType(GrammarType.ArgumentValue, ParserHandlers.FunctionCall) },
                         { GrammarType.Pipe, new ParserStateTokenType(GrammarType.ExpectTransform) },
                         { GrammarType.Question, new ParserStateTokenType(GrammarType.TernaryMid, ParserHandlers.TernaryStart) },
-                        // For sequence expression
-                        { GrammarType.Comma, new ParserStateTokenType(GrammarType.SequenceValue) }
+                        // Conditionally start sequence expression
+                        // { GrammarType.Comma, new ParserStateTokenType(null, ParserHandlers.SequenceStart) }
                     },
                     Completable = true
                 }
@@ -143,6 +143,7 @@ namespace JexlNet
                 {
                     SubHandler = ParserHandlers.SubExpression,
                     EndStates = new Dictionary<GrammarType, GrammarType>() {
+                        { GrammarType.Comma, GrammarType.SequenceValue },
                         { GrammarType.CloseParen, GrammarType.ExpectBinaryOperator}
                     }
                 }
@@ -151,12 +152,10 @@ namespace JexlNet
             { GrammarType.SequenceValue, new ParserState()
                 {
                     SubHandler = ParserHandlers.SequenceValue,
-                    TokenTypes = new Dictionary<GrammarType, ParserStateTokenType>() {
-                        { GrammarType.Comma, new ParserStateTokenType(GrammarType.SequenceValue) }
+                    EndStates = new Dictionary<GrammarType, GrammarType>() {
+                        { GrammarType.Comma, GrammarType.SequenceValue },
+                        { GrammarType.CloseParen, GrammarType.ExpectBinaryOperator}
                     },
-                    /* EndStates = new Dictionary<GrammarType, GrammarType>() {
-                        { GrammarType.Comma, GrammarType.SequenceValue }
-                    }, */
                     Completable = true
                 }
             },

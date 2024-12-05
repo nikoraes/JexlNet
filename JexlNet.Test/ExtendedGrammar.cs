@@ -521,6 +521,7 @@ public class ExtendedGrammarUnitTest
 
     [Theory]
     [InlineData("['f','o','o']|map((v,i) => v + i)|join('')", "f0o1o2")]
+    [InlineData("['foo','bar','baz','tek']|reduce((acc,v) => acc + '-' + v,'abc')", "abc-foo-bar-baz-tek")]
     public void ArrowOperatorString(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
