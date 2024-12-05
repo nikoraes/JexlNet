@@ -518,6 +518,40 @@ public class ExtendedGrammarUnitTest
         Assert.True(JsonNode.DeepEquals(expected, result));
     }
 
+    [Fact]
+    public void ComplexExample5()
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        string context = @"{    ""evalInput"": {
+    ""data"": {
+      ""measurementTimeDefault"": ""2024-12-05T14:05:00Z"",
+      ""measuredValue"": [
+    {
+                ""@index"": ""6"",
+            ""@xsi: type"": ""_SiteMeasurementsIndexMeasuredValue"",
+            ""measuredValue"": {
+                    ""@xsi: type"": ""MeasuredValue"",
+                ""basicData"": {
+                        ""@xsi: type"": ""TrafficFlow"",
+                    ""vehicleFlow"": {
+                            ""@numberOfInputValuesUsed"": ""3"",
+                        ""vehicleFlowRate"": ""180""
+                    }
+                    }
+                }
+            },{
+                ""@index"": ""7"",
+            ""@xsi: type"": ""_SiteMeasurementsIndexMeasuredValue"",
+            ""vehicleFlowRate"": ""50""
+            }
+    ]
+    } } }";
+
+        string expression = """(5 + {a:5}|eval(evalInput.data.measuredValue|filter('value["@index"]=="6"')[0].measuredValue.basicData.vehicleFlow.vehicleFlowRate + ' - a'))|toString""";
+        var result = jexl.Eval(expression, context);
+        Assert.Equal("180", result.ToString());
+    }
+
 
     [Theory]
     [InlineData("['f','o','o']|map((v,i) => v + i)|join('')", "f0o1o2")]
