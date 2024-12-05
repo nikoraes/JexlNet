@@ -106,6 +106,33 @@ namespace JexlNet
         }
 
         ///<summary>
+        ///Handles a sequence value used in arrow functions.
+        ///</summary>
+        ///<param name="parser"></param>
+        ///<param name="node">The subexpression tree</param>
+        internal static void SequenceValue(this Parser parser, Node node)
+        {
+            if (parser.SubParser == null) return;
+            if (parser.Cursor.Type == GrammarType.SequenceLiteral)
+            {
+                parser.Cursor.Args.Add(node);
+            }
+            else if (node.Type == GrammarType.SequenceLiteral)
+            {
+                node.Args.Insert(0, parser.Cursor);
+                parser.PlaceBeforeCursor(node);
+            }
+            else
+            {
+                // If in a sub expression, we need to stop the subexpression and go a level up
+                parser.PlaceBeforeCursor(new Node(GrammarType.SequenceLiteral)
+                {
+                    Args = new List<Node> { parser.Cursor, node }
+                });
+            }
+        }
+
+        ///<summary>
         ///Handles identifier tokens when used to indicate the name of a function to
         ///be called.
         ///</summary>
@@ -298,7 +325,8 @@ namespace JexlNet
             { GrammarType.TernaryMid, TernaryMid },
             { GrammarType.TernaryStart, TernaryStart },
             { GrammarType.Transform, Transform },
-            { GrammarType.UnaryOperator, UnaryOperator }
+            { GrammarType.UnaryOperator, UnaryOperator },
+            { GrammarType.SequenceValue, SequenceValue }
         };
     }
 }

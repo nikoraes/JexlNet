@@ -8,6 +8,19 @@ using System.Threading.Tasks;
 
 namespace JexlNet
 {
+    public class OnDemandBinaryFunctionWrapper
+    {
+        public OnDemandBinaryFunctionWrapper(Evaluator evaluator, Node subAst, CancellationToken cancellationToken = default)
+        {
+            Evaluator = evaluator;
+            SubAst = subAst;
+            EvalAsync = async () => await Evaluator.EvalAsync(subAst, cancellationToken);
+        }
+        public Evaluator Evaluator { get; }
+        public Node SubAst { get; }
+        public Func<Task<JsonNode>> EvalAsync { get; }
+    }
+
     public static class EvaluatorHandlers
     {
         /// <summary>
@@ -42,19 +55,27 @@ namespace JexlNet
                 throw new Exception("EvaluatorHandlers.BinaryExpression: node has no operator");
             }
             var grammarOp = evaluator.Grammar.Elements[node.Operator];
-            if (grammarOp == null || grammarOp.Evaluate == null)
+            if (grammarOp == null)
             {
                 throw new Exception($"EvaluatorHandlers.BinaryExpression: node has unknown operator: {node.Operator}");
             }
             // EvaluateOnDemand allows to only conditionally evaluate one side of the binary expression
+            // It is always prefered, so that we can avoid evaluating both sides if not necessary
             if (grammarOp.EvaluateOnDemandAsync != null && node.Left != null && node.Right != null)
             {
+                var wrappedLeft = new OnDemandBinaryFunctionWrapper(evaluator, node.Left, cancellationToken);
+                var wrappedRight = new OnDemandBinaryFunctionWrapper(evaluator, node.Right, cancellationToken);
                 var wrap = new Func<Node, Func<Task<JsonNode>>>((subAst) => async () => await evaluator.EvalAsync(subAst, cancellationToken));
-                return await grammarOp.EvaluateOnDemandAsync(new Func<Task<JsonNode>>[] { wrap(node.Left), wrap(node.Right) });
+                return await grammarOp.EvaluateOnDemandAsync(new OnDemandBinaryFunctionWrapper[] { wrappedLeft, wrappedRight });
             }
-            var leftResult = await evaluator.EvalAsync(node?.Left, cancellationToken);
-            var rightResult = await evaluator.EvalAsync(node?.Right, cancellationToken);
-            return grammarOp.Evaluate(new JsonNode[] { leftResult?.DeepClone(), rightResult?.DeepClone() });
+            // We don't really need the non ondemand evaluation to be defined on the grammar, but we can use it as a fallback
+            if (grammarOp.Evaluate != null)
+            {
+                var leftResult = await evaluator.EvalAsync(node?.Left, cancellationToken);
+                var rightResult = await evaluator.EvalAsync(node?.Right, cancellationToken);
+                return grammarOp.Evaluate(new JsonNode[] { leftResult?.DeepClone(), rightResult?.DeepClone() });
+            }
+            throw new Exception($"EvaluatorHandlers.BinaryExpression: node has no evaluation function: {node.Operator}");
         }
 
         ///<summary>
@@ -213,6 +234,19 @@ namespace JexlNet
             return await evaluator.EvalMapAsync(node.Object, cancellationToken);
         }
 
+        /// <summary>
+        /// Evaluates a SequenceLiteral by returning its value, with each element
+        /// independently run through the evaluator.
+        /// </summary>
+        /// <param name="evaluator"></param>
+        /// <param name="node"></param>
+        /// <returns></returns>
+        public static async Task<JsonNode> SequenceLiteralAsync(Evaluator evaluator, Node node, CancellationToken cancellationToken = default)
+        {
+            if (node?.Args == null) throw new Exception("EvaluatorHandlers.SequenceLiteralAsync: node has no args");
+            return await evaluator.EvalArrayAsync(node.Args, cancellationToken);
+        }
+
         ///<summary>
         ///Evaluates a FunctionCall node by applying the supplied arguments to a
         ///function defined in one of the grammar's function pools.
@@ -237,11 +271,16 @@ namespace JexlNet
             }
             if (node.Pool == Grammar.PoolType.Functions && evaluator.Grammar.Functions.TryGetValue(node.Name, out var func))
             {
+                // TODO: Certain functions could benefit from not evaluating the arguments before passing them
+                // Especially if combined with arrow notation: eg. `map([0,1,2], x => x + 1)`
+
                 JsonArray argsResult = await evaluator.EvalArrayAsync(node.Args, cancellationToken);
                 return await func(argsResult.Select((arg) => arg).ToArray(), cancellationToken);
             }
             else if (node.Pool == Grammar.PoolType.Transforms && evaluator.Grammar.Transforms.TryGetValue(node.Name, out var transform))
             {
+                // TODO: Certain transforms could benefit from not evaluating the arguments before passing them
+                // Especially if combined with arrow notation: eg. `[0,1,2]|map(x => x + 1)`
                 JsonArray argsResult = await evaluator.EvalArrayAsync(node.Args, cancellationToken);
                 // Convert to array of JsonNode
                 return await transform(argsResult.Select((arg) => arg).ToArray(), cancellationToken);
@@ -289,7 +328,8 @@ namespace JexlNet
             { GrammarType.Literal, LiteralAsync },
             { GrammarType.ObjectLiteral, ObjectLiteralAsync },
             { GrammarType.FunctionCall, FunctionCallAsync },
-            { GrammarType.UnaryExpression, UnaryExpressionAsync }
+            { GrammarType.UnaryExpression, UnaryExpressionAsync },
+            { GrammarType.SequenceLiteral, SequenceLiteralAsync }
         };
     }
 

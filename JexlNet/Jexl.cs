@@ -35,6 +35,17 @@ namespace JexlNet
         }
 
         ///<summary>
+        ///Constructs an Expression object from a precompiled AST.
+        ///</summary>
+        ///<param name="ast">The Jexl AST to be wrapped in an
+        ///Expression object</param>
+        ///<returns>The Expression object representing the given string</returns>
+        public Expression CreateExpression(Node ast)
+        {
+            return new Expression(Grammar, ast);
+        }
+
+        ///<summary>
         ///Asynchronously evaluates a Jexl string within an optional context.
         ///</summary>
         ///<param name="expression">The Jexl expression to be evaluated</param>

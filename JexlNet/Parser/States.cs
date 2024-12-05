@@ -114,7 +114,9 @@ namespace JexlNet
                         { GrammarType.OpenBracket, new ParserStateTokenType(GrammarType.Filter) },
                         { GrammarType.OpenParen, new ParserStateTokenType(GrammarType.ArgumentValue, ParserHandlers.FunctionCall) },
                         { GrammarType.Pipe, new ParserStateTokenType(GrammarType.ExpectTransform) },
-                        { GrammarType.Question, new ParserStateTokenType(GrammarType.TernaryMid, ParserHandlers.TernaryStart) }
+                        { GrammarType.Question, new ParserStateTokenType(GrammarType.TernaryMid, ParserHandlers.TernaryStart) },
+                        // Conditionally start sequence expression
+                        // { GrammarType.Comma, new ParserStateTokenType(null, ParserHandlers.SequenceStart) }
                     },
                     Completable = true
                 }
@@ -141,8 +143,20 @@ namespace JexlNet
                 {
                     SubHandler = ParserHandlers.SubExpression,
                     EndStates = new Dictionary<GrammarType, GrammarType>() {
+                        { GrammarType.Comma, GrammarType.SequenceValue },
                         { GrammarType.CloseParen, GrammarType.ExpectBinaryOperator}
                     }
+                }
+            },
+
+            { GrammarType.SequenceValue, new ParserState()
+                {
+                    SubHandler = ParserHandlers.SequenceValue,
+                    EndStates = new Dictionary<GrammarType, GrammarType>() {
+                        { GrammarType.Comma, GrammarType.SequenceValue },
+                        { GrammarType.CloseParen, GrammarType.ExpectBinaryOperator}
+                    },
+                    Completable = true
                 }
             },
 
@@ -150,8 +164,8 @@ namespace JexlNet
                 {
                     SubHandler = ParserHandlers.ArgumentValue,
                     EndStates = new Dictionary<GrammarType, GrammarType>() {
-                        { GrammarType.Comma, GrammarType.ArgumentValue},
-                        { GrammarType.CloseParen, GrammarType.PostArgs}
+                        { GrammarType.Comma, GrammarType.ArgumentValue },
+                        { GrammarType.CloseParen, GrammarType.PostArgs }
                     }
                 }
             },

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace JexlNet
 {
@@ -1361,20 +1362,49 @@ namespace JexlNet
         /// <returns>A new array with the elements of the input array transformed by the specified map function</returns>
         public static JsonNode Map(JsonNode input, JsonNode expression)
         {
-            if (input is JsonArray array && expression is JsonValue exprVal)
+            if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
-                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
-                return new JsonArray(array.Select((x, i) =>
+                if (expression is JsonValue exprVal)
                 {
-                    var context = new JsonObject()
+                    Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                    return new JsonArray(array.Select((x, i) =>
                     {
-                        ["value"] = x?.DeepClone(),
-                        ["index"] = i,
-                        ["array"] = array.DeepClone(),
-                    };
-                    return jExpression.Eval(context)?.DeepClone();
-                }).ToArray());
+                        var context = new JsonObject()
+                        {
+                            ["value"] = x?.DeepClone(),
+                            ["index"] = i,
+                            ["array"] = array.DeepClone(),
+                        };
+                        return jExpression.Eval(context)?.DeepClone();
+                    }).ToArray());
+                }
+                else if (expression is JsonObject exprObject &&
+                    exprObject.TryGetPropertyValue("variables", out JsonNode variables) &&
+                    variables is JsonArray variablesArray &&
+                    exprObject.TryGetPropertyValue("expression", out JsonNode exprNode) &&
+                    exprNode is JsonValue exprValue)
+                {
+                    Node ast = JsonSerializer.Deserialize<Node>(exprValue.ToString(), SerializerOptions);
+                    Expression jExpression = jexl.CreateExpression(ast);
+                    return new JsonArray(array.Select((x, i) =>
+                    {
+                        var context = new JsonObject();
+                        if (variablesArray.ElementAtOrDefault(0) is JsonValue var1)
+                        {
+                            context[var1.ToString()] = x?.DeepClone();
+                        }
+                        if (variablesArray.ElementAtOrDefault(1) is JsonValue var2)
+                        {
+                            context[var2.ToString()] = i;
+                        }
+                        if (variablesArray.ElementAtOrDefault(2) is JsonValue var3)
+                        {
+                            context[var3.ToString()] = array.DeepClone();
+                        }
+                        return jExpression.Eval(context)?.DeepClone();
+                    }).ToArray());
+                }
             }
             return null;
         }
@@ -1392,19 +1422,44 @@ namespace JexlNet
         /// <returns>true if the array has any elements that match the specified expression, otherwise it returns false</returns>
         public static JsonNode Any(JsonNode input, JsonNode expression)
         {
-            if (input is JsonArray array && expression is JsonValue exprVal)
+            if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
-                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
-                return array.Any((x) =>
+                if (expression is JsonValue exprVal)
                 {
-                    var context = new JsonObject()
+                    Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                    return array.Any((x) =>
                     {
-                        ["value"] = x?.DeepClone(),
-                        ["array"] = array.DeepClone(),
-                    };
-                    return jExpression.Eval(context)?.DeepClone()?.AsValue().ToBoolean() ?? false;
-                });
+                        var context = new JsonObject()
+                        {
+                            ["value"] = x?.DeepClone(),
+                            ["array"] = array.DeepClone(),
+                        };
+                        return jExpression.Eval(context)?.DeepClone()?.AsValue().ToBoolean() ?? false;
+                    });
+                }
+                else if (expression is JsonObject exprObject &&
+                    exprObject.TryGetPropertyValue("variables", out JsonNode variables) &&
+                    variables is JsonArray variablesArray &&
+                    exprObject.TryGetPropertyValue("expression", out JsonNode exprNode) &&
+                    exprNode is JsonValue exprValue)
+                {
+                    Node ast = JsonSerializer.Deserialize<Node>(exprValue.ToString(), SerializerOptions);
+                    Expression jExpression = jexl.CreateExpression(ast);
+                    return array.Any((x) =>
+                    {
+                        var context = new JsonObject();
+                        if (variablesArray.ElementAtOrDefault(0) is JsonValue var1)
+                        {
+                            context[var1.ToString()] = x?.DeepClone();
+                        }
+                        if (variablesArray.ElementAtOrDefault(1) is JsonValue var2)
+                        {
+                            context[var2.ToString()] = array.DeepClone();
+                        }
+                        return jExpression.Eval(context)?.DeepClone()?.AsValue().ToBoolean() ?? false;
+                    });
+                }
             }
             return false;
         }
@@ -1422,19 +1477,44 @@ namespace JexlNet
         /// <returns>true if the array has all elements that match the specified expression, otherwise it returns false</returns>
         public static JsonNode All(JsonNode input, JsonNode expression)
         {
-            if (input is JsonArray array && expression is JsonValue exprVal)
+            if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
-                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
-                return array.All((x) =>
+                if (expression is JsonValue exprVal)
                 {
-                    var context = new JsonObject()
+                    Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                    return array.All((x) =>
                     {
-                        ["value"] = x?.DeepClone(),
-                        ["array"] = array.DeepClone(),
-                    };
-                    return jExpression.Eval(context)?.DeepClone()?.AsValue().ToBoolean() ?? false;
-                });
+                        var context = new JsonObject()
+                        {
+                            ["value"] = x?.DeepClone(),
+                            ["array"] = array.DeepClone(),
+                        };
+                        return jExpression.Eval(context)?.DeepClone()?.AsValue().ToBoolean() ?? false;
+                    });
+                }
+                else if (expression is JsonObject exprObject &&
+                    exprObject.TryGetPropertyValue("variables", out JsonNode variables) &&
+                    variables is JsonArray variablesArray &&
+                    exprObject.TryGetPropertyValue("expression", out JsonNode exprNode) &&
+                    exprNode is JsonValue exprValue)
+                {
+                    Node ast = JsonSerializer.Deserialize<Node>(exprValue.ToString(), SerializerOptions);
+                    Expression jExpression = jexl.CreateExpression(ast);
+                    return array.All((x) =>
+                    {
+                        var context = new JsonObject();
+                        if (variablesArray.ElementAtOrDefault(0) is JsonValue var1)
+                        {
+                            context[var1.ToString()] = x?.DeepClone();
+                        }
+                        if (variablesArray.ElementAtOrDefault(1) is JsonValue var2)
+                        {
+                            context[var2.ToString()] = array.DeepClone();
+                        }
+                        return jExpression.Eval(context)?.DeepClone()?.AsValue().ToBoolean() ?? false;
+                    });
+                }
             }
             return false;
         }
@@ -1452,25 +1532,59 @@ namespace JexlNet
         /// <returns>A new array with the elements of the input array that match the specified expression</returns>
         public static JsonNode Filter(JsonNode input, JsonNode expression)
         {
-            if (input is JsonArray array && expression is JsonValue exprVal)
+            if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
-                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
-                JsonArray filteredArray = new JsonArray();
-                for (int i = 0; i < array.Count; i++)
+                if (expression is JsonValue exprVal)
                 {
-                    var context = new JsonObject()
+                    Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                    JsonArray filteredArray = new JsonArray();
+                    for (int i = 0; i < array.Count; i++)
                     {
-                        ["value"] = array[i]?.DeepClone(),
-                        ["index"] = i,
-                        ["array"] = array.DeepClone(),
-                    };
-                    if (jExpression.Eval(context)?.AsValue().ToBoolean() ?? false)
-                    {
-                        filteredArray.Add(array[i]?.DeepClone());
+                        var context = new JsonObject()
+                        {
+                            ["value"] = array[i]?.DeepClone(),
+                            ["index"] = i,
+                            ["array"] = array.DeepClone(),
+                        };
+                        if (jExpression.Eval(context)?.AsValue().ToBoolean() ?? false)
+                        {
+                            filteredArray.Add(array[i]?.DeepClone());
+                        }
                     }
+                    return filteredArray;
                 }
-                return filteredArray;
+                else if (expression is JsonObject exprObject &&
+                    exprObject.TryGetPropertyValue("variables", out JsonNode variables) &&
+                    variables is JsonArray variablesArray &&
+                    exprObject.TryGetPropertyValue("expression", out JsonNode exprNode) &&
+                    exprNode is JsonValue exprValue)
+                {
+                    Node ast = JsonSerializer.Deserialize<Node>(exprValue.ToString(), SerializerOptions);
+                    Expression jExpression = jexl.CreateExpression(ast);
+                    JsonArray filteredArray = new JsonArray();
+                    for (int i = 0; i < array.Count; i++)
+                    {
+                        var context = new JsonObject();
+                        if (variablesArray.ElementAtOrDefault(0) is JsonValue var1)
+                        {
+                            context[var1.ToString()] = array[i]?.DeepClone();
+                        }
+                        if (variablesArray.ElementAtOrDefault(1) is JsonValue var2)
+                        {
+                            context[var2.ToString()] = i;
+                        }
+                        if (variablesArray.ElementAtOrDefault(2) is JsonValue var3)
+                        {
+                            context[var3.ToString()] = array.DeepClone();
+                        }
+                        if (jExpression.Eval(context)?.AsValue().ToBoolean() ?? false)
+                        {
+                            filteredArray.Add(array[i]?.DeepClone());
+                        }
+                    }
+                    return filteredArray;
+                }
             }
             return null;
         }
@@ -1489,24 +1603,57 @@ namespace JexlNet
         /// <returns>The first matching element in the array</returns>
         public static JsonNode ArrayFind(JsonNode input, JsonNode expression)
         {
-            if (input is JsonArray array && expression is JsonValue exprVal)
+            if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
-                Expression jexlExpression = jexl.CreateExpression(exprVal.ToString());
-                for (int i = 0; i < array.Count; i++)
+                if (expression is JsonValue exprVal)
                 {
-                    var context = new JsonObject()
+                    Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                    for (int i = 0; i < array.Count; i++)
                     {
-                        ["value"] = array[i]?.DeepClone(),
-                        ["index"] = i,
-                        ["array"] = array.DeepClone(),
-                    };
-                    if (jexlExpression.Eval(context) is JsonValue jsonValue && jsonValue.GetValueKind() == JsonValueKind.True)
-                    {
-                        return array[i]?.DeepClone();
+                        var context = new JsonObject()
+                        {
+                            ["value"] = array[i]?.DeepClone(),
+                            ["index"] = i,
+                            ["array"] = array.DeepClone(),
+                        };
+                        if (jExpression.Eval(context)?.AsValue().ToBoolean() ?? false)
+                        {
+                            return array[i]?.DeepClone();
+                        }
                     }
+                    return null;
                 }
-                return null;
+                else if (expression is JsonObject exprObject &&
+                    exprObject.TryGetPropertyValue("variables", out JsonNode variables) &&
+                    variables is JsonArray variablesArray &&
+                    exprObject.TryGetPropertyValue("expression", out JsonNode exprNode) &&
+                    exprNode is JsonValue exprValue)
+                {
+                    Node ast = JsonSerializer.Deserialize<Node>(exprValue.ToString(), SerializerOptions);
+                    Expression jExpression = jexl.CreateExpression(ast);
+                    for (int i = 0; i < array.Count; i++)
+                    {
+                        var context = new JsonObject();
+                        if (variablesArray.ElementAtOrDefault(0) is JsonValue var1)
+                        {
+                            context[var1.ToString()] = array[i]?.DeepClone();
+                        }
+                        if (variablesArray.ElementAtOrDefault(1) is JsonValue var2)
+                        {
+                            context[var2.ToString()] = i;
+                        }
+                        if (variablesArray.ElementAtOrDefault(2) is JsonValue var3)
+                        {
+                            context[var3.ToString()] = array.DeepClone();
+                        }
+                        if (jExpression.Eval(context)?.AsValue().ToBoolean() ?? false)
+                        {
+                            return array[i]?.DeepClone();
+                        }
+                    }
+                    return null;
+                }
             }
             return null;
         }
@@ -1525,23 +1672,58 @@ namespace JexlNet
         /// <returns>A new array with the elements of the input array transformed by the specified map function</returns>
         public static JsonNode Reduce(JsonNode input, JsonNode expression, JsonNode initialValue = null)
         {
-            if (input is JsonArray array && expression is JsonValue exprVal)
+            if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
-                Expression jExpression = jexl.CreateExpression(exprVal.ToString());
-                JsonNode accumulator = initialValue?.DeepClone();
-                for (int i = 0; i < array.Count; i++)
+                if (expression is JsonValue exprVal)
                 {
-                    var context = new JsonObject()
+                    Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                    JsonNode accumulator = initialValue?.DeepClone();
+                    for (int i = 0; i < array.Count; i++)
                     {
-                        ["accumulator"] = accumulator?.DeepClone(),
-                        ["value"] = array[i]?.DeepClone(),
-                        ["index"] = i,
-                        ["array"] = array.DeepClone(),
-                    };
-                    accumulator = jExpression.Eval(context)?.DeepClone();
+                        var context = new JsonObject()
+                        {
+                            ["accumulator"] = accumulator?.DeepClone(),
+                            ["value"] = array[i]?.DeepClone(),
+                            ["index"] = i,
+                            ["array"] = array.DeepClone(),
+                        };
+                        accumulator = jExpression.Eval(context)?.DeepClone();
+                    }
+                    return accumulator;
                 }
-                return accumulator;
+                else if (expression is JsonObject exprObject &&
+                    exprObject.TryGetPropertyValue("variables", out JsonNode variables) &&
+                    variables is JsonArray variablesArray &&
+                    exprObject.TryGetPropertyValue("expression", out JsonNode exprNode) &&
+                    exprNode is JsonValue exprValue)
+                {
+                    Node ast = JsonSerializer.Deserialize<Node>(exprValue.ToString(), SerializerOptions);
+                    Expression jExpression = jexl.CreateExpression(ast);
+                    JsonNode accumulator = initialValue?.DeepClone();
+                    for (int i = 0; i < array.Count; i++)
+                    {
+                        var context = new JsonObject();
+                        if (variablesArray.ElementAtOrDefault(0) is JsonValue var1)
+                        {
+                            context[var1.ToString()] = accumulator?.DeepClone();
+                        }
+                        if (variablesArray.ElementAtOrDefault(1) is JsonValue var2)
+                        {
+                            context[var2.ToString()] = array[i]?.DeepClone();
+                        }
+                        if (variablesArray.ElementAtOrDefault(2) is JsonValue var3)
+                        {
+                            context[var3.ToString()] = i;
+                        }
+                        if (variablesArray.ElementAtOrDefault(2) is JsonValue var4)
+                        {
+                            context[var4.ToString()] = array.DeepClone();
+                        }
+                        accumulator = jExpression.Eval(context)?.DeepClone();
+                    }
+                    return accumulator;
+                }
             }
             return null;
         }

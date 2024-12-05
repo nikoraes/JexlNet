@@ -799,4 +799,184 @@ public class ParserUnitTest
         };
         Assert.Equal(expected, result);
     }
+
+    [Fact]
+    public void HandlesArrowFunctions()
+    {
+        Parser _parser = new(new Grammar());
+        _parser.AddTokens(_lexer.Tokenize(@"test|map((v)=>baz)"));
+        var result = _parser.Complete();
+        Node expected = new(GrammarType.FunctionCall)
+        {
+            Name = "map",
+            Pool = Grammar.PoolType.Transforms,
+            Args =
+            [
+                new(GrammarType.Identifier, "test"),
+                new(GrammarType.BinaryExpression)
+                {
+                    Operator = "=>",
+                    Left = new(GrammarType.Identifier, "v"),
+                    Right = new(GrammarType.Identifier, "baz")
+                }
+            ]
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesArrowFunctionsWithTwoArguments()
+    {
+        Parser _parser = new(new Grammar());
+        _parser.AddTokens(_lexer.Tokenize(@"test|map((v,i)=>baz)"));
+        var result = _parser.Complete();
+        Node expected = new(GrammarType.FunctionCall)
+        {
+            Name = "map",
+            Pool = Grammar.PoolType.Transforms,
+            Args =
+            [
+                new(GrammarType.Identifier, "test"),
+                new(GrammarType.BinaryExpression)
+                {
+                    Operator = "=>",
+                    Left = new(GrammarType.SequenceLiteral)
+                    {
+                        Args =
+                        [
+                            new(GrammarType.Identifier, "v"),
+                            new(GrammarType.Identifier, "i")
+                        ]
+                    },
+                    Right = new(GrammarType.Identifier, "baz")
+                }
+            ]
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesArrowFunctionsWithMultipleArguments()
+    {
+        Parser _parser = new(new Grammar());
+        _parser.AddTokens(_lexer.Tokenize(@"test|map((v,i,a)=>baz)"));
+        var result = _parser.Complete();
+        Node expected = new(GrammarType.FunctionCall)
+        {
+            Name = "map",
+            Pool = Grammar.PoolType.Transforms,
+            Args =
+            [
+                new(GrammarType.Identifier, "test"),
+                new(GrammarType.BinaryExpression)
+                {
+                    Operator = "=>",
+                    Left = new(GrammarType.SequenceLiteral)
+                    {
+                        Args =
+                        [
+                            new(GrammarType.Identifier, "v"),
+                            new(GrammarType.Identifier, "i"),
+                            new(GrammarType.Identifier, "a")
+                        ]
+                    },
+                    Right = new(GrammarType.Identifier, "baz")
+                }
+            ]
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesArrowFunctionsWithOutSequence()
+    {
+        Parser _parser = new(new Grammar());
+        _parser.AddTokens(_lexer.Tokenize(@"test|map(v=>baz)"));
+        var result = _parser.Complete();
+        Node expected = new(GrammarType.FunctionCall)
+        {
+            Name = "map",
+            Pool = Grammar.PoolType.Transforms,
+            Args =
+            [
+                new(GrammarType.Identifier, "test"),
+                new(GrammarType.BinaryExpression)
+                {
+                    Operator = "=>",
+                    Left = new(GrammarType.Identifier, "v"),
+                    Right = new(GrammarType.Identifier, "baz")
+                }
+            ]
+        };
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void HandlesArrowFunctionsWithMixedArgs()
+    {
+        Parser _parser = new(new Grammar());
+        _parser.AddTokens(_lexer.Tokenize(@"test|reduce(v=>baz, 'a')"));
+        var result = _parser.Complete();
+        Node expected = new(GrammarType.FunctionCall)
+        {
+            Name = "reduce",
+            Pool = Grammar.PoolType.Transforms,
+            Args =
+            [
+                new(GrammarType.Identifier, "test"),
+                new(GrammarType.BinaryExpression)
+                {
+                    Operator = "=>",
+                    Left = new(GrammarType.Identifier, "v"),
+                    Right = new(GrammarType.Identifier, "baz")
+                },
+                new(GrammarType.Literal, "a")
+            ]
+        };
+        Assert.Equal(expected, result);
+    }
+
+
+    [Fact]
+    public void HandlesArrowFunctionsWithMixedArgsComplex()
+    {
+        Parser _parser = new(new Grammar());
+        _parser.AddTokens(_lexer.Tokenize(@"test|reduce((v,i,a)=>1*(baz+3), 'a')"));
+        var result = _parser.Complete();
+        Node expected = new(GrammarType.FunctionCall)
+        {
+            Name = "reduce",
+            Pool = Grammar.PoolType.Transforms,
+            Args =
+            [
+                new(GrammarType.Identifier, "test"),
+                new(GrammarType.BinaryExpression)
+                {
+                    Operator = "=>",
+                    Left = new(GrammarType.SequenceLiteral)
+                    {
+                        Args =
+                        [
+                            new(GrammarType.Identifier, "v"),
+                            new(GrammarType.Identifier, "i"),
+                            new(GrammarType.Identifier, "a")
+                        ]
+                    },
+                    Right = new(GrammarType.BinaryExpression)
+                    {
+                        Operator = "*",
+                        Left = new(GrammarType.Literal, (decimal)1),
+                        Right = new(GrammarType.BinaryExpression)
+                        {
+                            Operator = "+",
+                            Left = new(GrammarType.Identifier, "baz"),
+                            Right = new(GrammarType.Literal, (decimal)3)
+                        }
+                    }
+                },
+                new(GrammarType.Literal, "a")
+            ]
+        };
+        Assert.Equal(expected, result);
+    }
 }

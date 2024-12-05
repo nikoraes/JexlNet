@@ -23,6 +23,17 @@ namespace JexlNet
             Grammar = grammar;
             ExprStr = exprStr;
         }
+        // Pass precompiled AST
+        public Expression(Node ast)
+        {
+            Grammar = new Grammar();
+            _ast = ast;
+        }
+        public Expression(Grammar grammar, Node ast)
+        {
+            Grammar = grammar;
+            _ast = ast;
+        }
         private readonly Grammar Grammar;
         private readonly string ExprStr;
         private Node _ast = null;

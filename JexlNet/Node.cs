@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace JexlNet
 {
     public class Node : Token, IEquatable<Node>
     {
+        [JsonConstructorAttribute]
+        public Node() { }
         public Node(GrammarType type, JsonNode value = null) : base(type, value) { }
         public Node(GrammarType type, bool value) : base(type, JsonValue.Create(value)) { }
         public Node(GrammarType type, decimal value) : base(type, JsonValue.Create(value)) { }
