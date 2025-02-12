@@ -620,6 +620,21 @@ public class ExtendedGrammarUnitTest
         Assert.Equal("180", result.ToString());
     }
 
+    [Fact]
+    public void ComplexExample6()
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        string context =
+            @"{ ""data"": {
+      ""weirdDate"": ""9-2-2025 00:00:00""
+      } }";
+
+        string expression =
+            """data.weirdDate|split(' ')[0]|split('-')|map(a=>a|pad(-2,'0'))|reverse|join('-') + 'T' + data.weirdDate|split(' ')[1] + '.000000Z'""";
+        var result = jexl.Eval(expression, context);
+        Assert.Equal("2025-02-09T00:00:00.000000Z", result.ToString());
+    }
+
     [Theory]
     [InlineData("['f','o','o']|map((v,i) => v + i)|join('')", "f0o1o2")]
     [InlineData(
