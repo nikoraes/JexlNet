@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -30,7 +31,7 @@ namespace JexlNet
             }
             else if (value.TryGetValue(out string valString))
             {
-                return decimal.Parse(valString, System.Globalization.CultureInfo.InvariantCulture);
+                return decimal.Parse(valString, NumberStyles.Any, CultureInfo.InvariantCulture);
             }
             else if (value.TryGetValue(out object valObj))
             {

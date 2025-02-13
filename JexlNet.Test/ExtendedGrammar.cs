@@ -206,6 +206,8 @@ public class ExtendedGrammarUnitTest
     [InlineData("$number(-1.1)", -1.1)]
     [InlineData("$number(-1.1)|floor", -2)]
     [InlineData("$number('10.6')|ceil", 11)]
+    [InlineData("'5e2'|toNumber", 500)]
+    [InlineData("'5.1e+3'|toNumber", 5100)]
     [InlineData("10.123456|round(2)", 10.12)]
     [InlineData("3|power(2)", 9)]
     [InlineData("3|power", 9)]
