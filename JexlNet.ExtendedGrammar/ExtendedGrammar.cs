@@ -316,6 +316,10 @@ namespace JexlNet
             AddFunction("parseDateTime", ToDateTime);
             AddFunction("$parseDateTime", ToDateTime);
             AddFunction("dateTimeString", ToDateTime);
+            // DateTimeFormat
+            AddFunction("dateTimeFormat", DateTimeFormat);
+            AddFunction("$dateTimeFormat", DateTimeFormat);
+            AddTransform("dateTimeFormat", DateTimeFormat);
             // DateTimeToMillis
             AddFunction("dateTimeToMillis", DateTimeToMillis);
             AddFunction("$dateTimeToMillis", DateTimeToMillis);
@@ -2001,6 +2005,38 @@ namespace JexlNet
             else if (input is null && format is null)
             {
                 return DateTimeOffset.UtcNow.ToString("o");
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Converts a date and time to a provided format
+        /// </summary>
+        /// <example><code>dateTimeFormat(datetime, format)</code><code>$dateTimeFormat(datetime, format)</code><code>datetime|dateTimeFormat(format)</code></example>
+        /// <returns>The date and time in the specified format</returns>
+        public static JsonNode DateTimeFormat(JsonNode input, JsonNode format)
+        {
+            if (input is JsonValue value && format is JsonValue formatValue)
+            {
+                DateTimeOffset dateTime;
+                if (value.GetValueKind() == JsonValueKind.String)
+                {
+                    dateTime = DateTimeOffset.Parse(
+                        value.ToString(),
+                        null,
+                        DateTimeStyles.AssumeUniversal
+                    );
+                }
+                else if (value.GetValueKind() == JsonValueKind.Number)
+                {
+                    long millis = value.ToInt64();
+                    dateTime = DateTimeOffset.FromUnixTimeMilliseconds(millis);
+                }
+                else
+                {
+                    return null;
+                }
+                return dateTime.ToString(formatValue.ToString());
             }
             return null;
         }
