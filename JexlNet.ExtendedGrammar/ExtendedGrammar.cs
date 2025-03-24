@@ -340,6 +340,13 @@ namespace JexlNet
             AddFunction("$uuid", Uuid);
             AddFunction("uid", Uuid);
             AddFunction("$uid", Uuid);
+            // Type checks
+            AddFunction("isArray", IsArray);
+            AddFunction("$isArray", IsArray);
+            AddTransform("isArray", IsArray);
+            AddFunction("isObject", IsObject);
+            AddFunction("$isObject", IsObject);
+            AddTransform("isObject", IsObject);
         }
 
         private static readonly JsonSerializerOptions _prettyPrintOptions =
@@ -2151,6 +2158,24 @@ namespace JexlNet
         public static JsonNode Uuid()
         {
             return Guid.NewGuid().ToString();
+        }
+
+        /// <summary>
+        /// Checks whether the provided value is an array
+        /// </summary>
+        /// <example><code>isArray(value)</code><code>$isArray(value)</code></example>
+        public static JsonNode IsArray(JsonNode input)
+        {
+            return input is JsonArray;
+        }
+
+        /// <summary>
+        /// Checks whether the provided value is an object
+        /// </summary>
+        /// <example><code>isObject(value)</code><code>$isObject(value)</code></example>
+        public static JsonNode IsObject(JsonNode input)
+        {
+            return input is JsonObject;
         }
     }
 }
