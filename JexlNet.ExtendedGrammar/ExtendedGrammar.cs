@@ -1309,6 +1309,11 @@ namespace JexlNet
             JsonNode descending = null
         )
         {
+            if (input is JsonObject inputObject)
+            {
+                input = new JsonArray() { inputObject.DeepClone() };
+            }
+
             if (input is JsonArray array)
             {
                 bool isDescending =
@@ -1382,6 +1387,11 @@ namespace JexlNet
         /// <returns>A new object based on an array of key-value pairs</returns>
         public static JsonNode ArrayToObject(JsonNode input, JsonNode val)
         {
+            if (input is JsonObject inputObject)
+            {
+                return inputObject.DeepClone();
+            }
+
             if (input is JsonArray array)
             {
                 JsonObject result = new JsonObject();
@@ -1418,6 +1428,11 @@ namespace JexlNet
         /// <returns>A new array with the elements of the input array transformed by the specified map function</returns>
         public static JsonNode MapField(JsonNode input, JsonNode field)
         {
+            if (input is JsonObject inputObject)
+            {
+                input = new JsonArray() { inputObject.DeepClone() };
+            }
+
             if (input is JsonArray array && field is JsonValue fieldVal)
             {
                 return new JsonArray(
@@ -1440,6 +1455,11 @@ namespace JexlNet
         /// <returns>A new array with the elements of the input array transformed by the specified map function</returns>
         public static JsonNode Map(JsonNode input, JsonNode expression)
         {
+            if (input is JsonObject inputObject)
+            {
+                input = new JsonArray() { inputObject.DeepClone() };
+            }
+
             if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
@@ -1517,6 +1537,11 @@ namespace JexlNet
         /// <returns>true if the array has any elements that match the specified expression, otherwise it returns false</returns>
         public static JsonNode Any(JsonNode input, JsonNode expression)
         {
+            if (input is JsonObject inputObject)
+            {
+                input = new JsonArray() { inputObject.DeepClone() };
+            }
+
             if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
@@ -1583,6 +1608,11 @@ namespace JexlNet
         /// <returns>true if the array has all elements that match the specified expression, otherwise it returns false</returns>
         public static JsonNode All(JsonNode input, JsonNode expression)
         {
+            if (input is JsonObject inputObject)
+            {
+                input = new JsonArray() { inputObject.DeepClone() };
+            }
+
             if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
@@ -1649,6 +1679,11 @@ namespace JexlNet
         /// <returns>A new array with the elements of the input array that match the specified expression</returns>
         public static JsonNode Filter(JsonNode input, JsonNode expression)
         {
+            if (input is JsonObject inputObject)
+            {
+                input = new JsonArray() { inputObject.DeepClone() };
+            }
+
             if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
@@ -1725,6 +1760,11 @@ namespace JexlNet
         /// <returns>The first matching element in the array</returns>
         public static JsonNode ArrayFind(JsonNode input, JsonNode expression)
         {
+            if (input is JsonObject inputObject)
+            {
+                input = new JsonArray() { inputObject.DeepClone() };
+            }
+
             if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());
@@ -1802,6 +1842,11 @@ namespace JexlNet
             JsonNode initialValue = null
         )
         {
+            if (input is JsonObject inputObject)
+            {
+                input = new JsonArray() { inputObject.DeepClone() };
+            }
+
             if (input is JsonArray array)
             {
                 Jexl jexl = new Jexl(new ExtendedGrammar());

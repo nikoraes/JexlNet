@@ -356,6 +356,7 @@ public class ExtendedGrammarUnitTest
     [InlineData("assoc|some('value.age>40')", true)]
     [InlineData("assoc|some('value.lastName==\\'Figgis\\'')", true)]
     [InlineData("assoc|map('value.age')|some('value>30')", true)]
+    [InlineData("assoc[0]|map('value.age')[0] > 30", true)]
     public void AnyAll(string expression, bool expected)
     {
         var context = new JsonObject
