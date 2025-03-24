@@ -465,6 +465,10 @@ public class ExtendedGrammarUnitTest
         "'2024-02-22T00:00:00.000000Z'|dateTimeFormat('dd.MM.yyyy HH:mm:ss')",
         "22.02.2024 00:00:00"
     )]
+    [InlineData(
+        "'24/3/2025.15:14:57'|toDateTime('dd/M/yyyy.HH:mm:ss')",
+        "2025-03-24T15:14:57.0000000+00:00"
+    )]
     public void TimeFunctions2(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
