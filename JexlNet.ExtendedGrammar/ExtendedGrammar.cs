@@ -18,6 +18,13 @@ namespace JexlNet
             AddFunction("$string", ToString);
             AddTransform("string", ToString);
             AddTransform("toString", ToString);
+            // JSON
+            AddFunction("json", ToJson);
+            AddFunction("$json", ToJson);
+            AddTransform("toJson", ToJson);
+            AddFunction("parseJson", ToJson);
+            AddFunction("$parseJson", ToJson);
+            AddTransform("parseJson", ToJson);
             // Length
             AddFunction("length", Length);
             AddFunction("$length", Length);
@@ -371,6 +378,37 @@ namespace JexlNet
                     : _defaultOptions;
             string jsonString = JsonSerializer.Serialize(input, options);
             return JsonValue.Create(jsonString);
+        }
+
+        /**
+         * Parses the string and returns a JSON object.
+         *
+         * @example
+         * ```jexl
+         * parseJson('{"key": "value"}') // { key: "value" }
+         * '{"key": "value"}'|toJson // { key: "value" }
+         */
+
+        /// <summary>
+        /// Parses the string and returns a JSON object.
+        /// </summary>
+        /// <example><code>json(arg)</code><code>$json(arg)</code><code>arg|json</code></example>
+        /// <returns>The JSON object that represents the input</returns>
+        public static JsonNode ToJson(JsonNode input)
+        {
+            if (input is JsonValue value && value.GetValueKind() == JsonValueKind.String)
+            {
+                string str = value.ToString();
+                try
+                {
+                    return JsonNode.Parse(str);
+                }
+                catch (JsonException)
+                {
+                    return null;
+                }
+            }
+            return null;
         }
 
         /// <summary>
