@@ -653,6 +653,7 @@ public class ExtendedGrammarUnitTest
         "abc-foo-bar-baz-tek"
     )]
     [InlineData("['foo','bar','baz','tek']|map((v) => ({a:v}))[0].a", "foo")]
+    [InlineData("{array:['foo','bar','baz','tek']}.array|map((v) => ({a:v}))[0].a", "foo")]
     public void ArrowOperatorString(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
