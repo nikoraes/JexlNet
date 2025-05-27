@@ -646,6 +646,37 @@ public class ExtendedGrammarUnitTest
         Assert.Equal("2025-02-09T00:00:00.000000Z", result.ToString());
     }
 
+    [Fact]
+    public void ComplexExample7()
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        string context =
+            @"{
+  ""data"": [
+    {
+      ""s:Field"": {
+        ""@s:name"": ""SystemNominalVoltage"",
+        ""@s:value"": ""208.0""
+      }
+    },
+    {
+      ""s:Field"": {
+        ""@s:name"": ""InService"",
+        ""@s:value"": ""In""
+      }
+    }]}";
+
+        string expression =
+            """data|map(val => ([val['s:Field']['@s:name'],val['s:Field']['@s:value']]))|toObject""";
+        var result = jexl.Eval(expression, context);
+        var expected = new JsonObject
+        {
+            { "SystemNominalVoltage", "208.0" },
+            { "InService", "In" }
+        };
+        Assert.True(JsonNode.DeepEquals(expected, result));
+    }
+
     [Theory]
     [InlineData("['f','o','o']|map((v,i) => v + i)|join('')", "f0o1o2")]
     [InlineData(
