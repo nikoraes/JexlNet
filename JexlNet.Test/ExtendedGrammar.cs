@@ -178,6 +178,15 @@ public class ExtendedGrammarUnitTest
     }
 
     [Theory]
+    [InlineData("'foobar'|regexReplace('foo', 'baz')", "bazbar")]
+    public void RegexReplace(string expression, string expected)
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        var result = jexl.Eval(expression);
+        Assert.Equal(expected, result?.ToString());
+    }
+
+    [Theory]
     [InlineData("'foobar'|regexMatches('foo')|mapField('0')|includes('foo')", "true")]
     [InlineData("'foobar'|regexMatches('baz')|mapField('0')|includes('foo')", "false")]
     [InlineData(

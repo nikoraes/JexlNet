@@ -127,6 +127,9 @@ namespace JexlNet
             AddFunction("regexMatches", RegexMatches);
             AddFunction("$regexMatches", RegexMatches);
             AddTransform("regexMatches", RegexMatches);
+            AddFunction("regexReplace", RegexReplace);
+            AddFunction("$regexReplace", RegexReplace);
+            AddTransform("regexReplace", RegexReplace);
             // Number
             AddFunction("number", ToNumber);
             AddFunction("$number", ToNumber);
@@ -856,6 +859,25 @@ namespace JexlNet
                         })
                         .ToArray()
                 );
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Replace by Regex
+        /// </summary>
+        /// <example><code>regexReplace(str, pattern, replacement)</code><code>$regexReplace(str, pattern, replacement)</code><code>str|regexReplace(pattern, replacement)</code></example>
+        /// <returns>A string with all occurrences of the pattern replaced by the replacement</returns>
+        public static JsonNode RegexReplace(JsonNode input, JsonNode pattern, JsonNode replacement)
+        {
+            if (input is JsonValue value && pattern is JsonValue patternValue)
+            {
+                string str = value.ToString();
+                string patternStr = patternValue.ToString();
+                string replacementStr = replacement is JsonValue replacementValue
+                    ? replacementValue.ToString()
+                    : "";
+                return Regex.Replace(str, patternStr, replacementStr);
             }
             return null;
         }
