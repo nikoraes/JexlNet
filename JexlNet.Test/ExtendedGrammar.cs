@@ -178,8 +178,12 @@ public class ExtendedGrammarUnitTest
     }
 
     [Theory]
-    [InlineData("'foobar'|regexReplace('foo', 'baz')", "bazbar")]
-    public void RegexReplace(string expression, string expected)
+    [InlineData("'bazbar'|regexReplace('baz', 'foo')", "foobar")]
+    [InlineData(
+        @"'id/with/bad/charac:ter$'|regexReplace('[^A-Za-z0-9+%_#*?!(),=@$]', '_')",
+        "id_with_bad_charac_ter$"
+    )]
+    public void RegexReplaceInverse(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
         var result = jexl.Eval(expression);
