@@ -1072,19 +1072,86 @@ namespace JexlNet
         }
 
         private static readonly Regex FindIntegerRegex = new Regex(@"^\d+", RegexOptions.Compiled);
+        private static readonly Regex FindHexRegex = new Regex(
+            @"^[0-9a-fA-F]+",
+            RegexOptions.Compiled
+        );
+        private static readonly Regex FindOctalRegex = new Regex(@"^[0-7]+", RegexOptions.Compiled);
+        private static readonly Regex FindBinaryRegex = new Regex(
+            @"^[0-1]+",
+            RegexOptions.Compiled
+        );
+        private static readonly Regex FindAlphaNumericRegex = new Regex(
+            @"^[0-9a-zA-Z]+",
+            RegexOptions.Compiled
+        );
 
         /// <summary>
-        /// Parses the string argument as a signed decimal integer.
+        /// Parses the string argument as a signed integer in the specified base (default is base 10).
         /// </summary>
-        /// <example><code>parseInteger(string)</code><code>parseInt(string)</code><code>$parseInteger(string)</code><code>$parseInt(string)</code><code>string|parseInteger</code><code>string|parseInt</code></example>
+        /// <example><code>parseInteger(string)</code><code>parseInt(string)</code><code>parseInteger(string, base)</code><code>parseInt(string, base)</code><code>$parseInteger(string)</code><code>$parseInt(string)</code><code>string|parseInteger</code><code>string|parseInt</code><code>string|parseInteger(base)</code><code>string|parseInt(base)</code><code>string|toInt(base)</code></example>
         /// <returns>A number representation of the input</returns>
-        public static JsonNode ParseInteger(JsonNode input)
+        public static JsonNode ParseInteger(JsonNode input, JsonNode baseNode = null)
         {
             if (input is JsonValue value)
             {
-                foreach (Match match in FindIntegerRegex.Matches(value.ToString()))
+                int parseBase = 10; // Default base is 10
+
+                if (baseNode is JsonValue baseValue)
                 {
-                    return int.Parse(match.Value);
+                    parseBase = baseValue.ToInt32();
+                    if (parseBase < 2 || parseBase > 36)
+                    {
+                        throw new ArgumentException("Base must be between 2 and 36");
+                    }
+                }
+
+                string inputStr = value.ToString();
+                Regex regexToUse;
+
+                // Choose appropriate regex based on base
+                switch (parseBase)
+                {
+                    case 2:
+                        regexToUse = FindBinaryRegex;
+                        break;
+                    case 8:
+                        regexToUse = FindOctalRegex;
+                        break;
+                    case 16:
+                        regexToUse = FindHexRegex;
+                        break;
+                    case 10:
+                        regexToUse = FindIntegerRegex;
+                        break;
+                    default:
+                        regexToUse = FindAlphaNumericRegex;
+                        break;
+                }
+
+                foreach (Match match in regexToUse.Matches(inputStr))
+                {
+                    try
+                    {
+                        return Convert.ToInt32(match.Value, parseBase);
+                    }
+                    catch (FormatException)
+                    {
+                        // If parsing fails, try with the next match or return null
+                        continue;
+                    }
+                    catch (OverflowException)
+                    {
+                        // If the number is too large for int, try parsing as long
+                        try
+                        {
+                            return Convert.ToInt64(match.Value, parseBase);
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+                    }
                 }
             }
             return null;

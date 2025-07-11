@@ -247,6 +247,15 @@ public class ExtendedGrammarUnitTest
     [Theory]
     [InlineData("'16325'|toInt", 16325)]
     [InlineData("(9/2)|toInt", 4)]
+    [InlineData("'FF'|toInt(16)", 255)]
+    [InlineData("'1010'|toInt(2)", 10)]
+    [InlineData("'777'|toInt(8)", 511)]
+    [InlineData("'abc'|toInt(16)", 2748)]
+    [InlineData("'123'|toInt(10)", 123)]
+    [InlineData("'123'|parseInt(10)", 123)]
+    [InlineData("'FF'|parseInt(16)", 255)]
+    [InlineData("'1F'|toInt(16)", 31)]
+    [InlineData("'101'|toInt(2)", 5)]
     public void Integers(string expression, int expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
