@@ -248,6 +248,7 @@ public class ExtendedGrammarUnitTest
     [InlineData("'16325'|toInt", 16325)]
     [InlineData("(9/2)|toInt", 4)]
     [InlineData("'FF'|toInt(16)", 255)]
+    [InlineData("'88e71c146e4'|toInt(16)", 9407886870244)]
     [InlineData("'1010'|toInt(2)", 10)]
     [InlineData("'777'|toInt(8)", 511)]
     [InlineData("'abc'|toInt(16)", 2748)]
@@ -256,11 +257,11 @@ public class ExtendedGrammarUnitTest
     [InlineData("'FF'|parseInt(16)", 255)]
     [InlineData("'1F'|toInt(16)", 31)]
     [InlineData("'101'|toInt(2)", 5)]
-    public void Integers(string expression, int expected)
+    public void Integers(string expression, long expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
         var result = jexl.Eval(expression);
-        Assert.Equal(expected, result?.AsValue().ToInt32());
+        Assert.Equal(expected, result?.AsValue().ToInt64());
     }
 
     [Theory]
