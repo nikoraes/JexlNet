@@ -708,22 +708,10 @@ public class ExtendedGrammarUnitTest
     )]
     [InlineData("['foo','bar','baz','tek']|map((v) => ({a:v}))[0].a", "foo")]
     [InlineData("{array:['foo','bar','baz','tek']}.array|map((v) => ({a:v}))[0].a", "foo")]
-    /* [InlineData(
-        "{data:{FL_abc_mean:123,FL_abc_min:122,FL_def_mean:456,FL_def_min:451,HE_abc_min:789}}.data|entries|reduce((acc,entry) => acc|merge([entry[0]|split('_')[0],(!!acc[entry[0]|split('_')[0]] ? acc[entry[0]|split('_')[0]] : {})|merge([entry[0]|split('_')[1],{}]|toObject)]|toObject), {})|entries|string",
-        @"[[""FL"",{""abc"":{""mean"":123,""min"": 122}},""def"": {""mean"":456,""min"": 451}}],[""HE"":{""abc"": {""min"":789}}]]"
-    )] */
-    /* [InlineData(
-        "{data:{FL_abc_mean:123,FL_abc_min:122,FL_def_mean:456,FL_def_min:451,HE_abc_min:789}}.data|entries|reduce((acc,entry,index,array) => acc|merge([[entry[0]|split('_')[0],array|filter('value[0]|startsWith(\\''+entry[0]|split('_')[0]+'\\')')|map('[value[0]|replace(\\''+entry[0]|split('_')[0]+'_'+'\\'),value[1]]')|toObject]]|toObject), {})|string",
-        @"[[""FL"",{""abc"":{""mean"":123,""min"": 122}},""def"": {""mean"":456,""min"": 451}}],[""HE"":{""abc"": {""min"":789}}]]"
-    )] */
     [InlineData(
         "{data:{FL_abc_mean:123,FL_abc_min:122,FL_def_mean:456,FL_def_min:451,HE_abc_min:789}}.data|entries|reduce((acc,entry,index,array) => acc|merge([[entry[0]|split('_')[0],array|filter('value[0]|startsWith(\\''+entry[0]|split('_')[0]+'\\')')|reduce((acc2,entry2,i2,arr2) => acc2|merge([[entry2[0]|split('_')[1],arr2|filter('value[0]|startsWith(\\''+entry2[0]|split('_')[0]+'_'+entry2[0]|split('_')[1]+'\\')')|map('[value[0]|replace(\\''+entry2[0]|split('_')[0]+'_'+entry2[0]|split('_')[1]+'_'+'\\'),value[1]]')|toObject]]|toObject),{})|toObject]]|toObject), {})|entries|string",
         @"[[""FL"",{""abc"":{""mean"":123,""min"":122},""def"":{""mean"":456,""min"":451}}],[""HE"",{""abc"":{""min"":789}}]]"
     )]
-    /* [InlineData(
-        "{data:{FL_abc_mean:123,FL_abc_min:122,FL_def_mean:456,FL_def_min:451,HE_abc_min:789}}.data|entries|reduce((acc,entry,index,array) => acc|merge([[entry[0]|split('_')[0],array|filter('value[0]|startsWith(\\''+entry[0]|split('_')[0]+'\\')')|reduce((acc2,entry2,i2,arr2) => acc2|merge([[entry[0]|split('_')[1],arr2|filter('value[0]|startsWith(\\''+entry2[0]|split('_')[0]+'_'+entry2[0]|split('_')[1]+'\\')')|map('[value[0]|replace(\\''+entry2[0]|split('_')[0]+'_'+entry2[0]|split('_')[1]+_+'\\'),value[1]]')|toObject]]|toObject),{})|toObject]]|toObject), {})|string",
-        @"[[""FL"",{""abc"":{""mean"":123,""min"": 122}},""def"": {""mean"":456,""min"": 451}}],[""HE"":{""abc"": {""min"":789}}]]"
-    )] */
     public void ArrowOperatorString(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
