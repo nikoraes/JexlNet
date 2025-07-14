@@ -1046,7 +1046,7 @@ namespace JexlNet
         {
             if (input is JsonValue value && radix is JsonValue radixValue)
             {
-                int number = value.ToInt32();
+                long number = value.ToInt64();
                 int rad = radixValue.ToInt32();
                 return Convert.ToString(number, rad);
             }

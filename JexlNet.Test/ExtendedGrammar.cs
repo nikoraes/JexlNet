@@ -236,6 +236,7 @@ public class ExtendedGrammarUnitTest
     [Theory]
     [InlineData("16325.62|formatNumber('0,0.000')", "16,325.620")]
     [InlineData("12|formatBase(16)", "c")]
+    [InlineData("9407886870244|formatBase(16)", "88e71c146e4")]
     [InlineData("16325.62|formatInteger('0000000')", "0016325")]
     public void Formatting(string expression, string expected)
     {
@@ -712,10 +713,14 @@ public class ExtendedGrammarUnitTest
         "{data:{FL_abc_mean:123,FL_abc_min:122,FL_def_mean:456,FL_def_min:451,HE_abc_min:789}}.data|entries|reduce((acc,entry,index,array) => acc|merge([[entry[0]|split('_')[0],array|filter('value[0]|startsWith(\\''+entry[0]|split('_')[0]+'\\')')|reduce((acc2,entry2,i2,arr2) => acc2|merge([[entry2[0]|split('_')[1],arr2|filter('value[0]|startsWith(\\''+entry2[0]|split('_')[0]+'_'+entry2[0]|split('_')[1]+'\\')')|map('[value[0]|replace(\\''+entry2[0]|split('_')[0]+'_'+entry2[0]|split('_')[1]+'_'+'\\'),value[1]]')|toObject]]|toObject),{})|toObject]]|toObject), {})|entries|string",
         @"[[""FL"",{""abc"":{""mean"":123,""min"":122},""def"":{""mean"":456,""min"":451}}],[""HE"",{""abc"":{""min"":789}}]]"
     )]
+    [InlineData(
+        "{data:{FL_abc_mean:123,FL_abc_min:122,FL_def_mean:456,FL_def_min:451,HE_abc_min:789}}.data|entries|map((entry) => [entry[0]|split('_'), entry[1]])|reduce((acc, item) => acc|merge([[item[0][0],acc[item[0][0]]|merge([[item[0][1],acc[item[0][0]][item[0][1]]|merge([[item[0][2],item[1]]]|toObject)]]|toObject)]]|toObject), {})|entries|string",
+        @"[[""FL"",{""abc"":{""mean"":123,""min"":122},""def"":{""mean"":456,""min"":451}}],[""HE"",{""abc"":{""min"":789}}]]"
+    )]
     public void ArrowOperatorString(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());
         var result = jexl.Eval(expression)?.ToString();
-        Assert.Equal(expected, result); // |merge({[entry[0]|split('-')[1]]: acc[entry[0]|split('-')[1]]})})
+        Assert.Equal(expected, result);
     }
 }
