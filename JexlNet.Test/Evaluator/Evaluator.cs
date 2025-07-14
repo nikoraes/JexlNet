@@ -76,18 +76,20 @@ public class EvaluatorUnitTest
     [InlineData("(foo.bar ?: foo.baz).bar", "tek")]
     public async void EvaluateExpression_WithContext(string input, string expected)
     {
-        JsonObject context = new()
-        {
-            { "foo", new JsonObject
+        JsonObject context =
+            new()
+            {
                 {
-                    { "baz", new JsonObject
+                    "foo",
+                    new JsonObject
+                    {
                         {
-                            { "bar", "tek" }
+                            "baz",
+                            new JsonObject { { "bar", "tek" } }
                         }
                     }
                 }
-            }
-        };
+            };
         Evaluator _evaluator = new(new Grammar(), context);
         var ast = ToTree(input);
         var result = await _evaluator.EvalAsync(ast);
@@ -97,12 +99,12 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_AppliesTransforms()
     {
-        JsonObject context = new()
-        {
-            { "foo", 10 }
-        };
+        JsonObject context = new() { { "foo", 10 } };
         var grammar = new Grammar();
-        grammar.AddTransform("half", (JsonValue val) => JsonValue.Create(Convert.ToDecimal(val?.ToString()) / 2));
+        grammar.AddTransform(
+            "half",
+            (JsonValue val) => JsonValue.Create(Convert.ToDecimal(val?.ToString()) / 2)
+        );
         Evaluator _evaluator = new(grammar, context);
         var ast = ToTree("foo|half + 3");
         var result = await _evaluator.EvalAsync(ast);
@@ -112,10 +114,7 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_AppliesFunctions()
     {
-        JsonObject context = new()
-        {
-            { "foo", 10 }
-        };
+        JsonObject context = new() { { "foo", 10 } };
         var grammar = new Grammar();
         grammar.AddFunction("half", (JsonValue val) => val?.ToDecimal() / 2);
         Evaluator _evaluator = new(grammar, context);
@@ -127,16 +126,16 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_AppliesAsyncFunctions()
     {
-        JsonObject context = new()
-        {
-            { "foo", 10 }
-        };
+        JsonObject context = new() { { "foo", 10 } };
         var grammar = new Grammar();
-        grammar.AddFunction("half", async (JsonValue val) =>
-        {
-            await Task.Delay(100);
-            return val?.ToDecimal() / 2;
-        });
+        grammar.AddFunction(
+            "half",
+            async (JsonValue val) =>
+            {
+                await Task.Delay(100);
+                return val?.ToDecimal() / 2;
+            }
+        );
         Evaluator _evaluator = new(grammar, context);
         var ast = ToTree("half(foo) + 3");
         var result = await _evaluator.EvalAsync(ast);
@@ -146,20 +145,25 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_FiltersArrays()
     {
-        JsonObject context = new()
-        {
-            { "foo", new JsonObject
+        JsonObject context =
+            new()
+            {
                 {
-                    { "bar", new JsonArray
+                    "foo",
+                    new JsonObject
+                    {
                         {
-                            new JsonObject { { "tek", "hello" } },
-                            new JsonObject { { "tek", "baz" } },
-                            new JsonObject { { "tok", "baz" } }
+                            "bar",
+                            new JsonArray
+                            {
+                                new JsonObject { { "tek", "hello" } },
+                                new JsonObject { { "tek", "baz" } },
+                                new JsonObject { { "tok", "baz" } }
+                            }
                         }
                     }
                 }
-            }
-        };
+            };
         Evaluator _evaluator = new(new Grammar(), context);
         var ast = ToTree("foo.bar[.tek == \"baz\"]");
         var result = await _evaluator.EvalAsync(ast);
@@ -187,20 +191,25 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_FiltersArrays2()
     {
-        JsonObject context = new()
-        {
-            { "foo", new JsonObject
+        JsonObject context =
+            new()
+            {
                 {
-                    { "bar", new JsonArray
+                    "foo",
+                    new JsonObject
+                    {
                         {
-                            new JsonObject { { "tek", "hello" } },
-                            new JsonObject { { "tek", "baz" } },
-                            new JsonObject { { "tok", "baz" } }
+                            "bar",
+                            new JsonArray
+                            {
+                                new JsonObject { { "tek", "hello" } },
+                                new JsonObject { { "tek", "baz" } },
+                                new JsonObject { { "tok", "baz" } }
+                            }
                         }
                     }
                 }
-            }
-        };
+            };
         Evaluator _evaluator;
 
         _evaluator = new(new Grammar(), context);
@@ -217,20 +226,25 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_FiltersArrays3()
     {
-        JsonObject context = new()
-        {
-            { "foo", new JsonObject
+        JsonObject context =
+            new()
+            {
                 {
-                    { "bar", new JsonArray
+                    "foo",
+                    new JsonObject
+                    {
                         {
-                            new JsonObject { { "tek", "hello" }, { "tok", "olleh" } },
-                            new JsonObject { { "tek", "baz" }, { "tok", "olleh" } },
-                            new JsonObject { { "tok", "baz" }, { "tak", "olleh" } }
+                            "bar",
+                            new JsonArray
+                            {
+                                new JsonObject { { "tek", "hello" }, { "tok", "olleh" } },
+                                new JsonObject { { "tek", "baz" }, { "tok", "olleh" } },
+                                new JsonObject { { "tok", "baz" }, { "tak", "olleh" } }
+                            }
                         }
                     }
                 }
-            }
-        };
+            };
         Evaluator _evaluator;
 
         _evaluator = new(new Grammar(), context);
@@ -242,18 +256,20 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_AllowFiltersToSelectObjectProperties()
     {
-        JsonObject context = new()
-        {
-            { "foo", new JsonObject
+        JsonObject context =
+            new()
+            {
                 {
-                    { "baz", new JsonObject
+                    "foo",
+                    new JsonObject
+                    {
                         {
-                            { "bar", "tek" }
+                            "baz",
+                            new JsonObject { { "bar", "tek" } }
                         }
                     }
                 }
-            }
-        };
+            };
         Evaluator _evaluator = new(new Grammar(), context);
         var ast = ToTree(@"foo[""ba"" + ""z""].bar");
         var result = await _evaluator.EvalAsync(ast);
@@ -274,7 +290,13 @@ public class EvaluatorUnitTest
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(@"{foo: {bar: ""tek""}}");
         var result = await _evaluator.EvalAsync(ast);
-        var expected = new JsonObject { { "foo", new JsonObject { { "bar", "tek" } } } };
+        var expected = new JsonObject
+        {
+            {
+                "foo",
+                new JsonObject { { "bar", "tek" } }
+            }
+        };
         Assert.True(JsonNode.DeepEquals(expected, result));
     }
 
@@ -318,7 +340,10 @@ public class EvaluatorUnitTest
     public async void EvaluateExpression_AppliesTransformsWithMultipleArgs()
     {
         var grammar = new Grammar();
-        grammar.AddTransform("concat", (JsonNode[] args) => args[0] + ": " + args[1] + args[2] + args[3]);
+        grammar.AddTransform(
+            "concat",
+            (JsonNode[] args) => args[0] + ": " + args[1] + args[2] + args[3]
+        );
         Evaluator _evaluator = new(grammar);
         var ast = ToTree(@"""foo""|concat(""baz"", ""bar"", ""tek"")");
         var result = await _evaluator.EvalAsync(ast);
@@ -329,13 +354,17 @@ public class EvaluatorUnitTest
     public async void EvaluateExpression_AllowAddMultipleTransforms()
     {
         var grammar = new Grammar();
-        grammar.AddTransforms(new Dictionary<string, Func<JsonNode[], JsonNode>>
-        {
-            { "concat", (JsonNode[] args) => args[0] + ": " + args[1] + args[2] + args[3] },
-            { "concat2", (JsonNode[] args) => args[0] + ": " + args[1] + args[2] + args[3] }
-        });
+        grammar.AddTransforms(
+            new Dictionary<string, Func<JsonNode[], JsonNode>>
+            {
+                { "concat", (JsonNode[] args) => args[0] + ": " + args[1] + args[2] + args[3] },
+                { "concat2", (JsonNode[] args) => args[0] + ": " + args[1] + args[2] + args[3] }
+            }
+        );
         Evaluator _evaluator = new(grammar);
-        var ast = ToTree(@"""foo""|concat(""baz"", ""bar"", ""tek"")|concat2(""baz"", ""bar"", ""tek"")");
+        var ast = ToTree(
+            @"""foo""|concat(""baz"", ""bar"", ""tek"")|concat2(""baz"", ""bar"", ""tek"")"
+        );
         var result = await _evaluator.EvalAsync(ast);
         Assert.Equal("foo: bazbartek: bazbartek", result?.ToString());
     }
@@ -379,7 +408,11 @@ public class EvaluatorUnitTest
     [InlineData(@""""" ?: ""bar""", "bar")]
     [InlineData(@"{foo:'bar'}.baz ?: 'tek'", "tek")]
     [InlineData(@"{foo:[]}.foo.bar ?: 'tek'", "tek")]
-    public async void EvaluateExpression_AllowsMissingConsequentInTernary(string input, string expected)
+    [InlineData(@"{foo:{baz:{}}}.foo.bar ?: 'tek'", "tek")]
+    public async void EvaluateExpression_AllowsMissingConsequentInTernary(
+        string input,
+        string expected
+    )
     {
         Evaluator _evaluator = new(new Grammar());
         var ast = ToTree(input);
@@ -390,11 +423,7 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_ReturnsEmptyArrayWhenApplyingFilterToUndefined()
     {
-        JsonObject context = new()
-        {
-            { "a", new JsonObject() },
-            { "b", 4 }
-        };
+        JsonObject context = new() { { "a", new JsonObject() }, { "b", 4 } };
         Evaluator _evaluator = new(new Grammar(), context);
         var ast = ToTree(@"a.b[.c == d]");
         var result = await _evaluator.EvalAsync(ast);
@@ -406,13 +435,7 @@ public class EvaluatorUnitTest
     [Fact]
     public async void EvaluateExpression_WithDollarIdentifiers()
     {
-        JsonObject context = new()
-        {
-            { "$", 5 },
-            { "$foo", 6 },
-            { "$foo$bar", 7 },
-            { "$bar", 8 }
-        };
+        JsonObject context = new() { { "$", 5 }, { "$foo", 6 }, { "$foo$bar", 7 }, { "$bar", 8 } };
         Evaluator _evaluator = new(new Grammar(), context);
         var ast = ToTree(@"$+$foo+$foo$bar+$bar");
         var result = await _evaluator.EvalAsync(ast);
@@ -424,11 +447,14 @@ public class EvaluatorUnitTest
     {
         var grammar = new Grammar();
         bool toTrueEvaluated = false;
-        grammar.AddTransform("toTrue", (JsonNode[] args) =>
-        {
-            toTrueEvaluated = true;
-            return true;
-        });
+        grammar.AddTransform(
+            "toTrue",
+            (JsonNode[] args) =>
+            {
+                toTrueEvaluated = true;
+                return true;
+            }
+        );
         Evaluator _evaluator = new(grammar);
         var ast = ToTree(@"true && ""foo""|toTrue");
         var result = await _evaluator.EvalAsync(ast);
@@ -441,11 +467,14 @@ public class EvaluatorUnitTest
     {
         var grammar = new Grammar();
         bool toTrueEvaluated = false;
-        grammar.AddTransform("toTrue", (JsonNode[] args) =>
-        {
-            toTrueEvaluated = true;
-            return true;
-        });
+        grammar.AddTransform(
+            "toTrue",
+            (JsonNode[] args) =>
+            {
+                toTrueEvaluated = true;
+                return true;
+            }
+        );
         Evaluator _evaluator = new(grammar);
         var ast = ToTree("true || foo|toTrue");
         var result = await _evaluator.EvalAsync(ast);

@@ -40,7 +40,11 @@ namespace JexlNet
     ///instead of boolean false.</param>
     public class Parser
     {
-        public Parser(Grammar grammar, string prefix = "", Dictionary<GrammarType, GrammarType> stopMap = null)
+        public Parser(
+            Grammar grammar,
+            string prefix = "",
+            Dictionary<GrammarType, GrammarType> stopMap = null
+        )
         {
             Grammar = grammar;
             State = GrammarType.ExpectOperand;
@@ -55,6 +59,7 @@ namespace JexlNet
             NextIdentRelative = null;
             CursorObjectKey = null;
         }
+
         internal readonly Grammar Grammar;
         internal GrammarType State;
         internal string ExpressionString;
@@ -73,7 +78,7 @@ namespace JexlNet
         ///machine.
         ///</summary>
         ///<param name="node">A token object, as provided by the {@link Lexer#tokenize} function.</param>
-        ///<returns>the stopState value if this parser encountered a token 
+        ///<returns>the stopState value if this parser encountered a token
         ///in the stopState map 'false' if tokens can continue.</returns>
         internal GrammarType AddToken(Node node)
         {
@@ -121,7 +126,9 @@ namespace JexlNet
             }
             else
             {
-                throw new Exception($"Token {node.Raw} ({node.Type}) unexpected in expression: {ExpressionString}");
+                throw new Exception(
+                    $"Token {node.Raw} ({node.Type}) unexpected in expression: {ExpressionString}"
+                );
             }
 
             return GrammarType.Stop;
@@ -163,7 +170,13 @@ namespace JexlNet
         ///the expression, indicating that the expression is incomplete</exception>
         public Node Complete()
         {
-            if (Cursor != null && (!ParserStates.States.TryGetValue(State, out var state) || state.Completable != true))
+            if (
+                Cursor != null
+                && (
+                    !ParserStates.States.TryGetValue(State, out var state)
+                    || state.Completable != true
+                )
+            )
             {
                 throw new Exception($"Unexpected end of expression: {ExpressionString}");
             }
@@ -190,7 +203,11 @@ namespace JexlNet
         ///</summary>
         internal void EndSubExpression()
         {
-            if (ParserStates.States.TryGetValue(State, out var state) && state.SubHandler != null && SubParser != null)
+            if (
+                ParserStates.States.TryGetValue(State, out var state)
+                && state.SubHandler != null
+                && SubParser != null
+            )
             {
                 state.SubHandler(this, SubParser.Complete());
             }
@@ -238,8 +255,9 @@ namespace JexlNet
         ///<param name="parent">An existing node of the AST to serve as the parent of the new node</param>
         internal static void SetParent(Node node, Node parent)
         {
-            if (node == null || parent == null) return;
-            node.Parent = parent;// new Node() { Value = parent, Writable = true };
+            if (node == null || parent == null)
+                return;
+            node.Parent = parent; // new Node() { Value = parent, Writable = true };
         }
 
         ///<summary>

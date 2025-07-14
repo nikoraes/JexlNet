@@ -2023,7 +2023,7 @@ namespace JexlNet
                         {
                             context[var3.ToString()] = i;
                         }
-                        if (variablesArray.ElementAtOrDefault(2) is JsonValue var4)
+                        if (variablesArray.ElementAtOrDefault(3) is JsonValue var4)
                         {
                             context[var4.ToString()] = array.DeepClone();
                         }
