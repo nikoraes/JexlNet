@@ -2327,8 +2327,13 @@ namespace JexlNet
         /// Generate a new UUID (Universally Unique Identifier).
         /// <example><code>uid()</code><code>$uuid()</code></example>
         /// </summary>
-        public static JsonNode Uuid()
+        public static JsonNode Uuid(JsonNode input)
         {
+            if (input is JsonValue inputValue && inputValue.GetValueKind() == JsonValueKind.String)
+            {
+                string format = inputValue.ToString();
+                return Guid.NewGuid().ToString(format);
+            }
             return Guid.NewGuid().ToString();
         }
 
