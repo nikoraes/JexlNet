@@ -86,8 +86,7 @@ namespace JexlNet
         public Func<
             OnDemandBinaryFunctionWrapper[],
             Task<JsonNode>
-        > EvaluateOnDemandAsync
-        { get; set; }
+        > EvaluateOnDemandAsync { get; set; }
     }
 
     public class BinaryOperatorGrammar : ElementGrammar
@@ -788,24 +787,33 @@ namespace JexlNet
                         {
                             return JsonValue.Create(jsonArray.Count == 0);
                         }
-                        else if (a.GetValueKind() == JsonValueKind.String)
+                        else if (a is JsonValue aValue)
                         {
-                            return JsonValue.Create(string.IsNullOrEmpty(a.GetValue<string>()));
-                        }
-                        else if (a.GetValueKind() == JsonValueKind.Number)
-                        {
-                            return JsonValue.Create(a.GetValue<decimal>() == 0);
-                        }
-                        else if (a.GetValueKind() == JsonValueKind.Array)
-                        {
-                            return JsonValue.Create(a.GetValue<JsonArray>().Count == 0);
-                        }
-                        else if (
-                            a.GetValueKind() == JsonValueKind.True
-                            || a.GetValueKind() == JsonValueKind.False
-                        )
-                        {
-                            return JsonValue.Create(!a.GetValue<bool>());
+                            if (aValue.GetValueKind() == JsonValueKind.String)
+                            {
+                                return JsonValue.Create(
+                                    string.IsNullOrEmpty(aValue.GetValue<string>())
+                                );
+                            }
+                            else if (aValue.GetValueKind() == JsonValueKind.Number)
+                            {
+                                return JsonValue.Create(aValue.ToDecimal() == 0);
+                            }
+                            else if (aValue.GetValueKind() == JsonValueKind.Array)
+                            {
+                                return JsonValue.Create(aValue.GetValue<JsonArray>().Count == 0);
+                            }
+                            else if (
+                                aValue.GetValueKind() == JsonValueKind.True
+                                || aValue.GetValueKind() == JsonValueKind.False
+                            )
+                            {
+                                return JsonValue.Create(!aValue.GetValue<bool>());
+                            }
+                            else
+                            {
+                                throw new Exception("Unsupported type for ! operator");
+                            }
                         }
                         else
                         {
