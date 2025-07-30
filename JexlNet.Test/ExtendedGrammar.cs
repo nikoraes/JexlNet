@@ -717,6 +717,10 @@ public class ExtendedGrammarUnitTest
         "{data:{FL_abc_mean:123,FL_abc_min:122,FL_def_mean:456,FL_def_min:451,HE_abc_min:789}}.data|entries|map((entry) => [entry[0]|split('_'), entry[1]])|reduce((acc, item) => acc|merge([[item[0][0],acc[item[0][0]]|merge([[item[0][1],acc[item[0][0]][item[0][1]]|merge([[item[0][2],item[1]]]|toObject)]]|toObject)]]|toObject), {})|entries|string",
         @"[[""FL"",{""abc"":{""mean"":123,""min"":122},""def"":{""mean"":456,""min"":451}}],[""HE"",{""abc"":{""min"":789}}]]"
     )]
+    [InlineData(
+        "{data:{user1:{name:'John',age:30,active:true,score:null},user2:{name:'Jane',age:0,active:false,score:85}}}.data|entries|map(v => [v[0],v[1]|entries|filter('!!value[1] || value[1] == 0')|toObject])|toObject|string",
+        @"{""user1"":{""name"":""John"",""age"":30,""active"":true},""user2"":{""name"":""Jane"",""age"":0,""score"":85}}"
+    )]
     public void ArrowOperatorString(string expression, string expected)
     {
         var jexl = new Jexl(new ExtendedGrammar());

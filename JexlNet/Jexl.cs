@@ -7,8 +7,16 @@ namespace JexlNet
     public interface IJexl
     {
         Expression CreateExpression(string exprStr);
-        Task<JsonNode> EvalAsync(string expression, JsonObject context = null, CancellationToken cancellationToken = default);
-        JsonNode Eval(string expression, JsonObject context = null, CancellationToken cancellationToken = default);
+        Task<JsonNode> EvalAsync(
+            string expression,
+            JsonObject context = null,
+            CancellationToken cancellationToken = default
+        );
+        JsonNode Eval(
+            string expression,
+            JsonObject context = null,
+            CancellationToken cancellationToken = default
+        );
     }
 
     public class Jexl : IJexl
@@ -17,10 +25,12 @@ namespace JexlNet
         {
             Grammar = new Grammar();
         }
+
         public Jexl(Grammar grammar)
         {
             Grammar = grammar;
         }
+
         public Grammar Grammar { get; set; }
 
         ///<summary>
@@ -52,14 +62,21 @@ namespace JexlNet
         ///<param name="context">A mapping of variables to values, which will be
         ///made accessible to the Jexl expression when evaluating it</param>
         ///<returns>The result of the evaluation.</returns>
-        public async Task<JsonNode> EvalAsync(string expression, JsonObject context = null, CancellationToken cancellationToken = default)
+        public async Task<JsonNode> EvalAsync(
+            string expression,
+            JsonObject context = null,
+            CancellationToken cancellationToken = default
+        )
         {
             var expressionObj = new Expression(Grammar, expression);
             return await expressionObj.EvalAsync(context, cancellationToken);
         }
 
-        public async Task<JsonNode> EvalAsync(string expression, string context, CancellationToken cancellationToken = default) =>
-            await EvalAsync(expression, (JsonObject)JsonNode.Parse(context), cancellationToken);
+        public async Task<JsonNode> EvalAsync(
+            string expression,
+            string context,
+            CancellationToken cancellationToken = default
+        ) => await EvalAsync(expression, (JsonObject)JsonNode.Parse(context), cancellationToken);
 
         ///<summary>
         ///Synchronously evaluates a Jexl string within an optional context.
@@ -68,13 +85,20 @@ namespace JexlNet
         ///<param name="context">A mapping of variables to values, which will be
         ///made accessible to the Jexl expression when evaluating it</param>
         ///<returns>The result of the evaluation.</returns>
-        public JsonNode Eval(string expression, JsonObject context = null, CancellationToken cancellationToken = default)
+        public JsonNode Eval(
+            string expression,
+            JsonObject context = null,
+            CancellationToken cancellationToken = default
+        )
         {
             var expressionObj = new Expression(Grammar, expression);
             return expressionObj.Eval(context, cancellationToken);
         }
 
-        public JsonNode Eval(string expression, string context, CancellationToken cancellationToken = default) =>
-            Eval(expression, (JsonObject)JsonNode.Parse(context), cancellationToken);
+        public JsonNode Eval(
+            string expression,
+            string context,
+            CancellationToken cancellationToken = default
+        ) => Eval(expression, (JsonObject)JsonNode.Parse(context), cancellationToken);
     }
 }

@@ -7,7 +7,10 @@ namespace JexlNet
     public interface IExpression
     {
         Expression Compile();
-        Task<JsonNode> EvalAsync(JsonObject context = null, CancellationToken cancellationToken = default);
+        Task<JsonNode> EvalAsync(
+            JsonObject context = null,
+            CancellationToken cancellationToken = default
+        );
         JsonNode Eval(JsonObject context = null, CancellationToken cancellationToken = default);
     }
 
@@ -18,22 +21,26 @@ namespace JexlNet
             Grammar = new Grammar();
             ExprStr = exprStr;
         }
+
         public Expression(Grammar grammar, string exprStr)
         {
             Grammar = grammar;
             ExprStr = exprStr;
         }
+
         // Pass precompiled AST
         public Expression(Node ast)
         {
             Grammar = new Grammar();
             _ast = ast;
         }
+
         public Expression(Grammar grammar, Node ast)
         {
             Grammar = grammar;
             _ast = ast;
         }
+
         private readonly Grammar Grammar;
         private readonly string ExprStr;
         private Node _ast = null;
@@ -60,7 +67,10 @@ namespace JexlNet
         /// <param name="context">A mapping of variables to values, which will be
         /// made accessible to the Jexl expression when evaluating it.</param>
         /// <returns>Resolves with the resulting value of the expression.</returns>
-        public async Task<JsonNode> EvalAsync(JsonObject context = null, CancellationToken cancellationToken = default)
+        public async Task<JsonNode> EvalAsync(
+            JsonObject context = null,
+            CancellationToken cancellationToken = default
+        )
         {
             Evaluator evaluator = new Evaluator(Grammar, context);
             return await evaluator.EvalAsync(GetAst(), cancellationToken);
@@ -72,7 +82,10 @@ namespace JexlNet
         /// <param name="context">A mapping of variables to values, which will be
         /// made accessible to the Jexl expression when evaluating it.</param>
         /// <returns>Resolves with the resulting value of the expression.</returns>
-        public JsonNode Eval(JsonObject context = null, CancellationToken cancellationToken = default)
+        public JsonNode Eval(
+            JsonObject context = null,
+            CancellationToken cancellationToken = default
+        )
         {
             Evaluator evaluator = new Evaluator(Grammar, context);
             Task<JsonNode> task = evaluator.EvalAsync(GetAst(), cancellationToken);
@@ -81,7 +94,8 @@ namespace JexlNet
 
         private Node GetAst()
         {
-            if (_ast == null) Compile();
+            if (_ast == null)
+                Compile();
             return _ast;
         }
     }

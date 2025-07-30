@@ -421,42 +421,6 @@ public class JexlUnitTest
         Assert.Equal("Danger ZONE!!!", res2?.ToString());
     }
 
-    // This is not possible when context is a JSON ...
-    /* [Fact]
-    public async void ResolveDictionaryPromise()
-    {
-        var func = new Func<Task<object?>>(async () =>
-        {
-            await Task.Delay(100);
-            return "bar";
-        });
-        var context = new JsonObject {
-            { "foo", func }
-        };
-        var jexl = new Jexl();
-        var res = await jexl.EvalAsync(@"foo", context);
-        Assert.Equal("bar", res);
-    } */
-
-    // This is not possible when context is a JSON ...
-    /* [Fact]
-    public async void ResolveDictionaryPromise2()
-    {
-        var func = new Func<Task<object?>>(async () =>
-        {
-            await Task.Delay(100);
-            return new JsonObject {
-                { "bar", "baz" }
-            };
-        });
-        var context = new JsonObject {
-            { "foo", func }
-        }; 
-        var jexl = new Jexl();
-        var res = await jexl.EvalAsync(@"foo.bar", context);
-        Assert.Equal("baz", res);
-    } */
-
     [Fact]
     public async void SupportJsonContext()
     {
@@ -581,35 +545,101 @@ public class JexlUnitTest
         Assert.Equal("Figgis", res?.ToString());
     }
 
-    /* [Fact]
-    public async void SupportJsonNetContext()
+    [Fact]
+    public async void JsonObjectContextWithVariousValueTypes()
     {
-        string contextJson =
-        @"{
-            ""name"": {
-                ""first"": ""Sterling"",
-                ""last"": ""Archer""
-            },
-            ""assoc"": [
+        var context = new JsonObject
+        {
+            { "stringValue", "Hello World" },
+            { "intValue", 42 },
+            { "doubleValue", 3.14159 },
+            { "booleanTrue", true },
+            { "booleanFalse", false },
+            { "nullValue", null },
+            { "dateTime", DateTime.Parse("2025-07-30T10:30:00Z") },
+            { "arrayOfNumbers", new JsonArray { 1, 2, 3, 4, 5 } },
+            { "arrayOfStrings", new JsonArray { "apple", "banana", "cherry" } },
+            { "nestedObject", new JsonObject
                 {
-                    ""first"": ""Lana"",
-                    ""last"": ""Kane""
-                },
-                {
-                    ""first"": ""Cyril"",
-                    ""last"": ""Figgis""
-                },
-                {
-                    ""first"": ""Pam"",
-                    ""last"": ""Poovey""
+                    { "innerString", "nested value" },
+                    { "innerNumber", 100 },
+                    { "innerBoolean", true }
                 }
-            ],
-            ""age"": 36
-        }";
-        JObject contextJsonElement = JObject.Parse(contextJson);
-        JsonObject context = JsonNet.ContextHelpers.ConvertJObject(contextJsonElement);
+            },
+            { "mixedArray", new JsonArray 
+                { 
+                    "text", 
+                    123, 
+                    true, 
+                    new JsonObject { { "key", "value" } },
+                    null 
+                }
+            }
+        };
+
         var jexl = new Jexl();
-        var res = await jexl.EvalAsync(@"assoc[.first == 'Cyril'].last", context);
-        Assert.Equal("Figgis", res);
-    } */
+        
+        // Test string value
+        var stringResult = await jexl.EvalAsync("stringValue", context);
+        Assert.Equal("Hello World", stringResult?.ToString());
+        
+        // Test integer value
+        var intResult = await jexl.EvalAsync("intValue", context);
+        Assert.Equal(42, intResult?.AsValue().ToInt32());
+        
+        // Test double value
+        var doubleResult = await jexl.EvalAsync("doubleValue", context);
+        Assert.Equal(3.14159, doubleResult?.AsValue().ToDouble() ?? 0, 5);
+        
+        // Test boolean values
+        var boolTrueResult = await jexl.EvalAsync("booleanTrue", context);
+        Assert.True(boolTrueResult?.GetValue<bool>());
+        
+        var boolFalseResult = await jexl.EvalAsync("booleanFalse", context);
+        Assert.False(boolFalseResult?.GetValue<bool>());
+        
+        // Test null value
+        var nullResult = await jexl.EvalAsync("nullValue", context);
+        Assert.Null(nullResult);
+        
+        // Test date/time value
+        var dateResult = await jexl.EvalAsync("dateTime", context);
+        Assert.Equal("2025-07-30T10:30:00.0000000Z", ((DateTime)dateResult).ToUniversalTime().ToString("o"));
+        
+        // Test array operations
+        var arrayLengthResult = await jexl.EvalAsync("arrayOfNumbers[0]", context);
+        Assert.Equal(1, arrayLengthResult?.AsValue().ToInt32());
+        
+        var arrayElementResult = await jexl.EvalAsync("arrayOfStrings[1]", context);
+        Assert.Equal("banana", arrayElementResult?.ToString());
+        
+        // Test nested object access
+        var nestedResult = await jexl.EvalAsync("nestedObject.innerString", context);
+        Assert.Equal("nested value", nestedResult?.ToString());
+        
+        var nestedNumberResult = await jexl.EvalAsync("nestedObject.innerNumber", context);
+        Assert.Equal(100, nestedNumberResult?.AsValue().ToInt32());
+        
+        // Test mixed array access
+        var mixedArrayStringResult = await jexl.EvalAsync("mixedArray[0]", context);
+        Assert.Equal("text", mixedArrayStringResult?.ToString());
+        
+        var mixedArrayNumberResult = await jexl.EvalAsync("mixedArray[1]", context);
+        Assert.Equal(123, mixedArrayNumberResult?.AsValue().ToInt32());
+        
+        var mixedArrayObjectResult = await jexl.EvalAsync("mixedArray[3].key", context);
+        Assert.Equal("value", mixedArrayObjectResult?.ToString());
+        
+        // Test arithmetic operations with different types
+        var arithmeticResult = await jexl.EvalAsync("intValue + doubleValue", context);
+        Assert.Equal(45.14159, arithmeticResult?.AsValue().ToDouble() ?? 0, 5);
+        
+        // Test conditional operations with boolean values
+        var conditionalResult = await jexl.EvalAsync("booleanTrue ? 'yes' : 'no'", context);
+        Assert.Equal("yes", conditionalResult?.ToString());
+        
+        // Test string concatenation
+        var concatResult = await jexl.EvalAsync("stringValue + ' - ' + nestedObject.innerString", context);
+        Assert.Equal("Hello World - nested value", concatResult?.ToString());
+    }
 }
