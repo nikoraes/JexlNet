@@ -718,8 +718,8 @@ public class ExtendedGrammarUnitTest
         @"[[""FL"",{""abc"":{""mean"":123,""min"":122},""def"":{""mean"":456,""min"":451}}],[""HE"",{""abc"":{""min"":789}}]]"
     )]
     [InlineData(
-        "{data:{user1:{name:'John',age:30,active:true,score:null},user2:{name:'Jane',age:0,active:false,score:85}}}.data|entries|map(v => [v[0],v[1]|entries|filter('!!value[1] || value[1] == 0')|toObject])|toObject|string",
-        @"{""user1"":{""name"":""John"",""age"":30,""active"":true},""user2"":{""name"":""Jane"",""age"":0,""score"":85}}"
+        "{data:{user1:{name:'John',age:30.2,active:true,score:null},user2:{name:'Jane',age:0,active:false,score:85}}}.data|entries|map(v => [v[0],v[1]|entries|filter('!!value[1] || value[1] == 0')|toObject])|toObject|string",
+        @"{""user1"":{""name"":""John"",""age"":30.2,""active"":true},""user2"":{""name"":""Jane"",""age"":0,""score"":85}}"
     )]
     public void ArrowOperatorString(string expression, string expected)
     {
