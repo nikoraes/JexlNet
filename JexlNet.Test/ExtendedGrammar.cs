@@ -470,6 +470,7 @@ public class ExtendedGrammarUnitTest
         "'02-22-24 00:00:00'|toDateTime('MM-dd-yy HH:mm:ss') == '2024-02-22T00:00:00Z'|toDateTime",
         true
     )]
+    [InlineData("'7/23/2025'|toDateTime('M/d/yyyy') == '2025-07-23'|toDateTime", true)]
     [InlineData("(now()|toMillis - 1000) > (millis() - 2000)", true)]
     [InlineData("$toDateTime(1727169975224)|toMillis == 1727169975224", true)]
     public void TimeFunctions(string expression, bool expected)
