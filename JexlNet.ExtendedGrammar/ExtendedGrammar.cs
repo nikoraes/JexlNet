@@ -287,6 +287,10 @@ namespace JexlNet
             AddFunction("find", ArrayFind);
             AddFunction("$find", ArrayFind);
             AddTransform("find", ArrayFind);
+            // FindIndex
+            AddFunction("findIndex", ArrayFindIndex);
+            AddFunction("$findIndex", ArrayFindIndex);
+            AddTransform("findIndex", ArrayFindIndex);
             // Reduce
             AddFunction("reduce", Reduce);
             AddFunction("$reduce", Reduce);
@@ -1947,6 +1951,85 @@ namespace JexlNet
                         }
                     }
                     return null;
+                }
+            }
+            return null;
+        }
+
+        /// Finds the index of the first element in the input array that satisfies the given Jexl expression.
+        /// </summary>
+        /// <example>
+        /// [1, 2, 3, 4]|findIndex('value > 2'); // returns 2
+        /// </example>
+        /// <param name="input">The array to search through.</param>
+        /// <param name="expression">
+        /// A Jexl expression string to evaluate for each element. The expression has access to <c>value</c>, <c>index</c>, and <c>array</c>.
+        /// </param>
+        /// <returns>
+        /// The index of the first matching element, or <c>-1</c> if no element matches, or <c>null</c> if the input is not an array.
+        /// </returns>
+        public static JsonNode ArrayFindIndex(JsonNode input, JsonNode expression)
+        {
+            if (input is JsonObject inputObject)
+            {
+                input = new JsonArray() { inputObject.DeepClone() };
+            }
+
+            if (input is JsonArray array)
+            {
+                Jexl jexl = new Jexl(new ExtendedGrammar());
+                if (expression is JsonValue exprVal)
+                {
+                    Expression jExpression = jexl.CreateExpression(exprVal.ToString());
+                    for (int i = 0; i < array.Count; i++)
+                    {
+                        var context = new JsonObject()
+                        {
+                            ["value"] = array[i]?.DeepClone(),
+                            ["index"] = i,
+                            ["array"] = array.DeepClone(),
+                        };
+                        if (jExpression.Eval(context)?.AsValue().ToBoolean() ?? false)
+                        {
+                            return i;
+                        }
+                    }
+                    return -1;
+                }
+                else if (
+                    expression is JsonObject exprObject
+                    && exprObject.TryGetPropertyValue("variables", out JsonNode variables)
+                    && variables is JsonArray variablesArray
+                    && exprObject.TryGetPropertyValue("expression", out JsonNode exprNode)
+                    && exprNode is JsonValue exprValue
+                )
+                {
+                    Node ast = JsonSerializer.Deserialize<Node>(
+                        exprValue.ToString(),
+                        SerializerOptions
+                    );
+                    Expression jExpression = jexl.CreateExpression(ast);
+                    for (int i = 0; i < array.Count; i++)
+                    {
+                        var context = new JsonObject();
+                        if (variablesArray.ElementAtOrDefault(0) is JsonValue var1)
+                        {
+                            context[var1.ToString()] = array[i]?.DeepClone();
+                        }
+                        if (variablesArray.ElementAtOrDefault(1) is JsonValue var2)
+                        {
+                            context[var2.ToString()] = i;
+                        }
+                        if (variablesArray.ElementAtOrDefault(2) is JsonValue var3)
+                        {
+                            context[var3.ToString()] = array.DeepClone();
+                        }
+                        if (jExpression.Eval(context)?.AsValue().ToBoolean() ?? false)
+                        {
+                            return i;
+                        }
+                    }
+                    return -1;
                 }
             }
             return null;
