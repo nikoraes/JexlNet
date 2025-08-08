@@ -702,6 +702,104 @@ public class ExtendedGrammarUnitTest
         Assert.True(JsonNode.DeepEquals(expected, result));
     }
 
+    [Fact]
+    public void ComplexExample8()
+    {
+        var jexl = new Jexl(new ExtendedGrammar());
+        string context =
+            @"{
+  ""USGS_Wells"": {
+    ""TwinIds"": [
+      ""8c8d2793-a27f-44dc-bd9f-66ebb28b5f3f"",
+      ""7f9e6673-31c5-4719-b97f-ffb546cb5bb9""
+    ],
+    ""WellIds"": [
+      ""464055120272101"",
+      ""464102120272101""
+    ]
+  },
+  ""usgsResponse"": {
+    ""value"": {
+      ""timeSeries"": [
+        {
+          ""sourceInfo"": {
+            ""siteCode"": [
+              {
+                ""value"": ""464055120272101""
+              }
+            ]
+          },
+          ""values"": [
+            {
+              ""value"": [
+                {
+                  ""value"": ""1249.21"",
+                  ""dateTime"": ""2025-08-07T09:00:00.000-07:00""
+                },
+                {
+                  ""value"": ""1249.22"",
+                  ""dateTime"": ""2025-08-07T09:15:00.000-07:00""
+                }
+              ]
+            }
+          ]
+        },
+        {
+          ""sourceInfo"": {
+            ""siteCode"": [
+              {
+                ""value"": ""464102120272101""
+              }
+            ]
+          },
+          ""values"": [
+            {
+              ""value"": []
+            }
+          ]
+        }
+      ]
+    }
+  }
+}";
+
+        string expression =
+            """usgsResponse.value.timeSeries|map('merge({wellId:value.sourceInfo.siteCode[0].value, twinId:'+USGS_Wells.TwinIds|string+'|find('+USGS_Wells.WellIds|string+'|findIndex("value==\'"+value.sourceInfo.siteCode[0].value+"\'") + " == index")},{values:value.values[0].value|map("{value:value.value,dateTime:value.dateTime}")})')""";
+        var result = jexl.Eval(expression, context);
+
+        var expected = new JsonArray
+        {
+            new JsonObject
+            {
+                { "wellId", "464055120272101" },
+                { "twinId", "8c8d2793-a27f-44dc-bd9f-66ebb28b5f3f" },
+                {
+                    "values",
+                    new JsonArray
+                    {
+                        new JsonObject
+                        {
+                            { "value", "1249.21" },
+                            { "dateTime", "2025-08-07T09:00:00.000-07:00" }
+                        },
+                        new JsonObject
+                        {
+                            { "value", "1249.22" },
+                            { "dateTime", "2025-08-07T09:15:00.000-07:00" }
+                        }
+                    }
+                }
+            },
+            new JsonObject
+            {
+                { "wellId", "464102120272101" },
+                { "twinId", "7f9e6673-31c5-4719-b97f-ffb546cb5bb9" },
+                { "values", new JsonArray() }
+            }
+        };
+        Assert.True(JsonNode.DeepEquals(expected, result));
+    }
+
     [Theory]
     [InlineData("['f','o','o']|map((v,i) => v + i)|join('')", "f0o1o2")]
     [InlineData(
