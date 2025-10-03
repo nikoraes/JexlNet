@@ -1,10 +1,70 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace JexlNet
 {
+    public static class JsonObjectExtensions
+    {
+        public static void RemoveDuplicateKeys(this JsonObject obj)
+        {
+            if (obj == null)
+                return;
+            // Collect all key-value pairs in order
+            var keyValuePairs = new List<KeyValuePair<string, JsonNode>>();
+            foreach (var property in obj)
+            {
+                keyValuePairs.Add(new KeyValuePair<string, JsonNode>(property.Key, property.Value));
+            }
+            // Clear the object
+            obj.Clear();
+            // Add only the last occurrence of each key
+            var seen = new HashSet<string>();
+            for (int i = keyValuePairs.Count - 1; i >= 0; i--)
+            {
+                var kvp = keyValuePairs[i];
+                if (!seen.Contains(kvp.Key))
+                {
+                    obj.Add(kvp.Key, kvp.Value);
+                    seen.Add(kvp.Key);
+                }
+            }
+            // Restore order (with last occurrence kept)
+            var reordered = new List<KeyValuePair<string, JsonNode>>();
+            var keysList = new List<string>();
+            foreach (var property in obj)
+            {
+                keysList.Add(property.Key);
+            }
+            foreach (var key in keysList)
+            {
+                reordered.Add(new KeyValuePair<string, JsonNode>(key, obj[key]));
+            }
+            obj.Clear();
+            foreach (var kvp in reordered)
+            {
+                obj.Add(kvp.Key, kvp.Value);
+            }
+            // Recursively process nested JsonObjects
+            keysList.Clear();
+            foreach (var property in obj)
+            {
+                keysList.Add(property.Key);
+            }
+            foreach (var key in keysList)
+            {
+                var value = obj[key];
+                var nestedObj = value as JsonObject;
+                if (nestedObj != null)
+                {
+                    nestedObj.RemoveDuplicateKeys();
+                }
+            }
+        }
+    }
+
     public static class JsonValueExtensions
     {
         /// <summary>

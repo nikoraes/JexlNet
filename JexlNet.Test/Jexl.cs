@@ -566,80 +566,100 @@ public class JexlUnitTest
                     { "innerBoolean", true }
                 }
             },
-            { "mixedArray", new JsonArray 
-                { 
-                    "text", 
-                    123, 
-                    true, 
+            { "mixedArray", new JsonArray
+                {
+                    "text",
+                    123,
+                    true,
                     new JsonObject { { "key", "value" } },
-                    null 
+                    null
                 }
             }
         };
 
         var jexl = new Jexl();
-        
+
         // Test string value
         var stringResult = await jexl.EvalAsync("stringValue", context);
         Assert.Equal("Hello World", stringResult?.ToString());
-        
+
         // Test integer value
         var intResult = await jexl.EvalAsync("intValue", context);
         Assert.Equal(42, intResult?.AsValue().ToInt32());
-        
+
         // Test double value
         var doubleResult = await jexl.EvalAsync("doubleValue", context);
         Assert.Equal(3.14159, doubleResult?.AsValue().ToDouble() ?? 0, 5);
-        
+
         // Test boolean values
         var boolTrueResult = await jexl.EvalAsync("booleanTrue", context);
         Assert.True(boolTrueResult?.GetValue<bool>());
-        
+
         var boolFalseResult = await jexl.EvalAsync("booleanFalse", context);
         Assert.False(boolFalseResult?.GetValue<bool>());
-        
+
         // Test null value
         var nullResult = await jexl.EvalAsync("nullValue", context);
         Assert.Null(nullResult);
-        
+
         // Test date/time value
         var dateResult = await jexl.EvalAsync("dateTime", context);
         Assert.Equal("2025-07-30T10:30:00.0000000Z", ((DateTime)dateResult).ToUniversalTime().ToString("o"));
-        
+
         // Test array operations
         var arrayLengthResult = await jexl.EvalAsync("arrayOfNumbers[0]", context);
         Assert.Equal(1, arrayLengthResult?.AsValue().ToInt32());
-        
+
         var arrayElementResult = await jexl.EvalAsync("arrayOfStrings[1]", context);
         Assert.Equal("banana", arrayElementResult?.ToString());
-        
+
         // Test nested object access
         var nestedResult = await jexl.EvalAsync("nestedObject.innerString", context);
         Assert.Equal("nested value", nestedResult?.ToString());
-        
+
         var nestedNumberResult = await jexl.EvalAsync("nestedObject.innerNumber", context);
         Assert.Equal(100, nestedNumberResult?.AsValue().ToInt32());
-        
+
         // Test mixed array access
         var mixedArrayStringResult = await jexl.EvalAsync("mixedArray[0]", context);
         Assert.Equal("text", mixedArrayStringResult?.ToString());
-        
+
         var mixedArrayNumberResult = await jexl.EvalAsync("mixedArray[1]", context);
         Assert.Equal(123, mixedArrayNumberResult?.AsValue().ToInt32());
-        
+
         var mixedArrayObjectResult = await jexl.EvalAsync("mixedArray[3].key", context);
         Assert.Equal("value", mixedArrayObjectResult?.ToString());
-        
+
         // Test arithmetic operations with different types
         var arithmeticResult = await jexl.EvalAsync("intValue + doubleValue", context);
         Assert.Equal(45.14159, arithmeticResult?.AsValue().ToDouble() ?? 0, 5);
-        
+
         // Test conditional operations with boolean values
         var conditionalResult = await jexl.EvalAsync("booleanTrue ? 'yes' : 'no'", context);
         Assert.Equal("yes", conditionalResult?.ToString());
-        
+
         // Test string concatenation
         var concatResult = await jexl.EvalAsync("stringValue + ' - ' + nestedObject.innerString", context);
         Assert.Equal("Hello World - nested value", concatResult?.ToString());
+    }
+
+    [Fact]
+    public async void SupportsDuplicateKeys()
+    {
+        string contextJson =
+        @"{
+            ""name"": ""Archer"",
+            ""name"": ""Sterling"",
+            ""age"": 36
+        }";
+        JsonDocument? contextJsonDocument = JsonDocument.Parse(contextJson);
+        JsonObject? contextJsonObject = new();
+        foreach (var prop in contextJsonDocument.RootElement.EnumerateObject())
+        {
+            contextJsonObject[prop.Name] = JsonNode.Parse(prop.Value.GetRawText());
+        }
+        var jexl = new Jexl();
+        var res = await jexl.EvalAsync("name", contextJsonObject);
+        Assert.Equal("Sterling", res?.ToString());
     }
 }

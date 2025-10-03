@@ -10,12 +10,17 @@ namespace JexlNet
 {
     public class OnDemandBinaryFunctionWrapper
     {
-        public OnDemandBinaryFunctionWrapper(Evaluator evaluator, Node subAst, CancellationToken cancellationToken = default)
+        public OnDemandBinaryFunctionWrapper(
+            Evaluator evaluator,
+            Node subAst,
+            CancellationToken cancellationToken = default
+        )
         {
             Evaluator = evaluator;
             SubAst = subAst;
             EvalAsync = async () => await Evaluator.EvalAsync(subAst, cancellationToken);
         }
+
         public Evaluator Evaluator { get; }
         public Node SubAst { get; }
         public Func<Task<JsonNode>> EvalAsync { get; }
@@ -30,9 +35,14 @@ namespace JexlNet
         /// <param name="evaluator"></param>
         /// <param name="node"></param>
         /// <returns></returns>
-        public static async Task<JsonNode> ArrayLiteralAsync(Evaluator evaluator, Node node, CancellationToken cancellationToken = default)
+        public static async Task<JsonNode> ArrayLiteralAsync(
+            Evaluator evaluator,
+            Node node,
+            CancellationToken cancellationToken = default
+        )
         {
-            if (node?.Array == null) throw new Exception("EvaluatorHandlers.ArrayLiteralAsync: node has no array");
+            if (node?.Array == null)
+                throw new Exception("EvaluatorHandlers.ArrayLiteralAsync: node has no array");
             return await evaluator.EvalArrayAsync(node.Array, cancellationToken);
         }
 
@@ -48,7 +58,11 @@ namespace JexlNet
         ///<param name="evaluator"></param>
         ///<param name="node">An expression tree with a BinaryExpression as the top node</param>
         ///<returns>resolves with the value of the BinaryExpression.</returns>
-        public static async Task<JsonNode> BinaryExpressionAsync(Evaluator evaluator, Node node, CancellationToken cancellationToken = default)
+        public static async Task<JsonNode> BinaryExpressionAsync(
+            Evaluator evaluator,
+            Node node,
+            CancellationToken cancellationToken = default
+        )
         {
             if (node?.Operator == null)
             {
@@ -57,25 +71,43 @@ namespace JexlNet
             var grammarOp = evaluator.Grammar.Elements[node.Operator];
             if (grammarOp == null)
             {
-                throw new Exception($"EvaluatorHandlers.BinaryExpression: node has unknown operator: {node.Operator}");
+                throw new Exception(
+                    $"EvaluatorHandlers.BinaryExpression: node has unknown operator: {node.Operator}"
+                );
             }
             // EvaluateOnDemand allows to only conditionally evaluate one side of the binary expression
             // It is always prefered, so that we can avoid evaluating both sides if not necessary
             if (grammarOp.EvaluateOnDemandAsync != null && node.Left != null && node.Right != null)
             {
-                var wrappedLeft = new OnDemandBinaryFunctionWrapper(evaluator, node.Left, cancellationToken);
-                var wrappedRight = new OnDemandBinaryFunctionWrapper(evaluator, node.Right, cancellationToken);
-                var wrap = new Func<Node, Func<Task<JsonNode>>>((subAst) => async () => await evaluator.EvalAsync(subAst, cancellationToken));
-                return await grammarOp.EvaluateOnDemandAsync(new OnDemandBinaryFunctionWrapper[] { wrappedLeft, wrappedRight });
+                var wrappedLeft = new OnDemandBinaryFunctionWrapper(
+                    evaluator,
+                    node.Left,
+                    cancellationToken
+                );
+                var wrappedRight = new OnDemandBinaryFunctionWrapper(
+                    evaluator,
+                    node.Right,
+                    cancellationToken
+                );
+                var wrap = new Func<Node, Func<Task<JsonNode>>>(
+                    (subAst) => async () => await evaluator.EvalAsync(subAst, cancellationToken)
+                );
+                return await grammarOp.EvaluateOnDemandAsync(
+                    new OnDemandBinaryFunctionWrapper[] { wrappedLeft, wrappedRight }
+                );
             }
             // We don't really need the non ondemand evaluation to be defined on the grammar, but we can use it as a fallback
             if (grammarOp.Evaluate != null)
             {
                 var leftResult = await evaluator.EvalAsync(node?.Left, cancellationToken);
                 var rightResult = await evaluator.EvalAsync(node?.Right, cancellationToken);
-                return grammarOp.Evaluate(new JsonNode[] { leftResult?.DeepClone(), rightResult?.DeepClone() });
+                return grammarOp.Evaluate(
+                    new JsonNode[] { leftResult?.DeepClone(), rightResult?.DeepClone() }
+                );
             }
-            throw new Exception($"EvaluatorHandlers.BinaryExpression: node has no evaluation function: {node.Operator}");
+            throw new Exception(
+                $"EvaluatorHandlers.BinaryExpression: node has no evaluation function: {node.Operator}"
+            );
         }
 
         ///<summary>
@@ -86,7 +118,11 @@ namespace JexlNet
         ///</summary>
         ///<param name="evaluator"></param>
         ///<param name="node">An expression tree with a ConditionalExpression as the top node</param>
-        public static async Task<JsonNode> ConditionalExpression(Evaluator evaluator, Node node, CancellationToken cancellationToken = default)
+        public static async Task<JsonNode> ConditionalExpression(
+            Evaluator evaluator,
+            Node node,
+            CancellationToken cancellationToken = default
+        )
         {
             if (node?.Test == null)
             {
@@ -96,10 +132,19 @@ namespace JexlNet
             // If it's a string, we consider it truthy if it's non-empty
             // If it's a decimal, we consider it truthy it's non-zero
             // Align with behaviour in Javascript
-            if (testResult != null &&
-                ((testResult.GetValueKind() == JsonValueKind.String && !string.IsNullOrEmpty(testResult.GetValue<string>())) ||
-                (testResult.GetValueKind() == JsonValueKind.Number && testResult.GetValue<decimal>() != 0) ||
-                (testResult.GetValueKind() == JsonValueKind.True))
+            if (
+                testResult != null
+                && (
+                    (
+                        testResult.GetValueKind() == JsonValueKind.String
+                        && !string.IsNullOrEmpty(testResult.GetValue<string>())
+                    )
+                    || (
+                        testResult.GetValueKind() == JsonValueKind.Number
+                        && testResult.GetValue<decimal>() != 0
+                    )
+                    || (testResult.GetValueKind() == JsonValueKind.True)
+                )
             )
             {
                 if (node?.Consequent != null)
@@ -117,7 +162,11 @@ namespace JexlNet
         ///<param name="evaluator"></param>
         ///<param name="node">An expression tree with a FilterExpression as the top node</param>
         ///<returns>resolves with the value of the FilterExpression.</returns>
-        public static async Task<JsonNode> FilterExpression(Evaluator evaluator, Node node, CancellationToken cancellationToken = default)
+        public static async Task<JsonNode> FilterExpression(
+            Evaluator evaluator,
+            Node node,
+            CancellationToken cancellationToken = default
+        )
         {
             if (node?.Subject == null)
             {
@@ -130,7 +179,11 @@ namespace JexlNet
             JsonNode subjectResult = await evaluator.EvalAsync(node?.Subject, cancellationToken);
             if (node?.Relative == true)
             {
-                return await evaluator.FilterRelativeAsync(subjectResult, node.Expr, cancellationToken);
+                return await evaluator.FilterRelativeAsync(
+                    subjectResult,
+                    node.Expr,
+                    cancellationToken
+                );
             }
             else
             {
@@ -146,13 +199,21 @@ namespace JexlNet
         ///<param name="evaluator"></param>
         ///<param name="node">An expression tree with an Identifier as the top node</param>
         ///<returns>either the identifier's value, or a Promise that will resolve with the identifier's value.</returns>
-        public static async Task<JsonNode> IdentifierAsync(Evaluator evaluator, Node node, CancellationToken cancellationToken = default)
+        public static async Task<JsonNode> IdentifierAsync(
+            Evaluator evaluator,
+            Node node,
+            CancellationToken cancellationToken = default
+        )
         {
             string nodeValue;
             if (node.Value != null && node.From == null)
             {
                 nodeValue = node.Value.GetValue<string>();
-                if (node?.Relative == true && evaluator.RelContext != null && evaluator.RelContext.ContainsKey(nodeValue))
+                if (
+                    node?.Relative == true
+                    && evaluator.RelContext != null
+                    && evaluator.RelContext.ContainsKey(nodeValue)
+                )
                 {
                     return evaluator.RelContext[nodeValue];
                 }
@@ -166,7 +227,8 @@ namespace JexlNet
                 {
                     return evaluator.Context;
                 }
-                else return null;
+                else
+                    return null;
             }
             JsonNode fromResult = await evaluator.EvalAsync(node.From, cancellationToken);
             if (fromResult == null || node.Value == null)
@@ -176,7 +238,11 @@ namespace JexlNet
             nodeValue = node.Value.GetValue<string>();
             if (fromResult is JsonArray list)
             {
-                if (list.Count > 0 && list.First() is JsonObject dict && !string.IsNullOrEmpty(nodeValue))
+                if (
+                    list.Count > 0
+                    && list.First() is JsonObject dict
+                    && !string.IsNullOrEmpty(nodeValue)
+                )
                 {
                     // NOTE: we could also return a mapped list, like in JSONata, but then it won't align to the JS JEXL implementation
                     /* JsonArray result = new();
@@ -195,9 +261,14 @@ namespace JexlNet
                 {
                     return list[index];
                 }
-                else return null;
+                else
+                    return null;
             }
-            else if (fromResult is JsonObject dict && !string.IsNullOrEmpty(nodeValue) && dict.ContainsKey(nodeValue))
+            else if (
+                fromResult is JsonObject dict
+                && !string.IsNullOrEmpty(nodeValue)
+                && dict.ContainsKey(nodeValue)
+            )
             {
                 return dict[nodeValue];
             }
@@ -216,7 +287,11 @@ namespace JexlNet
         ///<param name="evaluator"></param>
         ///<param name="node">An expression tree with a Literal as its only node</param>
         ///<returns>The value of the Literal node</returns>
-        public static async Task<JsonNode> LiteralAsync(Evaluator evaluator, Node node, CancellationToken cancellationToken = default)
+        public static async Task<JsonNode> LiteralAsync(
+            Evaluator evaluator,
+            Node node,
+            CancellationToken cancellationToken = default
+        )
         {
             return await Task.FromResult(node.Value);
         }
@@ -228,9 +303,14 @@ namespace JexlNet
         ///<param name="evaluator"></param>
         ///<param name="node">An expression tree with a Literal as its only node</param>
         ///<returns>The value of the Literal node</returns>
-        public static async Task<JsonNode> ObjectLiteralAsync(Evaluator evaluator, Node node, CancellationToken cancellationToken = default)
+        public static async Task<JsonNode> ObjectLiteralAsync(
+            Evaluator evaluator,
+            Node node,
+            CancellationToken cancellationToken = default
+        )
         {
-            if (node?.Object == null) throw new Exception("EvaluatorHandlers.ObjectLiteralAsync: node has no object");
+            if (node?.Object == null)
+                throw new Exception("EvaluatorHandlers.ObjectLiteralAsync: node has no object");
             return await evaluator.EvalMapAsync(node.Object, cancellationToken);
         }
 
@@ -241,9 +321,14 @@ namespace JexlNet
         /// <param name="evaluator"></param>
         /// <param name="node"></param>
         /// <returns></returns>
-        public static async Task<JsonNode> SequenceLiteralAsync(Evaluator evaluator, Node node, CancellationToken cancellationToken = default)
+        public static async Task<JsonNode> SequenceLiteralAsync(
+            Evaluator evaluator,
+            Node node,
+            CancellationToken cancellationToken = default
+        )
         {
-            if (node?.Args == null) throw new Exception("EvaluatorHandlers.SequenceLiteralAsync: node has no args");
+            if (node?.Args == null)
+                throw new Exception("EvaluatorHandlers.SequenceLiteralAsync: node has no args");
             return await evaluator.EvalArrayAsync(node.Args, cancellationToken);
         }
 
@@ -254,22 +339,30 @@ namespace JexlNet
         ///<param name="evaluator"></param>
         ///<param name="node">An expression tree with a FunctionCall as the top node</param>
         ///<returns>the value of the function call, or a Promise that will resolve with the resulting value.</returns>
-        public static async Task<JsonNode> FunctionCallAsync(Evaluator evaluator, Node node, CancellationToken cancellationToken = default)
+        public static async Task<JsonNode> FunctionCallAsync(
+            Evaluator evaluator,
+            Node node,
+            CancellationToken cancellationToken = default
+        )
         {
-
             if (node?.Pool == null)
             {
                 throw new Exception("EvaluatorHandlers.FunctionCallAsync: node has no pool");
             }
             if (node.Name == null)
             {
-                throw new Exception("EvaluatorHandlers.FunctionCallAsync: function or transform not defined");
+                throw new Exception(
+                    "EvaluatorHandlers.FunctionCallAsync: function or transform not defined"
+                );
             }
             if (node.Args == null)
             {
                 throw new Exception("EvaluatorHandlers.FunctionCallAsync: Arguments not defined");
             }
-            if (node.Pool == Grammar.PoolType.Functions && evaluator.Grammar.Functions.TryGetValue(node.Name, out var func))
+            if (
+                node.Pool == Grammar.PoolType.Functions
+                && evaluator.Grammar.Functions.TryGetValue(node.Name, out var func)
+            )
             {
                 // TODO: Certain functions could benefit from not evaluating the arguments before passing them
                 // Especially if combined with arrow notation: eg. `map([0,1,2], x => x + 1)`
@@ -277,17 +370,25 @@ namespace JexlNet
                 JsonArray argsResult = await evaluator.EvalArrayAsync(node.Args, cancellationToken);
                 return await func(argsResult.Select((arg) => arg).ToArray(), cancellationToken);
             }
-            else if (node.Pool == Grammar.PoolType.Transforms && evaluator.Grammar.Transforms.TryGetValue(node.Name, out var transform))
+            else if (
+                node.Pool == Grammar.PoolType.Transforms
+                && evaluator.Grammar.Transforms.TryGetValue(node.Name, out var transform)
+            )
             {
                 // TODO: Certain transforms could benefit from not evaluating the arguments before passing them
                 // Especially if combined with arrow notation: eg. `[0,1,2]|map(x => x + 1)`
                 JsonArray argsResult = await evaluator.EvalArrayAsync(node.Args, cancellationToken);
                 // Convert to array of JsonNode
-                return await transform(argsResult.Select((arg) => arg).ToArray(), cancellationToken);
+                return await transform(
+                    argsResult.Select((arg) => arg).ToArray(),
+                    cancellationToken
+                );
             }
             else
             {
-                throw new Exception($"EvaluatorHandlers.FunctionCallAsync: Function or transform not found: {Enum.GetName(typeof(Grammar.PoolType), node.Pool)}.{node.Name}");
+                throw new Exception(
+                    $"EvaluatorHandlers.FunctionCallAsync: Function or transform not found: {Enum.GetName(typeof(Grammar.PoolType), node.Pool)}.{node.Name}"
+                );
             }
         }
 
@@ -298,7 +399,11 @@ namespace JexlNet
         ///<param name="evaluator"></param>
         ///<param name="node">An expression tree with a UnaryExpression as the top node</param>
         ///<returns>resolves with the value of the UnaryExpression.</returns>
-        public static async Task<JsonNode> UnaryExpressionAsync(Evaluator evaluator, Node node, CancellationToken cancellationToken = default)
+        public static async Task<JsonNode> UnaryExpressionAsync(
+            Evaluator evaluator,
+            Node node,
+            CancellationToken cancellationToken = default
+        )
         {
             if (node?.Operator == null)
             {
@@ -311,14 +416,21 @@ namespace JexlNet
             var grammarOp = evaluator.Grammar.Elements[node.Operator];
             if (grammarOp == null || grammarOp.Evaluate == null)
             {
-                throw new Exception($"EvaluatorHandlers.UnaryExpressionAsync: node has unknown operator: {node.Operator}");
+                throw new Exception(
+                    $"EvaluatorHandlers.UnaryExpressionAsync: node has unknown operator: {node.Operator}"
+                );
             }
             JsonNode rightResult = await evaluator.EvalAsync(node?.Right, cancellationToken);
             return grammarOp.Evaluate(new[] { rightResult });
         }
 
-
-        public static readonly Dictionary<GrammarType, Func<Evaluator, Node, CancellationToken, Task<JsonNode>>> Handlers = new Dictionary<GrammarType, Func<Evaluator, Node, CancellationToken, Task<JsonNode>>>
+        public static readonly Dictionary<
+            GrammarType,
+            Func<Evaluator, Node, CancellationToken, Task<JsonNode>>
+        > Handlers = new Dictionary<
+            GrammarType,
+            Func<Evaluator, Node, CancellationToken, Task<JsonNode>>
+        >
         {
             { GrammarType.ArrayLiteral, ArrayLiteralAsync },
             { GrammarType.BinaryExpression, BinaryExpressionAsync },
@@ -332,6 +444,4 @@ namespace JexlNet
             { GrammarType.SequenceLiteral, SequenceLiteralAsync }
         };
     }
-
-
 }
